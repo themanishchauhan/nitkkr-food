@@ -9,10 +9,11 @@ function getDb() {
 export async function getActiveVendors() {
   try {
     const db = getDb();
-    return await db.select()
+    const result = await db.select()
       .from(schema.vendors)
       .where(eq(schema.vendors.isActive, true))
       .orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
+    return result.length > 0 ? result : MOCK_VENDORS;
   } catch (e) {
     return MOCK_VENDORS;
   }
@@ -34,11 +35,12 @@ export async function getVendorBySlug(slug: string) {
 export async function getFeaturedVendors(limit = 5) {
   try {
     const db = getDb();
-    return await db.select()
+    const result = await db.select()
       .from(schema.vendors)
       .where(and(eq(schema.vendors.isActive, true), eq(schema.vendors.isFeatured, true)))
       .orderBy(asc(schema.vendors.displayOrder))
       .limit(limit);
+    return result.length > 0 ? result : MOCK_VENDORS.filter(v => v.isFeatured).slice(0, limit);
   } catch (e) {
     return MOCK_VENDORS.filter(v => v.isFeatured).slice(0, limit);
   }
@@ -47,9 +49,10 @@ export async function getFeaturedVendors(limit = 5) {
 export async function getCategories() {
   try {
     const db = getDb();
-    return await db.select()
+    const result = await db.select()
       .from(schema.categories)
       .orderBy(asc(schema.categories.displayOrder), asc(schema.categories.name));
+    return result.length > 0 ? result : MOCK_CATEGORIES;
   } catch (e) {
     return MOCK_CATEGORIES;
   }
@@ -58,7 +61,7 @@ export async function getCategories() {
 export async function getMenuItemsByVendor(vendorId: number) {
   try {
     const db = getDb();
-    return await db.select({
+    const result = await db.select({
       id: schema.menuItems.id,
       name: schema.menuItems.name,
       description: schema.menuItems.description,
@@ -77,6 +80,7 @@ export async function getMenuItemsByVendor(vendorId: number) {
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
       .where(and(eq(schema.menuItems.vendorId, vendorId), eq(schema.menuItems.isAvailable, true)))
       .orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
+    return result.length > 0 ? result : MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId);
   } catch (e) {
     return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId);
   }
@@ -85,7 +89,7 @@ export async function getMenuItemsByVendor(vendorId: number) {
 export async function getAllMenuItemsForSearch() {
   try {
     const db = getDb();
-    return await db.select({
+    const result = await db.select({
       id: schema.menuItems.id,
       name: schema.menuItems.name,
       description: schema.menuItems.description,
@@ -103,15 +107,39 @@ export async function getAllMenuItemsForSearch() {
       .innerJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id))
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
       .where(and(eq(schema.menuItems.isAvailable, true), eq(schema.vendors.isActive, true)));
-  } catch (e) {
-    return MOCK_MENU_ITEMS.map(m => {
+    return result.length > 0 ? result : MOCK_MENU_ITEMS.map((m: any) => {
       const v = MOCK_VENDORS.find(v => v.id === m.vendorId);
       return {
-        ...m,
+        id: m.id,
+        name: m.name,
+        description: m.description || null,
+        price: typeof m.price === 'number' ? m.price : parseFloat(m.price),
+        isVeg: Boolean(m.isVeg),
+        isAvailable: Boolean(m.isAvailable),
+        tags: m.tags || [],
         vendorName: v?.name || '',
         vendorSlug: v?.slug || '',
         vendorPhone: v?.phone || '',
-        vendorWhatsApp: v?.whatsapp || '',
+        vendorWhatsApp: v?.whatsapp || null,
+        categoryName: MOCK_CATEGORIES.find(c => c.id === m.categoryId)?.name || null,
+      };
+    });
+  } catch (e) {
+    return MOCK_MENU_ITEMS.map((m: any) => {
+      const v = MOCK_VENDORS.find(v => v.id === m.vendorId);
+      return {
+        id: m.id,
+        name: m.name,
+        description: m.description || null,
+        price: typeof m.price === 'number' ? m.price : parseFloat(m.price),
+        isVeg: Boolean(m.isVeg),
+        isAvailable: Boolean(m.isAvailable),
+        tags: m.tags || [],
+        vendorName: v?.name || '',
+        vendorSlug: v?.slug || '',
+        vendorPhone: v?.phone || '',
+        vendorWhatsApp: v?.whatsapp || null,
+        categoryName: MOCK_CATEGORIES.find(c => c.id === m.categoryId)?.name || null,
       };
     });
   }
@@ -202,7 +230,7 @@ export async function createMenuItem(data: {
       isAvailable: data.isAvailable ?? true,
       tags: data.tags || [],
       displayOrder: data.displayOrder ?? nextOrder,
-    }).returning();
+    } as any).returning();
     return item;
   } catch (error) {
     console.error('Create menu item error:', error);

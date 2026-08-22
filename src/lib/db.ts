@@ -1,28 +1,26 @@
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from './schema';
 
-let dbInstance: ReturnType<typeof drizzle> | null = null;
+export function getDbFromEnv(env?: any) {
+  const d1 = env?.DB || 
+             (globalThis as any).DB || 
+             (globalThis as any).env?.DB || 
+             (globalThis as any).__cf_env?.DB ||
+             (globalThis as any).process?.env?.DB;
 
-export function getDb(d1: any) {
-  if (!dbInstance) {
-    dbInstance = drizzle(d1, { schema });
+  if (!d1 || typeof d1.prepare !== 'function') {
+    throw new Error('D1 Database binding (DB) not available');
   }
-  return dbInstance;
+
+  return drizzle(d1, { schema });
 }
 
-export function getDbFromEnv() {
-  const d1 = (globalThis as any).DB || (globalThis as any).env?.DB;
-  if (!d1) {
-    console.warn('D1 database not available - using mock');
-    return new Proxy({}, {
-      get() {
-        return () => Promise.resolve([]);
-      }
-    }) as any;
-  }
-  return getDb(d1);
+export function getDb(env?: any) {
+  return getDbFromEnv(env);
 }
 
-export const db: any = getDbFromEnv();
+export const db: any = {
+  select: () => { throw new Error('Use getDbFromEnv(env)'); }
+};
 
 export { schema };
