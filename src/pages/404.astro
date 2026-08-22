@@ -1,0 +1,28 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Page Not Found - NITKKR Food" description="The page you're looking for doesn't exist.">
+  <section class="min-h-screen bg-nitkkr-cream flex items-center justify-center px-4">
+    <div class="max-w-md w-full text-center py-12">
+      <div class="mb-6">
+        <span class="text-8xl" aria-hidden="true">🍜</span>
+      </div>
+      <h1 class="font-display text-4xl font-bold text-nitkkr-dark mb-3">404 - Not Found</h1>
+      <p class="text-nitkkr-gray mb-6 text-lg">Sorry, we couldn't find that page. The stall might have moved or the link is stale.</p>
+      
+      <div class="space-y-3">
+        <a href="/" class="inline-block w-full px-6 py-3 bg-nitkkr-orange text-white rounded-xl font-bold hover:bg-nitkkr-orange-dark transition-colors">
+          Back to Food Search
+        </a>
+        <a href="/search" class="inline-block w-full px-6 py-3 bg-white text-nitkkr-dark border-2 border-nitkkr-orange/30 rounded-xl font-bold hover:border-nitkkr-orange hover:bg-nitkkr-cream transition-colors">
+          Search All Stalls
+        </a>
+      </div>
+      
+      <p class="mt-8 text-xs text-nitkkr-gray">
+        Looking for a specific stall? Try searching from the <a href="/" class="text-nitkkr-orange hover:underline font-medium">homepage</a>.
+      </p>
+    </div>
+  </section>
+</Layout>

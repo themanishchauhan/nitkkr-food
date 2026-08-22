@@ -1,0 +1,45 @@
+---
+const HOSTELS = [
+  'All Hostels & Locations',
+  'Hostel 1',
+  'Hostel 2',
+  'Hostel 3',
+  'Hostel 4',
+  'Hostel 5',
+  'Hostel 6',
+  'Hostel 7',
+  'Hostel 8',
+  'Hostel 9',
+  'Hostel 10',
+  'Hostel 11',
+  'Kalpana Chawla Girls Hostel',
+  'Academic Block',
+  'Faculty Colony / Staff Quarters',
+];
+---
+
+<div x-data="{
+  selectedHostel: localStorage.getItem('nitkkr_selected_hostel') || 'All Hostels & Locations',
+  selectHostel(h) {
+    this.selectedHostel = h;
+    localStorage.setItem('nitkkr_selected_hostel', h);
+    window.dispatchEvent(new CustomEvent('hostel-changed', { detail: h }));
+  }
+}" class="relative inline-block text-left w-full sm:w-auto">
+  <div class="flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl border border-nitkkr-orange/30 shadow-sm hover:border-nitkkr-orange transition-all cursor-pointer">
+    <span class="text-lg" aria-hidden="true">📍</span>
+    <div class="flex-1 min-w-0">
+      <p class="text-[10px] uppercase tracking-wider font-semibold text-nitkkr-gray">Deliver to</p>
+      <select
+        x-model="selectedHostel"
+        @change="selectHostel($event.target.value)"
+        class="bg-transparent font-semibold text-sm text-nitkkr-dark outline-none cursor-pointer w-full pr-2"
+        aria-label="Select hostel or campus location for delivery"
+      >
+        {HOSTELS.map(h => (
+          <option value={h}>{h}</option>
+        ))}
+      </select>
+    </div>
+  </div>
+</div>

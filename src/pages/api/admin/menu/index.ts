@@ -1,0 +1,136 @@
+import type { APIRoute } from 'astro';
+import { db, schema } from '../../../../lib/db';
+import { eq, asc, sql } from 'drizzle-orm';
+
+export const prerender = false;
+
+const ADMIN_SECRET = import.meta.env.ADMIN_SECRET || '';
+
+function verifyAdminAuth(request: Request): boolean {
+  const authHeader = request.headers.get('x-admin-key');
+  return authHeader === ADMIN_SECRET && ADMIN_SECRET.length > 0;
+}
+
+export const GET: APIRoute = async ({ request, url }) => {
+  if (!verifyAdminAuth(request)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    if (!process.env.DATABASE_URL) {
+      return new Response(JSON.stringify({ items: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const vendorIdParam = url.searchParams.get('vendorId');
+    if (!vendorIdParam) {
+      return new Response(JSON.stringify({ error: 'vendorId required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const vendorId = parseInt(vendorIdParam, 10);
+    if (!vendorId || isNaN(vendorId)) {
+      return new Response(JSON.stringify({ error: 'Invalid vendorId' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const items = await db.select({
+      id: schema.menuItems.id,
+      vendorId: schema.menuItems.vendorId,
+      categoryId: schema.menuItems.categoryId,
+      name: schema.menuItems.name,
+      description: schema.menuItems.description,
+      price: schema.menuItems.price,
+      image: schema.menuItems.image,
+      isVeg: schema.menuItems.isVeg,
+      isAvailable: schema.menuItems.isAvailable,
+      tags: schema.menuItems.tags,
+      displayOrder: schema.menuItems.displayOrder,
+      createdAt: schema.menuItems.createdAt,
+      categoryName: schema.categories.name,
+      categorySlug: schema.categories.slug,
+      categoryIcon: schema.categories.icon,
+    })
+      .from(schema.menuItems)
+      .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
+      .where(eq(schema.menuItems.vendorId, vendorId))
+      .orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
+
+    return new Response(JSON.stringify({ items }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('List menu items error:', error);
+    return new Response(JSON.stringify({ items: [] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
+
+export const POST: APIRoute = async ({ request }) => {
+  if (!verifyAdminAuth(request)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    if (!process.env.DATABASE_URL) {
+      return new Response(JSON.stringify({ error: 'Database not configured' }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const body = await request.json();
+    const { vendorId, categoryId, name, description, price, image, isVeg, isAvailable, tags, displayOrder } = body;
+
+    if (!vendorId || !name?.trim() || price === undefined || price === '') {
+      return new Response(JSON.stringify({ error: 'Missing required fields: vendorId, name, price' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const maxOrderResult = await db.select({ maxOrder: sql<number>`max(${schema.menuItems.displayOrder})` })
+      .from(schema.menuItems)
+      .where(eq(schema.menuItems.vendorId, vendorId));
+    const nextOrder = (maxOrderResult[0]?.maxOrder ?? 0) + 1;
+
+    const [item] = await db.insert(schema.menuItems).values({
+      vendorId,
+      categoryId: categoryId || null,
+      name: name.trim(),
+      description: description?.trim() || null,
+      price: price.toString(),
+      image: image?.trim() || null,
+      isVeg: isVeg ?? true,
+      isAvailable: isAvailable ?? true,
+      tags: tags || [],
+      displayOrder: displayOrder ?? nextOrder,
+    }).returning();
+
+    return new Response(JSON.stringify({ success: true, item }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Create menu item error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to create menu item' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};

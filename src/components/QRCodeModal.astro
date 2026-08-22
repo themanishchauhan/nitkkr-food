@@ -1,0 +1,66 @@
+---
+interface Props {
+  vendorName: string;
+  vendorSlug: string;
+  shareUrl: string;
+}
+
+const { vendorName, vendorSlug, shareUrl } = Astro.props;
+const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(shareUrl)}&color=2B2D42&bgcolor=FFF8F0`;
+---
+
+<div x-data="{ open: false }">
+  <button
+    @click="open = true"
+    class="w-full px-4 py-2 bg-nitkkr-cream hover:bg-nitkkr-orange/10 border border-nitkkr-orange/30 text-nitkkr-dark rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors mt-2"
+    aria-label="Show vendor QR code for scanning"
+  >
+    <svg class="w-4 h-4 text-nitkkr-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+    </svg>
+    Show Stall QR Code
+  </button>
+
+  <div
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+    style="display: none;"
+    @click.self="open = false"
+  >
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl border border-nitkkr-orange/30">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-display font-bold text-lg text-nitkkr-dark">{vendorName} QR Code</h3>
+        <button @click="open = false" class="text-nitkkr-gray hover:text-nitkkr-dark text-xl font-bold p-1">&times;</button>
+      </div>
+
+      <div class="p-4 bg-nitkkr-cream rounded-xl border border-nitkkr-orange/20 inline-block mb-4 shadow-inner">
+        <img
+          src={qrApiUrl}
+          alt={`Scan QR code for ${vendorName}`}
+          class="w-48 h-48 mx-auto rounded-lg"
+          loading="lazy"
+        />
+      </div>
+
+      <p class="text-xs text-nitkkr-gray mb-4">
+        Scan with any phone camera to view {vendorName}'s live menu instantly on campus.
+      </p>
+
+      <a
+        href={qrApiUrl}
+        download={`${vendorSlug}-qr.png`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="w-full inline-block px-4 py-2.5 bg-nitkkr-orange text-white rounded-xl font-medium text-sm hover:bg-nitkkr-orange-dark transition-colors"
+      >
+        Download QR Sticker
+      </a>
+    </div>
+  </div>
+</div>

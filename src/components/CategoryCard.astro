@@ -1,0 +1,18 @@
+---
+interface Props {
+  category: {
+    name: string;
+    slug: string;
+    icon: string;
+  };
+}
+const { category } = Astro.props;
+---
+<a
+  href={`/search?category=${category.slug}`}
+  class="bg-white p-3 sm:p-4 rounded-2xl border border-nitkkr-orange/20 text-center
+         hover:border-nitkkr-orange hover:shadow-md active:scale-95 transition-all duration-200 flex flex-col items-center justify-center min-w-[90px] sm:min-w-0"
+>
+  <span class="text-2xl sm:text-3xl block mb-1" aria-hidden="true">{category.icon}</span>
+  <span class="font-bold text-xs sm:text-sm text-nitkkr-dark leading-tight line-clamp-2">{category.name}</span>
+</a>

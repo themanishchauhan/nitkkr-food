@@ -1,0 +1,217 @@
+---
+interface Props {
+  vendorName: string;
+  vendorPhone: string;
+  vendorWhatsApp: string;
+}
+
+const { vendorName, vendorPhone, vendorWhatsApp } = Astro.props;
+---
+
+<div
+  x-data="{
+    open: false,
+    items: [],
+    roomNumber: localStorage.getItem('nitkkr_room_no') || '',
+    hostel: localStorage.getItem('nitkkr_selected_hostel') || 'Hostel 4',
+    
+    init() {
+      window.addEventListener('add-to-cart', (e) => {
+        const item = e.detail;
+        const existing = this.items.find(i => i.id === item.id);
+        if (existing) {
+          existing.qty += 1;
+        } else {
+          this.items.push({ ...item, qty: 1 });
+        }
+        this.open = true;
+      });
+      window.addEventListener('hostel-changed', (e) => {
+        this.hostel = e.detail;
+      });
+    },
+
+    saveRoom(val) {
+      this.roomNumber = val;
+      localStorage.setItem('nitkkr_room_no', val);
+    },
+
+    updateQty(id, delta) {
+      const idx = this.items.findIndex(i => i.id === id);
+      if (idx !== -1) {
+        this.items[idx].qty += delta;
+        if (this.items[idx].qty <= 0) {
+          this.items.splice(idx, 1);
+        }
+      }
+    },
+
+    get totalItems() {
+      return this.items.reduce((acc, i) => acc + i.qty, 0);
+    },
+
+    get totalPrice() {
+      return this.items.reduce((acc, i) => acc + (parseFloat(i.price) * i.qty), 0);
+    },
+
+    get whatsappUrl() {
+      let text = `Hi ${vendorName}! I'd like to order via NITKKR Food:\n\n`;
+      this.items.forEach(i => {
+        text += `• ${i.qty}x ${i.name} - ₹${(parseFloat(i.price) * i.qty).toFixed(0)}\n`;
+      });
+      text += `\nTotal: ₹${this.totalPrice.toFixed(0)}`;
+      text += `\nDelivery to: ${this.hostel}`;
+      if (this.roomNumber) {
+        text += `, Room: ${this.roomNumber}`;
+      }
+      return `https://wa.me/91${vendorWhatsApp || vendorPhone}?text=${encodeURIComponent(text)}`;
+    }
+  }"
+>
+  <!-- Floating Cart Button -->
+  <button
+    x-show="totalItems > 0"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 translate-y-4"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    @click="open = true"
+    class="fixed bottom-6 right-4 z-40 bg-nitkkr-orange text-white px-5 py-3.5 rounded-2xl shadow-xl hover:bg-nitkkr-orange-dark transition-all flex items-center gap-3 font-semibold border-2 border-white"
+    aria-label="View order cart"
+  >
+    <span class="bg-white/20 px-2.5 py-0.5 rounded-full text-xs font-bold" x-text="totalItems"></span>
+    <span>View Cart</span>
+    <span class="font-bold text-lg" x-text="`₹${totalPrice.toFixed(0)}`"></span>
+  </button>
+
+  <!-- Slide-Over Cart Drawer -->
+  <div
+    x-show="open"
+    class="fixed inset-0 z-50 overflow-hidden"
+    style="display: none;"
+  >
+    <div
+      x-show="open"
+      x-transition:enter="ease-in-out duration-300"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      x-transition:leave="ease-in-out duration-300"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+      class="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+      @click="open = false"
+    ></div>
+
+    <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div
+        x-show="open"
+        x-transition:enter="transform transition ease-in-out duration-300 sm:duration-500"
+        x-transition:enter-start="translate-x-full"
+        x-transition:enter-end="translate-x-0"
+        x-transition:leave="transform transition ease-in-out duration-300 sm:duration-500"
+        x-transition:leave-start="translate-x-0"
+        x-transition:leave-end="translate-x-full"
+        class="w-screen max-w-md bg-white shadow-2xl flex flex-col"
+      >
+        <!-- Drawer Header -->
+        <div class="p-4 bg-nitkkr-cream border-b border-nitkkr-orange/20 flex items-center justify-between">
+          <div>
+            <h2 class="font-display font-bold text-lg text-nitkkr-dark">Your Order</h2>
+            <p class="text-xs text-nitkkr-gray">{vendorName}</p>
+          </div>
+          <button @click="open = false" class="p-2 text-nitkkr-gray hover:text-nitkkr-dark text-xl font-bold">&times;</button>
+        </div>
+
+        <!-- Cart Items List -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+          <template x-if="items.length === 0">
+            <div class="text-center py-12 text-nitkkr-gray">
+              <p class="text-3xl mb-2">🛒</p>
+              <p class="font-medium">Your cart is empty</p>
+              <p class="text-xs mt-1">Add items from the menu below</p>
+            </div>
+          </template>
+
+          <template x-for="item in items" :key="item.id">
+            <div class="flex items-center justify-between p-3 bg-nitkkr-cream/50 rounded-xl border border-nitkkr-orange/10">
+              <div class="flex-1 min-w-0 pr-3">
+                <p class="font-semibold text-sm text-nitkkr-dark truncate" x-text="item.name"></p>
+                <p class="text-xs text-nitkkr-orange font-bold mt-0.5" x-text="`₹${(parseFloat(item.price) * item.qty).toFixed(0)}`"></p>
+              </div>
+
+              <!-- Stepper -->
+              <div class="flex items-center gap-2 bg-white rounded-lg border border-nitkkr-orange/30 px-2 py-1">
+                <button @click="updateQty(item.id, -1)" class="text-nitkkr-orange font-bold px-1 hover:bg-nitkkr-orange/10 rounded">-</button>
+                <span class="text-xs font-bold text-nitkkr-dark px-1" x-text="item.qty"></span>
+                <button @click="updateQty(item.id, 1)" class="text-nitkkr-orange font-bold px-1 hover:bg-nitkkr-orange/10 rounded">+</button>
+              </div>
+            </div>
+          </template>
+
+          <!-- Delivery Details Form -->
+          <template x-if="items.length > 0">
+            <div class="mt-6 p-4 bg-nitkkr-cream/60 rounded-2xl border border-nitkkr-orange/20 space-y-3">
+              <h4 class="font-bold text-xs text-nitkkr-dark flex items-center gap-1.5">
+                <span>📍</span> Delivery Location (NITKKR Campus)
+              </h4>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-semibold text-nitkkr-gray mb-1">Select Hostel / Area</label>
+                  <select
+                    x-model="hostel"
+                    @change="localStorage.setItem('nitkkr_selected_hostel', $event.target.value)"
+                    class="w-full px-2.5 py-2 text-xs bg-white border border-nitkkr-orange/30 rounded-xl font-semibold text-nitkkr-dark outline-none focus:border-nitkkr-orange"
+                  >
+                    <option value="Hostel 1">Hostel 1</option>
+                    <option value="Hostel 2">Hostel 2</option>
+                    <option value="Hostel 3">Hostel 3</option>
+                    <option value="Hostel 4">Hostel 4</option>
+                    <option value="Hostel 5">Hostel 5</option>
+                    <option value="Hostel 6">Hostel 6</option>
+                    <option value="Hostel 7">Hostel 7</option>
+                    <option value="Hostel 8">Hostel 8</option>
+                    <option value="Hostel 9">Hostel 9</option>
+                    <option value="Hostel 10">Hostel 10</option>
+                    <option value="Hostel 11">Hostel 11</option>
+                    <option value="Girls Hostel (KC)">Girls Hostel (KC)</option>
+                    <option value="Academic Block">Academic Block</option>
+                    <option value="Faculty Colony">Faculty Colony</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-semibold text-nitkkr-gray mb-1">Room No / LandMark</label>
+                  <input
+                    type="text"
+                    x-model="roomNumber"
+                    @input="saveRoom($event.target.value)"
+                    placeholder="e.g. Room 204"
+                    class="w-full px-2.5 py-2 text-xs bg-white border border-nitkkr-orange/30 rounded-xl font-semibold text-nitkkr-dark outline-none focus:border-nitkkr-orange"
+                  />
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-4 border-t border-nitkkr-orange/20 bg-white space-y-3" x-show="items.length > 0">
+          <div class="flex justify-between text-sm font-bold text-nitkkr-dark">
+            <span>Total Bill</span>
+            <span class="text-nitkkr-orange text-lg" x-text="`₹${totalPrice.toFixed(0)}`"></span>
+          </div>
+
+          <a
+            :href="whatsappUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full py-3.5 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 shadow-lg transition-colors"
+          >
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.194 1.871.18.51-.013 1.745-.87 2.014-1.762.27-.9.07-1.653-.599-2.185C18.918 15.288 17.787 14.532 17.472 14.382z" /></svg>
+            Send WhatsApp Order
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

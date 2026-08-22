@@ -1,0 +1,41 @@
+---
+interface Props {
+  vendor: {
+    id: number;
+    name: string;
+    slug: string;
+    image?: string | null;
+    deliversTo: string[];
+    opensAt: string;
+    closesAt: string;
+    minPrice?: number | null;
+  };
+  isOpen?: boolean;
+}
+const { vendor, isOpen } = Astro.props;
+---
+<a
+  href={`/v/${vendor.slug}`}
+  class="flex items-center gap-4 bg-white p-3 rounded-xl border border-nitkkr-orange/20
+         hover:border-nitkkr-orange hover:shadow-lg transition-all duration-200"
+>
+  <img
+    src={vendor.image || '/placeholder-vendor.svg'}
+    alt=""
+    class="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+    loading="lazy"
+  />
+  <div class="flex-1 min-w-0">
+    <p class="font-semibold truncate text-nitkkr-dark">{vendor.name}</p>
+    <p class="text-xs text-nitkkr-gray flex items-center gap-1 mt-0.5">
+      <span
+        class={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+        aria-hidden="true"
+      ></span>
+      <span class="truncate">{isOpen ? 'Open Now' : 'Closed'} ({vendor.opensAt} – {vendor.closesAt})</span>
+    </p>
+  </div>
+  {vendor.minPrice && (
+    <span class="text-nitkkr-orange font-bold text-lg whitespace-nowrap">₹{vendor.minPrice}</span>
+  )}
+</a>

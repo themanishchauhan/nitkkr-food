@@ -1,0 +1,60 @@
+---
+import '../styles/global.css';
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  ogUrl?: string;
+}
+const {
+  title = 'NITKKR Food',
+  description = 'Find food around NIT Kurukshetra instantly',
+  ogImage = '/og-default.jpg',
+  ogUrl = Astro.url.href,
+} = Astro.props;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#FF6B35" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonicalURL} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={ogUrl} />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content={new URL(ogImage, Astro.site).href} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={new URL(ogImage, Astro.site).href} />
+</head>
+<body class="font-body bg-nitkkr-cream text-nitkkr-dark min-h-screen flex flex-col">
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2" aria-live="polite"></div>
+  <main class="flex-1">
+    <slot />
+  </main>
+  <footer class="border-t border-nitkkr-orange/20 py-6 mt-auto">
+    <div class="max-w-4xl mx-auto px-4 text-center text-sm text-nitkkr-gray flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p>Made with ❤️ for NITKKR students</p>
+      <a href="/admin" class="px-3 py-1.5 bg-nitkkr-orange/10 hover:bg-nitkkr-orange hover:text-white text-nitkkr-orange rounded-xl font-bold text-xs transition-colors flex items-center gap-1">
+        <span>⚙️</span> Stall Owner Dashboard
+      </a>
+    </div>
+  </footer>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

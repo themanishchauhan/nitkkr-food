@@ -1,0 +1,24 @@
+---
+interface Props {
+  chips?: Array<{ label: string; icon: string; query: string }>;
+}
+const { chips = [
+  { label: 'Momos & Chinese', icon: '🥢', query: 'momo' },
+  { label: 'Under ₹100', icon: '💰', query: '100' },
+  { label: 'Pure Veg', icon: '🌱', query: 'veg' },
+  { label: 'Late Night', icon: '🌙', query: 'late night' },
+  { label: 'Shakes & Chai', icon: '🧋', query: 'shake' },
+] } = Astro.props;
+---
+<div class="flex overflow-x-auto gap-2 pb-2 mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:justify-center scrollbar-none" role="group" aria-label="Quick filters">
+  {chips.map(chip => (
+    <a
+      href={`/search?q=${encodeURIComponent(chip.query)}`}
+      class="px-3.5 py-2 bg-white border border-nitkkr-orange/30 text-nitkkr-dark rounded-full text-xs font-semibold
+             hover:bg-nitkkr-orange hover:text-white hover:border-nitkkr-orange shadow-xs transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap active:scale-95"
+    >
+      <span aria-hidden="true">{chip.icon}</span>
+      <span>{chip.label}</span>
+    </a>
+  ))}
+</div>
