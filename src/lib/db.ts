@@ -3,7 +3,7 @@ import * as schema from './schema';
 
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
-export function getDb(d1: D1Database) {
+export function getDb(d1: any) {
   if (!dbInstance) {
     dbInstance = drizzle(d1, { schema });
   }

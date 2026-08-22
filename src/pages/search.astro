@@ -87,7 +87,7 @@ const categories = await getCategories();
             >
               All
             </button>
-            {categories.map(cat => (
+            {categories.map((cat: any) => (
               <button
                 type="button"
                 @click={`activeCat = '${cat.slug}'`}

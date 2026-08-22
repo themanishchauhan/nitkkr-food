@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request }) => {
       isActive: 1,
       isFeatured: 0,
       displayOrder: nextOrder,
-    }).returning();
+    } as any).returning();
 
     return new Response(JSON.stringify({ success: true, vendor }), {
       status: 201,

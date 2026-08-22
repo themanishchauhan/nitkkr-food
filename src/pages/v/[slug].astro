@@ -8,14 +8,14 @@ import { getActiveVendors, getVendorBySlug, getMenuItemsByVendor, getCategories,
 
 export async function getStaticPaths() {
   const vendors = await getActiveVendors();
-  return vendors.map((v) => ({
+  return vendors.map((v: any) => ({
     params: { slug: v.slug },
     props: { vendor: v },
   }));
 }
 
 const { slug } = Astro.params;
-const vendor = Astro.props.vendor || (await getVendorBySlug(slug as string));
+const vendor = (Astro.props as any)?.vendor || (await getVendorBySlug(slug as string));
 
 if (!vendor) {
   return Astro.redirect('/404');

@@ -10,7 +10,7 @@ const vendors = await getActiveVendors();
 const categories = await getCategories();
 
 const vendorsWithStatus = await Promise.all(
-  vendors.map(async (v) => ({
+  vendors.map(async (v: any) => ({
     ...v,
     isOpen: isVendorOpenNow(v.opensAt, v.closesAt),
     minPrice: await getMinPrice(v.id),
@@ -40,7 +40,7 @@ const vendorsWithStatus = await Promise.all(
           Browse by Category
         </h2>
         <div class="grid grid-cols-4 gap-2 sm:gap-3">
-          {categories.map(cat => (
+          {categories.map((cat: any) => (
             <CategoryCard category={cat} />
           ))}
         </div>

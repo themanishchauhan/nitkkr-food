@@ -53,8 +53,8 @@ export const POST: APIRoute = async ({ request }) => {
       name: name.trim(),
       phone: phone.trim(),
       inviteId: invite.id,
-      isActive: 1,
-    }).returning();
+      isActive: true,
+    } as any).returning();
 
     // Mark invite as used
     await db.update(schema.stallInvites)

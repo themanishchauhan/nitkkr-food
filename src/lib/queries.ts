@@ -11,7 +11,7 @@ export async function getActiveVendors() {
     const db = getDb();
     return await db.select()
       .from(schema.vendors)
-      .where(eq(schema.vendors.isActive, 1))
+      .where(eq(schema.vendors.isActive, true))
       .orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
   } catch (e) {
     return MOCK_VENDORS;
@@ -23,7 +23,7 @@ export async function getVendorBySlug(slug: string) {
     const db = getDb();
     const result = await db.select()
       .from(schema.vendors)
-      .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, 1)))
+      .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
     return result[0] || MOCK_VENDORS.find(v => v.slug === slug) || MOCK_VENDORS[0];
   } catch (e) {
@@ -36,7 +36,7 @@ export async function getFeaturedVendors(limit = 5) {
     const db = getDb();
     return await db.select()
       .from(schema.vendors)
-      .where(and(eq(schema.vendors.isActive, 1), eq(schema.vendors.isFeatured, 1)))
+      .where(and(eq(schema.vendors.isActive, true), eq(schema.vendors.isFeatured, true)))
       .orderBy(asc(schema.vendors.displayOrder))
       .limit(limit);
   } catch (e) {
@@ -75,7 +75,7 @@ export async function getMenuItemsByVendor(vendorId: number) {
     })
       .from(schema.menuItems)
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
-      .where(and(eq(schema.menuItems.vendorId, vendorId), eq(schema.menuItems.isAvailable, 1)))
+      .where(and(eq(schema.menuItems.vendorId, vendorId), eq(schema.menuItems.isAvailable, true)))
       .orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
   } catch (e) {
     return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId);
@@ -102,7 +102,7 @@ export async function getAllMenuItemsForSearch() {
       .from(schema.menuItems)
       .innerJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id))
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
-      .where(and(eq(schema.menuItems.isAvailable, 1), eq(schema.vendors.isActive, 1)));
+      .where(and(eq(schema.menuItems.isAvailable, true), eq(schema.vendors.isActive, true)));
   } catch (e) {
     return MOCK_MENU_ITEMS.map(m => {
       const v = MOCK_VENDORS.find(v => v.id === m.vendorId);
@@ -136,7 +136,7 @@ export async function getMinPrice(vendorId: number): Promise<number | null> {
     const db = getDb();
     const result = await db.select({ minPrice: sql<number>`min(${schema.menuItems.price})` })
       .from(schema.menuItems)
-      .where(and(eq(schema.menuItems.vendorId, vendorId), eq(schema.menuItems.isAvailable, 1)));
+      .where(and(eq(schema.menuItems.vendorId, vendorId), eq(schema.menuItems.isAvailable, true)));
     return result[0]?.minPrice ?? null;
   } catch (e) {
     const items = MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId);
