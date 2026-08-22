@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import CartDrawer from '../components/CartDrawer.astro';
 import { getCategories, getAllMenuItemsForSearch } from '../lib/queries';
 
 const initialQuery = Astro.url.searchParams.get('q')?.trim() || '';
@@ -35,7 +36,7 @@ const categories = await getCategories();
         return list;
       }
     }`}
-    class="min-h-screen bg-nitkkr-cream"
+    class="min-h-screen bg-nitkkr-cream pb-20"
   >
     <div class="max-w-2xl mx-auto px-4 py-8">
       <div class="mb-6">
@@ -134,12 +135,21 @@ const categories = await getCategories();
                   </template>
                 </div>
 
-                <a
-                  :href="`/v/${item.vendorSlug}`"
-                  class="px-3 py-1.5 bg-nitkkr-orange/10 hover:bg-nitkkr-orange hover:text-white text-nitkkr-orange rounded-lg font-bold text-xs transition-colors"
-                >
-                  View Stall →
-                </a>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    @click="window.dispatchEvent(new CustomEvent('add-to-cart', { detail: { id: item.id, name: item.name + ' (' + item.vendorName + ')', price: Number(item.price) } }))"
+                    class="px-3 py-1.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white rounded-lg font-bold text-xs shadow-sm transition-transform active:scale-95 cursor-pointer"
+                  >
+                    + Add
+                  </button>
+                  <a
+                    :href="`/v/${item.vendorSlug}`"
+                    class="px-3 py-1.5 bg-nitkkr-cream hover:bg-nitkkr-orange/10 text-nitkkr-dark rounded-lg font-bold text-xs transition-colors"
+                  >
+                    Stall →
+                  </a>
+                </div>
               </div>
             </div>
           </article>
@@ -152,5 +162,8 @@ const categories = await getCategories();
         </div>
       </div>
     </div>
+
+    <!-- Universal Cart Drawer for Search Results -->
+    <CartDrawer vendorName="Campus Eateries" vendorPhone="9876543210" vendorWhatsApp="9876543210" />
   </section>
 </Layout>

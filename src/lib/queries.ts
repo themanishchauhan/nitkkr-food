@@ -118,12 +118,17 @@ export async function getAllMenuItemsForSearch() {
 }
 
 export function isVendorOpenNow(opensAt: string, closesAt: string): boolean {
-  const now = new Date();
-  const currentTime = now.toTimeString().slice(0, 5);
+  const istTime = new Date().toLocaleTimeString('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   if (opensAt > closesAt) {
-    return currentTime >= opensAt || currentTime <= closesAt;
+    return istTime >= opensAt || istTime <= closesAt;
   }
-  return currentTime >= opensAt && currentTime <= closesAt;
+  return istTime >= opensAt && istTime <= closesAt;
 }
 
 export async function getMinPrice(vendorId: number): Promise<number | null> {
