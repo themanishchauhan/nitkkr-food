@@ -13,7 +13,9 @@ export default defineConfig({
     sitemap(),
     mdx(),
   ],
-  adapter: cloudflare(),
+  adapter: cloudflare({
+    imageService: 'passthrough',
+  }),
   output: 'server',
   vite: {
     resolve: {
