@@ -8,6 +8,9 @@ import path from 'node:path';
 
 export default defineConfig({
   site: 'https://nitkkr-food.pages.dev',
+  session: {
+    driver: 'memory',
+  },
   integrations: [
     tailwind(),
     sitemap(),
