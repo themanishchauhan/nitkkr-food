@@ -13,6 +13,13 @@
       "id": "146b1e0adaa24e3d8025854c979a3158"
     }
   ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nitkkr-food",
+      "database_id": "a8420ab2-6991-41ec-98fb-390f2932429c"
+    }
+  ],
   "vars": {
     "ENVIRONMENT": "production"
   },
