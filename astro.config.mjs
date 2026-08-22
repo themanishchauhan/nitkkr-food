@@ -22,10 +22,10 @@ export default defineConfig({
       },
     },
     optimizeDeps: {
-      exclude: ['@astrojs/cloudflare'],
+      exclude: ['@astrojs/cloudflare', 'meilisearch', 'drizzle-orm', '@neondatabase/serverless'],
     },
     ssr: {
-      noExternal: ['meilisearch', 'drizzle-orm', '@neondatabase/serverless'],
+      noExternal: ['@astrojs/cloudflare', 'meilisearch', 'drizzle-orm', '@neondatabase/serverless'],
     },
     plugins: [
       VitePWA({
