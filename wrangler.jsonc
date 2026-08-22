@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nitkkr-food",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "nitkkr-food",
+    "database_id": "a8420ab2-6991-41ec-98fb-390f2932429c"
+  }],
+  "kv_namespaces": [{
+    "binding": "SESSION",
+    "id": "146b1e0adaa24e3d8025854c979a3158"
+  }],
+  "vars": {
+    "ENVIRONMENT": "production"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
