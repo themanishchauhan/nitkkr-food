@@ -7,6 +7,12 @@
     "directory": "./dist/client",
     "binding": "ASSETS"
   },
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "146b1e0adaa24e3d8025854c979a3158"
+    }
+  ],
   "vars": {
     "ENVIRONMENT": "production"
   },
