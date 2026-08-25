@@ -27,18 +27,18 @@ export const onRequest = defineMiddleware(async (context, next) => {
       const token = match ? match[1] : (context.cookies.get('admin_session')?.value || null);
 
       if (!token) {
-        return Response.redirect(new URL('/admin/login', context.request.url).toString(), 302);
+        return context.redirect('/admin/login', 302);
       }
 
       const session = await verifySessionToken(token);
       if (!session) {
-        return Response.redirect(new URL('/admin/login', context.request.url).toString(), 302);
+        return context.redirect('/admin/login', 302);
       }
-
 
       // Add user info to locals for use in components
       context.locals.admin = session;
     }
+
 
     // 4. Protect all /api/admin API routes
     if (path.startsWith('/api/admin')) {
