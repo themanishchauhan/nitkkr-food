@@ -1,182 +1,457 @@
 ---
 export const prerender = false;
-
 import Layout from '../../layouts/Layout.astro';
-import { getActiveVendors, getCategories, getAllReviews } from '../../lib/queries';
-
-const vendors = await getActiveVendors();
-const categories = await getCategories();
-const reviews = await getAllReviews();
-
-const pendingReviews = reviews.filter(r => true).length; // All reviews shown
 ---
 
-<Layout title="Admin Dashboard - NITKKR Food" description="Manage your campus food platform">
-  <section class="min-h-screen bg-nitkkr-cream">
-    <div x-data="adminLayout()" class="flex min-h-screen">
-      <!-- Sidebar -->
-      <aside class="w-64 bg-white border-r border-nitkkr-orange/20 min-h-screen hidden lg:block">
-        <div class="p-6 border-b border-nitkkr-orange/20">
-          <h1 class="font-display text-xl font-bold text-nitkkr-dark flex items-center gap-2">
-            <span>⚙️</span> Admin Panel
-          </h1>
-        </div>
-        <nav class="p-4 space-y-2">
-          <a href="/admin" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors">
-            <span>📊</span> Dashboard
-          </a>
-          <a href="/admin/stalls" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors">
-            <span>🏪</span> Stalls
-          </a>
-          <a href="/admin/categories" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors">
-            <span>🍽️</span> Categories
-          </a>
-          <a href="/admin/menu-items" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors">
-            <span>🍽️</span> Menu Items
-          </a>
-          <a href="/admin/reviews" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors">
-            <span>⭐</span> Reviews
-          </a>
-          <a href="/admin/settings" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors">
-            <span>⚙️</span> Settings
-          </a>
-        </nav>
-      </aside>
+<Layout title="NITKKR Food - Founder Command Hub" description="Live Founder Operations & Campus Food Control Center">
+  <section class="min-h-screen bg-slate-950 text-slate-100 flex flex-col lg:flex-row">
+    
+    <!-- Alpine Root Data Scope -->
+    <div
+      x-data="{
+        sidebarOpen: false,
+        loading: true,
+        vendors: [],
+        categories: [],
+        menuItems: [],
+        reviews: [],
+        settings: {},
+        currentTime: '',
+        
+        async init() {
+          this.updateClock();
+          setInterval(() => this.updateClock(), 1000);
+          await this.loadDashboardData();
+        },
 
-      <!-- Mobile menu button -->
-      <div class="lg:hidden fixed top-4 left-4 z-50">
-        <button @click="sidebarOpen = !sidebarOpen" class="bg-nitkkr-orange text-white p-3 rounded-xl shadow-lg">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-      </div>
+        updateClock() {
+          const now = new Date();
+          this.currentTime = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        },
 
-      <div x-show="sidebarOpen" x-transition class="lg:hidden fixed inset-0 z-40 bg-black/50" @click.self="sidebarOpen = false"></div>
-      <aside x-show="sidebarOpen" x-transition class="lg:hidden fixed inset-y-0 left-0 w-64 bg-white border-r border-nitkkr-orange/20 z-50">
-        <div class="p-6 border-b border-nitkkr-orange/20">
-          <h1 class="font-display text-xl font-bold text-nitkkr-dark flex items-center gap-2">
-            <span>⚙️</span> Admin Panel
-          </h1>
-        </div>
-        <nav class="p-4 space-y-2">
-          <a href="/admin" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors block">
-            <span>📊</span> Dashboard
-          </a>
-          <a href="/admin/stalls" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors block">
-            <span>🏪</span> Stalls
-          </a>
-          <a href="/admin/categories" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors block">
-            <span>🍽️</span> Categories
-          </a>
-          <a href="/admin/menu-items" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors block">
-            <span>🍽️</span> Menu Items
-          </a>
-          <a href="/admin/reviews" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors block">
-            <span>⭐</span> Reviews
-          </a>
-          <a href="/admin/settings" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-xl font-medium transition-colors block">
-            <span>⚙️</span> Settings
-          </a>
-        </nav>
-      </aside>
+        async loadDashboardData() {
+          this.loading = true;
+          try {
+            const [vRes, cRes, mRes, rRes, sRes] = await Promise.all([
+              fetch('/api/admin/vendors').catch(() => null),
+              fetch('/api/admin/categories').catch(() => null),
+              fetch('/api/admin/menu').catch(() => null),
+              fetch('/api/reviews').catch(() => null),
+              fetch('/api/admin/settings').catch(() => null),
+            ]);
 
-      <!-- Main content -->
-      <main class="flex-1 p-8 lg:ml-0">
-        <div class="max-w-6xl mx-auto">
-          <div class="mb-8">
-            <h1 class="font-display text-3xl font-bold text-nitkkr-dark">Dashboard</h1>
-            <p class="text-nitkkr-gray mt-1">Manage your campus food platform</p>
-          </div>
+            if (vRes && vRes.ok) {
+              const d = await vRes.json();
+              this.vendors = d.vendors || [];
+            }
+            if (cRes && cRes.ok) {
+              const d = await cRes.json();
+              this.categories = d.categories || [];
+            }
+            if (mRes && mRes.ok) {
+              const d = await mRes.json();
+              this.menuItems = d.items || [];
+            }
+            if (rRes && rRes.ok) {
+              const d = await rRes.json();
+              this.reviews = d.reviews || [];
+            }
+            if (sRes && sRes.ok) {
+              const d = await sRes.json();
+              this.settings = d.settings || {};
+            }
+          } catch (err) {
+            console.error('Error loading dashboard data:', err);
+          } finally {
+            this.loading = false;
+          }
+        },
 
-          <!-- Stats cards -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white rounded-2xl border border-nitkkr-orange/20 p-6 shadow-sm">
-              <p class="text-xs font-semibold text-nitkkr-gray mb-1">Total Stalls</p>
-              <p class="font-display text-3xl font-bold text-nitkkr-orange" x-text="vendors.length"></p>
-            </div>
-            <div class="bg-white rounded-2xl border border-nitkkr-orange/20 p-6 shadow-sm">
-              <p class="text-xs font-semibold text-nitkkr-gray mb-1">Total Categories</p>
-              <p class="font-display text-3xl font-bold text-nitkkr-dark" x-text="categories.length"></p>
-            </div>
-            <div class="bg-white rounded-2xl border border-nitkkr-orange/20 p-6 shadow-sm">
-              <p class="text-xs font-semibold text-nitkkr-gray mb-1">Total Reviews</p>
-              <p class="font-display text-3xl font-bold text-green-600" x-text="reviews.length"></p>
-            </div>
-            <div class="bg-white rounded-2xl border border-nitkkr-orange/20 p-6 shadow-sm">
-              <p class="text-xs font-semibold text-nitkkr-gray mb-1">Active Stalls</p>
-              <p class="font-display text-3xl font-bold text-green-600" x-text="vendors.filter(v => v.isActive).length"></p>
-            </div>
-          </div>
+        async toggleVendorStatus(vendor) {
+          try {
+            const res = await fetch('/api/admin/vendors', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: vendor.id, isActive: !vendor.isActive })
+            });
+            if (res.ok) {
+              vendor.isActive = !vendor.isActive;
+            }
+          } catch (e) {
+            alert('Failed to update status');
+          }
+        },
 
-          <!-- Quick actions -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white rounded-2xl border border-nitkkr-orange/20 p-6 shadow-sm">
-              <h3 class="font-display text-lg font-bold text-nitkkr-dark mb-4">Quick Actions</h3>
-              <div class="space-y-3">
-                <a href="/admin/stalls" class="flex items-center gap-3 p-4 bg-nitkkr-cream rounded-xl hover:bg-nitkkr-orange/10 transition-colors block">
-                  <span class="w-10 h-10 bg-nitkkr-orange rounded-lg flex items-center justify-center text-white">🏪</span>
-                  <div>
-                    <p class="font-bold text-nitkkr-dark">Add New Stall</p>
-                    <p class="text-xs text-nitkkr-gray">Create a new food stall listing</p>
-                  </div>
-                </a>
-                <a href="/admin/categories" class="flex items-center gap-3 p-4 bg-nitkkr-cream rounded-xl hover:bg-nitkkr-orange/10 transition-colors block">
-                  <span class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white">🍽️</span>
-                  <div>
-                    <p class="font-bold text-nitkkr-dark">Manage Categories</p>
-                    <p class="text-xs text-nitkkr-gray">Add or edit food categories</p>
-                  </div>
-                </a>
-                <a href="/admin/menu-items" class="flex items-center gap-3 p-4 bg-nitkkr-cream rounded-xl hover:bg-nitkkr-orange/10 transition-colors block">
-                  <span class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white">🍽️</span>
-                  <div>
-                    <p class="font-bold text-nitkkr-dark">Manage Menu Items</p>
-                    <p class="text-xs text-nitkkr-gray">Add or edit food items</p>
-                  </div>
-                </a>
+        async logout() {
+          if (!confirm('Log out from Founder Panel?')) return;
+          await fetch('/api/admin/auth', { method: 'DELETE' });
+          window.location.href = '/';
+        },
+
+        get activeVendorsCount() {
+          return this.vendors.filter(v => v.isActive).length;
+        },
+
+        get avgRating() {
+          if (this.reviews.length === 0) return '5.0';
+          const sum = this.reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
+          return (sum / this.reviews.length).toFixed(1);
+        },
+
+        get vegCount() {
+          return this.menuItems.filter(m => m.isVeg).length;
+        }
+      }"
+      x-init="init()"
+      class="flex-1 flex flex-col lg:flex-row min-h-screen"
+    >
+
+      <!-- 🌟 Ultra-Modern Glassmorphic Sidebar -->
+      <aside class="w-full lg:w-64 bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/80 flex-shrink-0 flex flex-col justify-between p-5 lg:min-h-screen">
+        <div>
+          <!-- Brand / Founder Profile Badge -->
+          <div class="flex items-center justify-between pb-6 border-b border-slate-800/80">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-xl shadow-lg shadow-orange-500/20">
+                🍜
               </div>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-nitkkr-orange/20 p-6 shadow-sm">
-              <h3 class="font-display text-lg font-bold text-nitkkr-dark mb-4">Recent Reviews</h3>
-              <div class="space-y-3 max-h-64 overflow-y-auto">
-                <template x-for="review in reviews.slice(0, 5)" :key="review.id">
-                  <div class="flex items-center justify-between p-3 bg-nitkkr-cream rounded-xl">
-                    <div class="flex items-center gap-3">
-                      <span class="w-8 h-8 bg-nitkkr-orange/20 rounded-full flex items-center justify-center text-nitkkr-orange font-bold" x-text="review.studentName.charAt(0)"></span>
-                      <div>
-                        <p class="font-medium text-nitkkr-dark text-sm" x-text="review.studentName"></p>
-                        <p class="text-xs text-nitkkr-gray" x-text="review.menuItemName + ' @ ' + review.vendorName"></p>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span class="text-nitkkr-orange font-bold" x-text="'★ ' + review.rating"></span>
-                    </div>
-                  </div>
-                </template>
-                <div x-show="reviews.length === 0" class="text-center py-8 text-nitkkr-gray">
-                  <p class="text-xl mb-1">⭐</p>
-                  <p>No reviews yet</p>
+              <div>
+                <h2 class="font-display font-bold text-sm tracking-wide text-white">NITKKR Food</h2>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span class="text-[10px] font-mono font-medium text-emerald-400 uppercase tracking-wider">Ops Live</span>
                 </div>
               </div>
             </div>
+
+            <!-- Mobile Toggle -->
+            <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 text-slate-400 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+          </div>
+
+          <!-- Navigation Links -->
+          <nav class="mt-6 space-y-1.5" :class="sidebarOpen ? 'block' : 'hidden lg:block'">
+            <a href="/admin" class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-amber-500/15 to-orange-500/10 text-amber-400 border border-amber-500/30 rounded-2xl font-bold text-xs shadow-xs transition-all">
+              <span class="text-base">📊</span>
+              <span>Command Hub</span>
+            </a>
+
+            <a href="/admin/stalls" class="flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-2xl font-semibold text-xs transition-all group">
+              <div class="flex items-center gap-3">
+                <span class="text-base group-hover:scale-110 transition-transform">🏪</span>
+                <span>Campus Stalls</span>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700" x-text="vendors.length"></span>
+            </a>
+
+            <a href="/admin/categories" class="flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-2xl font-semibold text-xs transition-all group">
+              <div class="flex items-center gap-3">
+                <span class="text-base group-hover:scale-110 transition-transform">🍽️</span>
+                <span>Categories</span>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700" x-text="categories.length"></span>
+            </a>
+
+            <a href="/admin/menu-items" class="flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-2xl font-semibold text-xs transition-all group">
+              <div class="flex items-center gap-3">
+                <span class="text-base group-hover:scale-110 transition-transform">🍱</span>
+                <span>Dishes & Prices</span>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700" x-text="menuItems.length"></span>
+            </a>
+
+            <a href="/admin/reviews" class="flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-2xl font-semibold text-xs transition-all group">
+              <div class="flex items-center gap-3">
+                <span class="text-base group-hover:scale-110 transition-transform">⭐</span>
+                <span>Student Reviews</span>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 border border-slate-700" x-text="reviews.length"></span>
+            </a>
+
+            <a href="/admin/settings" class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-2xl font-semibold text-xs transition-all group">
+              <span class="text-base group-hover:rotate-45 transition-transform">⚙️</span>
+              <span>Website Control Center</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Founder Account & Live Site Link -->
+        <div class="mt-8 pt-4 border-t border-slate-800/80 space-y-3" :class="sidebarOpen ? 'block' : 'hidden lg:block'">
+          <a
+            href="/"
+            target="_blank"
+            class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700/80 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all border border-slate-700/60 shadow-sm"
+          >
+            <span>🌐</span> View Live Website ↗
+          </a>
+
+          <div class="flex items-center justify-between p-2.5 bg-slate-950/60 rounded-xl border border-slate-800">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center text-xs">
+                MC
+              </div>
+              <div class="truncate">
+                <p class="text-xs font-bold text-white truncate">Manish Chauhan</p>
+                <p class="text-[10px] text-slate-400">Founder & Admin</p>
+              </div>
+            </div>
+            <button
+              @click="logout()"
+              class="text-slate-400 hover:text-rose-400 p-1.5 transition-colors cursor-pointer"
+              title="Logout"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            </button>
           </div>
         </div>
+      </aside>
+
+      <!-- 🚀 Main Operations Dashboard Area -->
+      <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-7xl">
+        <div class="space-y-8">
+          
+          <!-- Top Founder Hero Header -->
+          <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-2 z-10">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-bold">
+                <span>⚡</span> NIT Kurukshetra Campus Realtime Operations
+              </div>
+              <h1 class="font-display text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Welcome back, Manish 👋
+              </h1>
+              <p class="text-xs sm:text-sm text-slate-400 max-w-xl">
+                Real-time campus food traffic, vendor availability, dish catalogs, and instant settings management.
+              </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 z-10">
+              <div class="px-4 py-2 bg-slate-950/80 border border-slate-800 rounded-2xl text-center">
+                <span class="text-[10px] font-mono uppercase text-slate-400 block">Campus Time</span>
+                <span class="font-mono text-sm font-bold text-amber-400" x-text="currentTime"></span>
+              </div>
+              <a
+                href="/admin/stalls"
+                class="px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+              >
+                <span>➕</span> Add New Stall
+              </a>
+            </div>
+
+            <!-- Glowing Abstract Background Accent -->
+            <div class="absolute -top-24 -right-24 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          </div>
+
+          <!-- 📊 Key Metric Cards (Glowing Cards) -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            
+            <!-- Card 1: Total Stalls -->
+            <div class="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-800 p-5 space-y-3 relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-xl">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400">Total Stalls</span>
+                <div class="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-lg">
+                  🏪
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <span class="font-display text-3xl sm:text-4xl font-extrabold text-white" x-text="vendors.length"></span>
+                <span class="text-[11px] font-bold text-emerald-400" x-text="activeVendorsCount + ' active'"></span>
+              </div>
+              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Gate 1, Market & DB Hall</span>
+                <a href="/admin/stalls" class="text-amber-400 hover:underline font-semibold">Manage →</a>
+              </div>
+            </div>
+
+            <!-- Card 2: Total Menu Items -->
+            <div class="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-800 p-5 space-y-3 relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-xl">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400">Dishes Listed</span>
+                <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-lg">
+                  🍱
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <span class="font-display text-3xl sm:text-4xl font-extrabold text-white" x-text="menuItems.length"></span>
+                <span class="text-[11px] font-bold text-emerald-400" x-text="vegCount + ' veg'"></span>
+              </div>
+              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span x-text="categories.length + ' categories'"></span>
+                <a href="/admin/menu-items" class="text-amber-400 hover:underline font-semibold">Edit prices →</a>
+              </div>
+            </div>
+
+            <!-- Card 3: Student Reviews -->
+            <div class="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-800 p-5 space-y-3 relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-xl">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400">Student Reviews</span>
+                <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-lg">
+                  ⭐
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <span class="font-display text-3xl sm:text-4xl font-extrabold text-white" x-text="reviews.length"></span>
+                <span class="text-[11px] font-bold text-amber-400" x-text="'★ ' + avgRating"></span>
+              </div>
+              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Verified Campus Feedback</span>
+                <a href="/admin/reviews" class="text-amber-400 hover:underline font-semibold">Read all →</a>
+              </div>
+            </div>
+
+            <!-- Card 4: In-Feed Sponsor / Ads -->
+            <div class="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-800 p-5 space-y-3 relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-xl">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400">In-Feed Sponsors</span>
+                <div class="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-lg">
+                  ⚡
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <span class="font-display text-2xl sm:text-3xl font-extrabold" :class="settings.ad_banner_enabled === 'true' ? 'text-emerald-400' : 'text-slate-500'" x-text="settings.ad_banner_enabled === 'true' ? 'ACTIVE' : 'OFF'"></span>
+              </div>
+              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Homepage & Menu Ads</span>
+                <a href="/admin/settings" class="text-amber-400 hover:underline font-semibold">Configure →</a>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ⚡ Fast Quick Command Hub (Interactive Glass Cards) -->
+          <div>
+            <h3 class="font-display text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <span>🚀</span> Founder Operations Matrix
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              <a href="/admin/stalls" class="p-5 bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-3xl transition-all shadow-lg hover:-translate-y-1 group">
+                <div class="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 border border-orange-500/20 flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">
+                  🏪
+                </div>
+                <h4 class="font-bold text-sm text-white group-hover:text-amber-400 transition-colors">Manage Campus Stalls</h4>
+                <p class="text-xs text-slate-400 mt-1">Add eateries, toggle active status, update WhatsApp numbers & opening timings.</p>
+              </a>
+
+              <a href="/admin/menu-items" class="p-5 bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-3xl transition-all shadow-lg hover:-translate-y-1 group">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">
+                  🍱
+                </div>
+                <h4 class="font-bold text-sm text-white group-hover:text-emerald-400 transition-colors">Dish Catalogs & Prices</h4>
+                <p class="text-xs text-slate-400 mt-1">Update dish prices, veg/non-veg tags, 1-tap food photo presets & availability.</p>
+              </a>
+
+              <a href="/admin/settings" class="p-5 bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-3xl transition-all shadow-lg hover:-translate-y-1 group">
+                <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">
+                  ⚡
+                </div>
+                <h4 class="font-bold text-sm text-white group-hover:text-amber-400 transition-colors">Ads & Sponsor Banners</h4>
+                <p class="text-xs text-slate-400 mt-1">Configure in-feed sponsored deals with real-time visual previews.</p>
+              </a>
+
+              <a href="/admin/settings" class="p-5 bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-3xl transition-all shadow-lg hover:-translate-y-1 group">
+                <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">
+                  📢
+                </div>
+                <h4 class="font-bold text-sm text-white group-hover:text-blue-400 transition-colors">Broadcast Live Alert</h4>
+                <p class="text-xs text-slate-400 mt-1">Push instant campus banners, fest offers, or rain alerts to all student phones.</p>
+              </a>
+
+            </div>
+          </div>
+
+          <!-- 🏪 Real-Time Stall Status Matrix & Quick Open/Close -->
+          <div class="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 class="font-display text-lg font-bold text-white flex items-center gap-2">
+                  <span>🏪</span> Live Stall Availability Control
+                </h3>
+                <p class="text-xs text-slate-400">1-tap toggle to mark stalls open or closed across campus in real time</p>
+              </div>
+              <a href="/admin/stalls" class="text-xs font-bold text-amber-400 hover:underline">
+                View All Details →
+              </a>
+            </div>
+
+            <!-- Stalls List Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <template x-for="vendor in vendors" :key="vendor.id">
+                <div class="p-4 bg-slate-950/80 border border-slate-800/80 rounded-2xl flex items-center justify-between gap-3 hover:border-slate-700 transition-all">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full" :class="vendor.isActive ? 'bg-emerald-400' : 'bg-rose-500'"></span>
+                      <h5 class="font-bold text-xs text-white truncate" x-text="vendor.name"></h5>
+                    </div>
+                    <p class="text-[11px] text-slate-400 truncate mt-0.5" x-text="vendor.address || 'Campus Eatery'"></p>
+                    <span class="text-[10px] font-mono text-slate-500" x-text="vendor.opensAt + ' - ' + vendor.closesAt"></span>
+                  </div>
+
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      @click="toggleVendorStatus(vendor)"
+                      class="px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                      :class="vendor.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'"
+                      x-text="vendor.isActive ? 'Open' : 'Closed'"
+                    >
+                    </button>
+                    <a
+                      :href="'/v/' + vendor.slug"
+                      target="_blank"
+                      class="p-1.5 text-slate-400 hover:text-amber-400 transition-colors"
+                      title="View Menu"
+                    >
+                      ↗
+                    </a>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- ⭐ Live Student Review Feed -->
+          <div class="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-display text-lg font-bold text-white flex items-center gap-2">
+                  <span>⭐</span> Recent Campus Food Feedback
+                </h3>
+                <p class="text-xs text-slate-400">Authentic student reviews from NIT Kurukshetra hostels</p>
+              </div>
+              <a href="/admin/reviews" class="text-xs font-bold text-amber-400 hover:underline">
+                Moderate All →
+              </a>
+            </div>
+
+            <template x-if="reviews.length === 0">
+              <div class="text-center py-10 text-slate-500 text-xs bg-slate-950/40 rounded-2xl border border-dashed border-slate-800">
+                <span class="text-3xl block mb-2">🍜</span>
+                No student reviews posted yet. As students review dishes, they will appear here live!
+              </div>
+            </template>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <template x-for="r in reviews.slice(0, 6)" :key="r.id">
+                <div class="p-4 bg-slate-950/70 border border-slate-800/80 rounded-2xl space-y-2">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 font-bold text-xs flex items-center justify-center" x-text="r.studentName ? r.studentName.charAt(0).toUpperCase() : 'S'"></div>
+                      <div>
+                        <h6 class="font-bold text-xs text-white" x-text="r.studentName || 'NIT Student'"></h6>
+                        <p class="text-[10px] text-slate-400" x-text="r.menuItemName ? (r.menuItemName + (r.vendorName ? ' @ ' + r.vendorName : '')) : 'General Feedback'"></p>
+                      </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30" x-text="'★ ' + r.rating"></span>
+                  </div>
+                  <p class="text-xs text-slate-300 italic" x-text="'“' + (r.comment || 'Great taste!') + '”'"></p>
+                </div>
+              </template>
+            </div>
+          </div>
+
+        </div>
       </main>
+
     </div>
   </section>
-
-  <script is:inline>
-    function adminLayout() {
-      return {
-        sidebarOpen: false,
-        vendors: JSON.parse(document.getElementById('vendors-data').textContent || '[]'),
-        categories: JSON.parse(document.getElementById('categories-data').textContent || '[]'),
-        reviews: JSON.parse(document.getElementById('reviews-data').textContent || '[]'),
-      };
-    }
-  </script>
 </Layout>
-
-<script id="vendors-data" type="application/json" is:inline set:html={JSON.stringify(vendors)}></script>
-<script id="categories-data" type="application/json" is:inline set:html={JSON.stringify(categories)}></script>
-<script id="reviews-data" type="application/json" is:inline set:html={JSON.stringify(reviews)}></script>
