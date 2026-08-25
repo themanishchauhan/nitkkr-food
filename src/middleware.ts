@@ -20,7 +20,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
       return next();
     }
 
-    // 3. Protect all /admin UI pages
+    // Forward legacy /admin/settings to /admin/site-settings
+    if (path === '/admin/settings') {
+      return context.redirect('/admin/site-settings', 302);
+    }
+
     if (path.startsWith('/admin')) {
       const cookieHeader = context.request.headers.get('cookie') || '';
       const match = cookieHeader.match(/admin_session=([^;]+)/);
