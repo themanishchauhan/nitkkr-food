@@ -17,7 +17,7 @@ function getDb() {
   return createDb();
 }
 
-import { MOCK_VENDORS } from '../../../../lib/mock-data';
+const isDev = process.env.NODE_ENV !== 'production';
 
 export const GET: APIRoute = async ({ request }) => {
   if (!await isAuthenticated(request)) {
@@ -33,16 +33,17 @@ export const GET: APIRoute = async ({ request }) => {
         status: 200, headers: { 'Content-Type': 'application/json' },
       });
     }
-    return new Response(JSON.stringify({ vendors: MOCK_VENDORS }), {
+    return new Response(JSON.stringify({ vendors: isDev ? MOCK_VENDORS : [] }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('List vendors error:', error);
-    return new Response(JSON.stringify({ vendors: MOCK_VENDORS }), {
+    return new Response(JSON.stringify({ vendors: isDev ? MOCK_VENDORS : [] }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   }
 };
+
 
 
 export const POST: APIRoute = async ({ request }) => {
