@@ -23,8 +23,10 @@ const stallAvgRating = stallReviewCount > 0
   : null;
 
 const settings = await getAllSiteSettings();
-const settingsObj = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+const settingsList = Array.isArray(settings) ? settings : [];
+const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 const adEnabled = settingsObj.ad_banner_enabled === 'true';
+
 
 const shareUrl = new URL(`/v/${vendor.slug}`, Astro.site).href;
 const shareTitle = `${vendor.name} - NITKKR Food`;

@@ -2,7 +2,28 @@ import { drizzle as drizzleD1 } from 'drizzle-orm/d1';
 import type { D1Database } from '@cloudflare/workers-types';
 import * as schema from './schema';
 
-let dbInstance: any = null;
+/**
+ * Creates a chainable Promise-like mock that resolves to an empty array
+ * for any Drizzle query chain when D1 is uninitialized.
+ */
+function createQueryProxy(result: any = []) {
+  const handler: ProxyHandler<any> = {
+    get(target, prop) {
+      if (prop === 'then') {
+        return (resolve: any) => Promise.resolve(result).then(resolve);
+      }
+      if (prop === 'catch') {
+        return (reject: any) => Promise.resolve(result).catch(reject);
+      }
+      if (prop === 'finally') {
+        return (cb: any) => Promise.resolve(result).finally(cb);
+      }
+      // Any chained method call (e.g. .from(), .where(), .orderBy(), .limit(), .set(), .values())
+      return (...args: any[]) => new Proxy({}, handler);
+    }
+  };
+  return new Proxy({}, handler);
+}
 
 /**
  * Creates a Drizzle database instance from the provided environment.
@@ -22,30 +43,10 @@ export function createDb(env?: { DB?: D1Database; DATABASE_URL?: string }): any 
 
   // Pure in-memory safe mock database for environments where D1 is initializing
   return {
-    select: () => ({
-      from: () => ({
-        where: () => ({
-          orderBy: () => ({ limit: () => [] }),
-          limit: () => []
-        }),
-        orderBy: () => [],
-        limit: () => []
-      })
-    }),
-    insert: () => ({
-      values: () => ({
-        onConflictDoUpdate: () => ({ returning: () => [] }),
-        returning: () => []
-      })
-    }),
-    update: () => ({
-      set: () => ({
-        where: () => ({ returning: () => [] })
-      })
-    }),
-    delete: () => ({
-      where: () => []
-    })
+    select: (...args: any[]) => createQueryProxy([]),
+    insert: (...args: any[]) => createQueryProxy([]),
+    update: (...args: any[]) => createQueryProxy([]),
+    delete: (...args: any[]) => createQueryProxy([]),
   };
 }
 
