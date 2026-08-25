@@ -1,0 +1,114 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+
+const { slug } = Astro.params;
+
+let page: any = null;
+
+try {
+  const rawD1 = (globalThis as any).DB || 
+                (globalThis as any).__CF_ENV__?.DB || 
+                (globalThis as any).env?.DB;
+
+  if (rawD1 && typeof rawD1.prepare === 'function') {
+    const res = await rawD1.prepare('SELECT * FROM custom_pages WHERE slug = ?1 AND is_published = 1 LIMIT 1').bind(slug).first();
+    if (res) {
+      page = {
+        title: res.title,
+        slug: res.slug,
+        category: res.category,
+        icon: res.icon,
+        content: res.content,
+        createdAt: res.created_at
+      };
+    }
+  }
+} catch (e) {
+  console.error('Error loading custom page:', e);
+}
+
+if (!page) {
+  return Astro.redirect('/404');
+}
+
+// Simple markdown formatter
+function renderFormattedContent(text: string) {
+  if (!text) return '';
+  return text
+    .split('\n\n')
+    .map(p => {
+      if (p.startsWith('# ')) return `<h2 class="text-xl sm:text-2xl font-bold text-nitkkr-dark mt-6 mb-3">${p.slice(2)}</h2>`;
+      if (p.startsWith('## ')) return `<h3 class="text-lg sm:text-xl font-bold text-nitkkr-dark mt-5 mb-2">${p.slice(3)}</h3>`;
+      if (p.startsWith('### ')) return `<h4 class="text-base sm:text-lg font-bold text-nitkkr-dark mt-4 mb-2">${p.slice(4)}</h4>`;
+      if (p.startsWith('- ') || p.startsWith('* ')) {
+        const items = p.split('\n').map(li => `<li class="ml-4 list-disc text-slate-700 leading-relaxed mb-1">${li.replace(/^[-*]\s+/, '')}</li>`).join('');
+        return `<ul class="my-3 space-y-1">${items}</ul>`;
+      }
+      return `<p class="text-slate-700 leading-relaxed mb-4 text-sm sm:text-base">${p.replace(/\n/g, '<br/>')}</p>`;
+    })
+    .join('');
+}
+
+const formattedHtml = renderFormattedContent(page.content);
+---
+
+<Layout title={`${page.title} - NITKKR Food`} description={`Read ${page.title} on NITKKR Food`}>
+  <section class="min-h-screen bg-nitkkr-cream pb-20">
+    <div class="max-w-3xl mx-auto px-4 py-8 sm:py-12">
+
+      <!-- Breadcrumbs -->
+      <nav class="flex items-center gap-2 text-xs font-semibold text-nitkkr-gray mb-6">
+        <a href="/" class="hover:text-nitkkr-orange transition-colors">Home</a>
+        <span>/</span>
+        <span class="text-nitkkr-orange">{page.category || 'Pages'}</span>
+        <span>/</span>
+        <span class="text-nitkkr-dark truncate max-w-[200px]">{page.title}</span>
+      </nav>
+
+      <!-- Page Article Card -->
+      <article class="bg-white rounded-3xl border border-nitkkr-orange/20 p-6 sm:p-10 shadow-sm space-y-6">
+        
+        <!-- Header -->
+        <div class="border-b border-slate-100 pb-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-xs font-bold mb-3">
+            <span>{page.icon || '📄'}</span>
+            <span>{page.category}</span>
+          </div>
+          <h1 class="font-display text-2xl sm:text-4xl font-extrabold text-nitkkr-dark tracking-tight">
+            {page.title}
+          </h1>
+          <p class="text-xs text-nitkkr-gray mt-2 flex items-center gap-2">
+            <span>📅 Updated for NIT Kurukshetra Campus</span>
+          </p>
+        </div>
+
+        <!-- Rendered Body Content -->
+        <div class="prose prose-slate max-w-none text-slate-800 leading-relaxed font-normal">
+          <div set:html={formattedHtml} />
+        </div>
+
+        <!-- Footer / Share Actions -->
+        <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <a
+            href="/"
+            class="px-5 py-2.5 bg-nitkkr-cream hover:bg-nitkkr-orange/10 text-nitkkr-dark font-bold text-xs rounded-xl border border-nitkkr-orange/30 transition-colors flex items-center gap-1.5"
+          >
+            <span>←</span> Back to Food & Stalls
+          </a>
+
+          <a
+            href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out ${page.title} on NITKKR Food: ` + Astro.url.href)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+          >
+            <span>💬</span> Share on WhatsApp
+          </a>
+        </div>
+
+      </article>
+
+    </div>
+  </section>
+</Layout>

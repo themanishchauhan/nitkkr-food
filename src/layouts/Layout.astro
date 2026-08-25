@@ -16,7 +16,19 @@ const {
 const siteBase = Astro.site || Astro.url.origin || 'https://nitkkr-food.pages.dev';
 const canonicalURL = new URL(Astro.url.pathname, siteBase);
 const resolvedOgImage = ogImage.startsWith('http') ? ogImage : new URL(ogImage, siteBase).href;
+
+let customFooterPages: any[] = [];
+try {
+  const rawD1 = (globalThis as any).DB || 
+                (globalThis as any).__CF_ENV__?.DB || 
+                (globalThis as any).env?.DB;
+  if (rawD1 && typeof rawD1.prepare === 'function') {
+    const res = await rawD1.prepare('SELECT title, slug, category, icon FROM custom_pages WHERE show_in_footer = 1 AND is_published = 1 ORDER BY display_order ASC, id ASC').all();
+    customFooterPages = res?.results || [];
+  }
+} catch (e) {}
 ---
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -164,6 +176,9 @@ const resolvedOgImage = ogImage.startsWith('http') ? ogImage : new URL(ogImage, 
             <li><a href="/search?tab=stalls" class="hover:text-nitkkr-orange transition-colors">🏪 Campus Stalls</a></li>
             <li><a href="/how-it-works" class="hover:text-nitkkr-orange transition-colors">📖 How It Works</a></li>
             <li><a href="/about" class="hover:text-nitkkr-orange transition-colors">ℹ️ About Us</a></li>
+            {customFooterPages.filter(p => p.category === 'Explore').map((p: any) => (
+              <li><a href={`/p/${p.slug}`} class="hover:text-nitkkr-orange transition-colors">{p.icon || '📄'} {p.title}</a></li>
+            ))}
           </ul>
         </div>
 
@@ -174,9 +189,13 @@ const resolvedOgImage = ogImage.startsWith('http') ? ogImage : new URL(ogImage, 
             <li><a href="/terms" class="hover:text-nitkkr-orange transition-colors">📜 Terms of Service</a></li>
             <li><a href="/privacy" class="hover:text-nitkkr-orange transition-colors">🔒 Privacy Policy</a></li>
             <li><a href="/contact" class="hover:text-nitkkr-orange transition-colors">🏪 List Your Stall</a></li>
+            {customFooterPages.filter(p => p.category !== 'Explore').map((p: any) => (
+              <li><a href={`/p/${p.slug}`} class="hover:text-nitkkr-orange transition-colors">{p.icon || '📄'} {p.title}</a></li>
+            ))}
           </ul>
         </div>
       </div>
+
 
       <div class="pt-6 border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-400 text-center sm:text-left">
         <p>© {new Date().getFullYear()} NITKKR Food • Built with ❤️ for NIT Kurukshetra students</p>
