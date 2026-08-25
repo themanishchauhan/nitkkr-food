@@ -1,25 +1,26 @@
 import type { APIRoute } from 'astro';
 import { createDb, schema } from '../../../../lib/db';
 import { eq } from 'drizzle-orm';
-import { verifySessionToken } from '../../../../lib/auth';
+import { authenticateAdminRequest } from '../../../../lib/auth';
 
 export const prerender = false;
 
-async function isAuthenticated(request: Request): Promise<boolean> {
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/admin_session=([^;]+)/);
-  if (!match) return false;
-  const session = await verifySessionToken(match[1]);
-  return !!session;
+async function ensureSiteSettingsTable() {
+  try {
+    const rawD1 = (globalThis as any).DB || 
+                  (globalThis as any).__CF_ENV__?.DB || 
+                  (globalThis as any).env?.DB;
+    if (rawD1 && typeof rawD1.prepare === 'function') {
+      await rawD1.prepare('CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
+    }
+  } catch (e) {
+    console.error('Error ensuring site_settings table in D1:', e);
+  }
 }
 
-function getDb(locals?: any) {
-  const env = locals?.runtime?.env || (globalThis as any).DB || (globalThis as any).env?.DB;
-  return createDb(env ? { DB: env } : undefined);
-}
-
-export const GET: APIRoute = async ({ request, locals }) => {
-  if (!await isAuthenticated(request)) {
+export const GET: APIRoute = async ({ request }) => {
+  const admin = await authenticateAdminRequest(request);
+  if (!admin) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -27,10 +28,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    const db = getDb(locals);
+    await ensureSiteSettingsTable();
+    const db = createDb();
     const settings = await db.select().from(schema.siteSettings);
-    const settingsObj = settings.reduce((acc, setting) => {
-      acc[setting.key] = setting.value;
+    const settingsObj = (settings || []).reduce((acc: any, setting: any) => {
+      if (setting && setting.key) {
+        acc[setting.key] = setting.value;
+      }
       return acc;
     }, {} as Record<string, string>);
     
@@ -40,15 +44,16 @@ export const GET: APIRoute = async ({ request, locals }) => {
     });
   } catch (error) {
     console.error('Get settings error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to get settings' }), {
-      status: 500,
+    return new Response(JSON.stringify({ settings: {} }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 };
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  if (!await isAuthenticated(request)) {
+export const POST: APIRoute = async ({ request }) => {
+  const admin = await authenticateAdminRequest(request);
+  if (!admin) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -56,18 +61,36 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    const db = getDb(locals);
+    await ensureSiteSettingsTable();
+    const db = createDb();
     const body = await request.json();
 
     // 1. Batch settings update: { settings: { key: value, ... } }
     if (body.settings && typeof body.settings === 'object') {
+      const rawD1 = (globalThis as any).DB || 
+                    (globalThis as any).__CF_ENV__?.DB || 
+                    (globalThis as any).env?.DB;
+
       const entries = Object.entries(body.settings);
-      for (const [key, value] of entries) {
-        if (key) {
-          await db.insert(schema.siteSettings).values({ key, value: String(value ?? '') })
-            .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value: String(value ?? '') } });
+      
+      if (rawD1 && typeof rawD1.prepare === 'function') {
+        const stmt = rawD1.prepare('INSERT INTO site_settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?2;');
+        const batchStatements = entries
+          .filter(([key]) => Boolean(key))
+          .map(([key, value]) => stmt.bind(key, String(value ?? '')));
+        
+        if (batchStatements.length > 0) {
+          await rawD1.batch(batchStatements);
+        }
+      } else {
+        for (const [key, value] of entries) {
+          if (key) {
+            await db.insert(schema.siteSettings).values({ key, value: String(value ?? '') })
+              .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value: String(value ?? '') } });
+          }
         }
       }
+
       return new Response(JSON.stringify({ success: true, count: entries.length }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -83,8 +106,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    await db.insert(schema.siteSettings).values({ key, value: String(value) })
-      .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value: String(value) } });
+    const rawD1 = (globalThis as any).DB || 
+                  (globalThis as any).__CF_ENV__?.DB || 
+                  (globalThis as any).env?.DB;
+
+    if (rawD1 && typeof rawD1.prepare === 'function') {
+      await rawD1.prepare('INSERT INTO site_settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?2;')
+        .bind(key, String(value)).run();
+    } else {
+      await db.insert(schema.siteSettings).values({ key, value: String(value) })
+        .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value: String(value) } });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -99,8 +131,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ request, url, locals }) => {
-  if (!await isAuthenticated(request)) {
+export const DELETE: APIRoute = async ({ request, url }) => {
+  const admin = await authenticateAdminRequest(request);
+  if (!admin) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -116,7 +149,8 @@ export const DELETE: APIRoute = async ({ request, url, locals }) => {
       });
     }
 
-    const db = getDb(locals);
+    await ensureSiteSettingsTable();
+    const db = createDb();
     await db.delete(schema.siteSettings).where(eq(schema.siteSettings.key, key));
 
     return new Response(JSON.stringify({ success: true }), {

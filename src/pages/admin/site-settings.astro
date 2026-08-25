@@ -4,102 +4,111 @@ import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
 ---
 
+<script is:inline>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('siteSettingsAdmin', () => ({
+      sidebarOpen: false,
+      vendors: [],
+      categories: [],
+      menuItems: [],
+      reviews: [],
+      settings: {
+        homepage_title: 'Hungry? We got you. 🍜',
+        homepage_tagline: 'Search 20+ food stalls around NITKKR',
+        meta_description: 'Search 20+ food stalls around NIT Kurukshetra. View menus, prices, and order via WhatsApp or call directly.',
+        announcement_banner_enabled: 'false',
+        announcement_banner_text: '',
+        announcement_banner_type: 'info',
+        ad_banner_enabled: 'false',
+        ad_banner_badge: '⚡ SPONSORED DEAL',
+        ad_banner_title: 'Kurukshetra Protein & Shake Hub',
+        ad_banner_description: '15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID.',
+        ad_banner_image: '',
+        ad_banner_cta: 'Claim Offer 💬',
+        ad_banner_link: '',
+        ordering_enabled: 'true',
+        maintenance_message: 'Ordering is temporarily paused for campus break. Stalls reopen tomorrow at 8 AM.',
+        whatsapp_msg_template: 'Hi stall_name! I would like to order from NITKKR Food.',
+        footer_tagline: 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.',
+        footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
+        footer_copyright: 'Built with ❤️ for NIT Kurukshetra students'
+      },
+      activeTab: 'general',
+      saving: false,
+      toastMsg: '',
+
+      async init() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if (tab && ['general', 'announcements', 'ads', 'ordering', 'footer'].includes(tab)) {
+          this.activeTab = tab;
+        }
+        await this.loadAll();
+      },
+
+      showToast(msg) {
+        this.toastMsg = msg;
+        setTimeout(() => { this.toastMsg = ''; }, 4000);
+      },
+
+      async loadAll() {
+        try {
+          const [sRes, vRes, cRes, mRes, rRes] = await Promise.all([
+            fetch('/api/admin/settings').catch(() => null),
+            fetch('/api/admin/vendors').catch(() => null),
+            fetch('/api/admin/categories').catch(() => null),
+            fetch('/api/admin/menu').catch(() => null),
+            fetch('/api/admin/reviews').catch(() => null)
+          ]);
+
+          if (sRes && sRes.ok) {
+            const d = await sRes.json();
+            this.settings = Object.assign({}, this.settings, d.settings || {});
+          }
+          if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
+          if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
+          if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
+          if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
+        } catch (e) {
+          console.error('Load error', e);
+        }
+      },
+
+      async saveAllSettings() {
+        this.saving = true;
+        try {
+          const res = await fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings: this.settings })
+          });
+          if (res.ok) {
+            this.showToast('🎉 All website settings saved successfully!');
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            this.showToast('❌ ' + (errData.error || 'Failed to save settings'));
+          }
+        } catch (err) {
+          this.showToast('❌ Network error saving settings');
+        } finally {
+          this.saving = false;
+        }
+      },
+
+      async logout() {
+        if (!confirm('Log out from Founder Panel?')) return;
+        await fetch('/api/admin/auth', { method: 'DELETE' });
+        window.location.href = '/';
+      }
+    }));
+  });
+</script>
+
 <Layout title="Website Control Center - NITKKR Food Admin" description="Control live hero text, announcement banners, ads, sponsors, and footer branding">
   <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
     
     <div
-      x-data="{
-        sidebarOpen: false,
-        vendors: [],
-        categories: [],
-        menuItems: [],
-        reviews: [],
-        settings: {
-          homepage_title: 'Hungry? We got you. 🍜',
-          homepage_tagline: 'Search 20+ food stalls around NITKKR',
-          meta_description: 'Search 20+ food stalls around NIT Kurukshetra. View menus, prices, and order via WhatsApp or call directly.',
-          announcement_banner_enabled: 'false',
-          announcement_banner_text: '',
-          announcement_banner_type: 'info',
-          ad_banner_enabled: 'false',
-          ad_banner_badge: '⚡ SPONSORED DEAL',
-          ad_banner_title: 'Kurukshetra Protein & Shake Hub',
-          ad_banner_description: '15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID.',
-          ad_banner_image: '',
-          ad_banner_cta: 'Claim Offer 💬',
-          ad_banner_link: '',
-          ordering_enabled: 'true',
-          maintenance_message: 'Ordering is temporarily paused for campus break. Stalls reopen tomorrow at 8 AM.',
-          whatsapp_msg_template: 'Hi stall_name! I would like to order from NITKKR Food.',
-          footer_tagline: 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.',
-          footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
-          footer_copyright: 'Built with ❤️ for NIT Kurukshetra students'
-        },
-        activeTab: 'general',
-        customKey: '',
-        customValue: '',
-        saving: false,
-        toastMsg: '',
-
-        async init() {
-          await this.loadAll();
-        },
-
-        showToast(msg) {
-          this.toastMsg = msg;
-          setTimeout(() => { this.toastMsg = ''; }, 3500);
-        },
-
-        async loadAll() {
-          try {
-            const [sRes, vRes, cRes, mRes, rRes] = await Promise.all([
-              fetch('/api/admin/settings').catch(() => null),
-              fetch('/api/admin/vendors').catch(() => null),
-              fetch('/api/admin/categories').catch(() => null),
-              fetch('/api/admin/menu').catch(() => null),
-              fetch('/api/admin/reviews').catch(() => null)
-            ]);
-
-            if (sRes && sRes.ok) {
-              const d = await sRes.json();
-              this.settings = Object.assign({}, this.settings, d.settings || {});
-            }
-            if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
-            if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
-            if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
-            if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
-          } catch (e) {
-            console.error('Load error', e);
-          }
-        },
-
-        async saveAllSettings() {
-          this.saving = true;
-          try {
-            const res = await fetch('/api/admin/settings', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ settings: this.settings })
-            });
-            if (res.ok) {
-              this.showToast('🎉 All website settings saved successfully!');
-            } else {
-              this.showToast('❌ Failed to save settings');
-            }
-          } catch (err) {
-            this.showToast('❌ Network error saving settings');
-          } finally {
-            this.saving = false;
-          }
-        },
-
-        async logout() {
-          if (!confirm('Log out from Founder Panel?')) return;
-          await fetch('/api/admin/auth', { method: 'DELETE' });
-          window.location.href = '/';
-        }
-      }"
-      x-init="init()"
+      x-data="siteSettingsAdmin"
       class="flex-1 flex flex-col lg:flex-row min-h-screen"
     >
 
@@ -114,7 +123,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
       </div>
 
       <!-- Shared Sidebar Component -->
-      <AdminSidebar currentPath="/admin/settings" />
+      <AdminSidebar currentPath="/admin/site-settings" />
 
       <!-- Main Content Area -->
       <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-6xl">
