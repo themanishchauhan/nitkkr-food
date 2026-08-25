@@ -14,6 +14,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 export default defineConfig({
   site: 'https://nitkkr-food.pages.dev',
+  devToolbar: {
+    enabled: false,
+  },
   session: {
     driver: 'memory',
   },
