@@ -4,7 +4,7 @@ import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
 ---
 
-<Layout title="Website Control Center - NITKKR Food Admin" description="Manage hero text, banners, ads, ordering controls, and global settings">
+<Layout title="Website Control Center - NITKKR Food Admin" description="Control live hero text, announcement banners, ads, sponsors, and footer branding">
   <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
     
     <div
@@ -25,23 +25,19 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           ad_banner_badge: '⚡ SPONSORED DEAL',
           ad_banner_title: 'Kurukshetra Protein & Shake Hub',
           ad_banner_description: '15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID.',
-          ad_banner_image: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=300&auto=format&fit=crop&q=80',
+          ad_banner_image: '',
           ad_banner_cta: 'Claim Offer 💬',
-          ad_banner_link: 'https://wa.me/919876543210?text=Hi!%20I%20want%20to%20claim%20the%20NIT%20student%20discount.',
+          ad_banner_link: '',
           ordering_enabled: 'true',
           maintenance_message: 'Ordering is temporarily paused for campus break. Stalls reopen tomorrow at 8 AM.',
           whatsapp_msg_template: 'Hi stall_name! I would like to order from NITKKR Food.',
           footer_tagline: 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.',
           footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
-          footer_copyright: 'Built with ❤️ for NIT Kurukshetra students',
-          terms_custom_text: '',
-          privacy_custom_text: '',
-          about_custom_text: ''
+          footer_copyright: 'Built with ❤️ for NIT Kurukshetra students'
         },
         activeTab: 'general',
         customKey: '',
         customValue: '',
-        search: '',
         saving: false,
         toastMsg: '',
 
@@ -77,24 +73,6 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           }
         },
 
-        async saveSingleSetting(key, value) {
-          try {
-            const res = await fetch('/api/admin/settings', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ key, value: String(value ?? '') })
-            });
-            if (res.ok) {
-              this.settings[key] = value;
-              this.showToast('✅ Saved ' + key);
-            } else {
-              this.showToast('❌ Failed to save ' + key);
-            }
-          } catch (e) {
-            this.showToast('❌ Error saving setting');
-          }
-        },
-
         async saveAllSettings() {
           this.saving = true;
           try {
@@ -112,36 +90,6 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             this.showToast('❌ Network error saving settings');
           } finally {
             this.saving = false;
-          }
-        },
-
-        async addCustomSetting() {
-          if (!this.customKey.trim()) {
-            this.showToast('❌ Setting key name is required');
-            return;
-          }
-          const formattedKey = this.customKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
-          await this.saveSingleSetting(formattedKey, this.customValue);
-          this.customKey = '';
-          this.customValue = '';
-          await this.loadAll();
-        },
-
-        async deleteSetting(key) {
-          if (!confirm('Are you sure you want to delete the setting: ' + key + '?')) return;
-          try {
-            const res = await fetch('/api/admin/settings?key=' + encodeURIComponent(key), {
-              method: 'DELETE'
-            });
-            if (res.ok) {
-              delete this.settings[key];
-              this.showToast('🗑️ Deleted ' + key);
-              await this.loadAll();
-            } else {
-              this.showToast('❌ Failed to delete');
-            }
-          } catch (e) {
-            this.showToast('❌ Network error');
           }
         },
 
@@ -235,14 +183,6 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
               :class="activeTab === 'footer' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
             >
               <span>🦶</span> Footer Branding
-            </button>
-
-            <button
-              @click="activeTab = 'custom'"
-              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
-              :class="activeTab === 'custom' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
-            >
-              <span>🎛️</span> Custom CRUD
             </button>
           </div>
 
@@ -390,30 +330,6 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
               <div>
                 <label class="text-xs font-bold text-nitkkr-dark block mb-1">Copyright Line</label>
                 <input type="text" x-model="settings.footer_copyright" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 6: CUSTOM CRUD -->
-          <div x-show="activeTab === 'custom'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
-            <div class="pb-3 border-b border-slate-100">
-              <h3 class="font-display text-lg font-bold text-nitkkr-dark">🎛️ Dynamic Parameter CRUD</h3>
-              <p class="text-xs text-nitkkr-gray">Add and modify custom database key-values directly</p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Key Name</label>
-                <input type="text" x-model="customKey" placeholder="e.g. night_delivery_fee" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
-              </div>
-              <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Value</label>
-                <input type="text" x-model="customValue" placeholder="e.g. ₹10" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
-              </div>
-              <div class="sm:col-span-2 flex justify-end">
-                <button @click="addCustomSetting()" class="px-5 py-2.5 bg-nitkkr-dark hover:bg-black text-white text-xs font-bold rounded-xl transition-all cursor-pointer">
-                  ➕ Save Key
-                </button>
               </div>
             </div>
           </div>
