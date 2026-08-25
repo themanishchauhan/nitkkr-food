@@ -1,23 +1,34 @@
 ---
 export const prerender = false;
 import Layout from '../layouts/Layout.astro';
+import { getAllSiteSettings } from '../lib/queries';
+
+const settings = await getAllSiteSettings();
+const settingsList = Array.isArray(settings) ? settings : [];
+const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+
+const isWhatsAppEnabled = settingsObj.whatsapp_ordering_enabled === 'true' && settingsObj.show_whatsapp_button !== 'false';
+const step3Title = settingsObj.how_it_works_step3_title || (isWhatsAppEnabled ? '3. 1-Tap WhatsApp Order' : '3. Call or Visit Counter');
+const step3Desc = settingsObj.how_it_works_step3_desc || (isWhatsAppEnabled 
+  ? 'Tap "Order on WhatsApp" to send a pre-filled greeting directly to the vendor owner. Zero commissions, zero middleman markups!' 
+  : 'Call the vendor directly to check availability or walk up to their campus counter with exact dishes and prices ready. Zero commissions, zero markups!');
+const step3Icon = isWhatsAppEnabled ? '💬' : '📞';
 ---
 
-
-<Layout title="How It Works - NITKKR Food" description="Step-by-step guide on how to search menus, find food, and order on WhatsApp from NIT Kurukshetra vendors.">
+<Layout title="How It Works - NITKKR Food" description="Step-by-step guide on how to search menus, check student prices, and connect with NIT Kurukshetra vendors.">
   <section class="min-h-screen bg-nitkkr-cream py-12 px-4">
     <div class="max-w-3xl mx-auto space-y-8">
       <div class="text-center space-y-2">
         <a href="/" class="text-xs text-slate-500 hover:text-nitkkr-orange mb-1 inline-block font-semibold">← Back to Home</a>
         <h1 class="font-display text-3xl sm:text-4xl font-bold text-nitkkr-dark">📖 How NITKKR Food Works</h1>
-        <p class="text-xs sm:text-sm text-slate-600">The fastest way to discover and order campus food in 3 simple steps.</p>
+        <p class="text-xs sm:text-sm text-slate-600">The fastest way to discover and connect with campus food in 3 simple steps.</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-white rounded-3xl p-6 border border-amber-200/80 shadow-xs text-center space-y-3">
           <span class="text-4xl block">🔍</span>
           <h3 class="font-display font-bold text-base text-slate-900">1. Search & Filter</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">Search for dishes (e.g. momos, egg rolls, shakes) or filter by <strong>High Protein 🏋️‍♂️</strong>, <strong>Late Night 🌙</strong>, or <strong>Under ₹50 💸</strong>.</p>
+          <p class="text-xs text-slate-600 leading-relaxed">Search for dishes (e.g. momos, parathas, shakes) or filter by <strong>High Protein 🏋️‍♂️</strong>, <strong>Late Night 🌙</strong>, or <strong>Under ₹50 💸</strong>.</p>
         </div>
 
         <div class="bg-white rounded-3xl p-6 border border-amber-200/80 shadow-xs text-center space-y-3">
@@ -27,9 +38,9 @@ import Layout from '../layouts/Layout.astro';
         </div>
 
         <div class="bg-white rounded-3xl p-6 border border-amber-200/80 shadow-xs text-center space-y-3">
-          <span class="text-4xl block">💬</span>
-          <h3 class="font-display font-bold text-base text-slate-900">3. 1-Tap WhatsApp Order</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">Tap <strong>"Order on WhatsApp"</strong> to send a pre-filled greeting directly to the vendor owner. Zero commissions, zero middleman markups!</p>
+          <span class="text-4xl block">{step3Icon}</span>
+          <h3 class="font-display font-bold text-base text-slate-900">{step3Title}</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">{step3Desc}</p>
         </div>
       </div>
 
@@ -43,4 +54,5 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 </Layout>
+
 

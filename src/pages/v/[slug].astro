@@ -28,7 +28,9 @@ const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 const adEnabled = settingsObj.ad_banner_enabled === 'true';
-
+const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && settingsObj.show_whatsapp_button !== 'false';
+const whatsAppLabel = settingsObj.whatsapp_button_label || 'Order on WhatsApp';
+const msgTemplate = (settingsObj.whatsapp_msg_template || `Hi ${vendor.name}! I'd like to check menu availability from NITKKR Food.`).replace('{vendor_name}', vendor.name);
 
 const shareUrl = new URL(`/v/${vendor.slug}`, Astro.site).href;
 const shareTitle = `${vendor.name} - NITKKR Food`;
@@ -60,7 +62,7 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
           class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/60 transition-all active:scale-95 shadow-md"
           aria-label="Back to home"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
           </svg>
         </a>
@@ -178,7 +180,7 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
         <div class="bg-white rounded-3xl border border-slate-100 p-10 text-center shadow-sm">
           <p class="text-4xl mb-3">🍱</p>
           <h3 class="text-base font-bold text-slate-800">No dishes listed yet</h3>
-          <p class="text-xs text-slate-500 mt-1">You can still order directly from the vendor owner via WhatsApp or Call below.</p>
+          <p class="text-xs text-slate-500 mt-1">You can call the vendor directly to check today's campus specials.</p>
         </div>
       )}
     </div>
@@ -187,33 +189,45 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
     <ReviewModal stallReviews={stallReviews} menuItems={menuItems} />
 
 
-    <!-- 📱 Sleek Floating Glassmorphism Order Bar (Zomato/Swiggy Style) -->
+    <!-- 📱 Sleek Floating Glassmorphism Action Bar -->
     <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-xl border-t border-slate-200/80 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
       <div class="max-w-2xl mx-auto flex items-center gap-3">
-        <!-- Call Button -->
-        <a
-          href={`tel:+91${vendor.phone}`}
-          class="flex-1 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl font-bold text-sm text-center transition-all flex items-center justify-center gap-2 active:scale-98"
-          aria-label="Call vendor"
-        >
+        {showWhatsApp ? (
+          <>
+            <a
+              href={`tel:+91${vendor.phone}`}
+              class="flex-1 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl font-bold text-sm text-center transition-all flex items-center justify-center gap-2 active:scale-98"
+              aria-label="Call vendor"
+            >
+              <span class="text-base">📞</span>
+              <span>Call</span>
+            </a>
 
-          <span class="text-base">📞</span>
-          <span>Call</span>
-        </a>
-
-        <!-- WhatsApp Brand Button -->
-        <a
-          href={`https://wa.me/91${vendor.whatsapp || vendor.phone}?text=${encodeURIComponent(`Hi ${vendor.name}! I'd like to place an order from NITKKR Food.`)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="flex-[2.5] py-3.5 px-5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 active:scale-98"
-          aria-label="Order on WhatsApp"
-        >
-          <svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.194 1.871.18.51-.013 1.745-.87 2.014-1.762.27-.9.07-1.653-.599-2.185C18.918 15.288 17.787 14.532 17.472 14.382z"/>
-          </svg>
-          <span>Order on WhatsApp</span>
-        </a>
+            <a
+              href={`https://wa.me/91${vendor.whatsapp || vendor.phone}?text=${encodeURIComponent(msgTemplate)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex-[2.5] py-3.5 px-5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 active:scale-98"
+              aria-label={whatsAppLabel}
+            >
+              <svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.194 1.871.18.51-.013 1.745-.87 2.014-1.762.27-.9.07-1.653-.599-2.185C18.918 15.288 17.787 14.532 17.472 14.382z"/>
+              </svg>
+              <span>{whatsAppLabel}</span>
+            </a>
+          </>
+        ) : (
+          <div class="w-full flex items-center gap-3">
+            <a
+              href={`tel:+91${vendor.phone}`}
+              class="flex-1 py-3.5 px-6 bg-gradient-to-r from-nitkkr-orange to-amber-600 hover:from-nitkkr-orange-dark hover:to-amber-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-nitkkr-orange/25 active:scale-98 cursor-pointer"
+              aria-label="Call vendor"
+            >
+              <span class="text-base">📞</span>
+              <span>Call Vendor ({vendor.phone})</span>
+            </a>
+          </div>
+        )}
       </div>
     </div>
   </section>

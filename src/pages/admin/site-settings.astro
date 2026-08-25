@@ -31,8 +31,8 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
 
       settings: {
         homepage_title: 'Hungry? We got you. 🍜',
-        homepage_tagline: 'Search 20+ food stalls around NITKKR',
-        meta_description: 'Search 20+ food stalls around NIT Kurukshetra. View menus, prices, and order via WhatsApp or call directly.',
+        homepage_tagline: 'Search 20+ food vendors around NITKKR',
+        meta_description: 'Search 20+ food vendors around NIT Kurukshetra. View menus, prices, and connect directly with campus eateries.',
         announcement_banner_enabled: 'false',
         announcement_banner_text: '',
         announcement_banner_type: 'info',
@@ -44,9 +44,14 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
         ad_banner_cta: 'Claim Offer 💬',
         ad_banner_link: '',
         ordering_enabled: 'true',
-        maintenance_message: 'Ordering is temporarily paused for campus break. Stalls reopen tomorrow at 8 AM.',
-        whatsapp_msg_template: 'Hi stall_name! I would like to order from NITKKR Food.',
-        footer_tagline: 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.',
+        whatsapp_ordering_enabled: 'false',
+        show_whatsapp_button: 'false',
+        whatsapp_button_label: 'Order on WhatsApp',
+        whatsapp_msg_template: 'Hi {vendor_name}! I would like to check availability from NITKKR Food.',
+        how_it_works_step3_title: '3. Call or Visit Counter',
+        how_it_works_step3_desc: 'Call the vendor directly to check availability or walk up to their campus counter with exact dishes and prices ready. Zero commissions, zero markups!',
+        maintenance_message: 'Ordering is temporarily paused for campus break. Vendors reopen tomorrow at 8 AM.',
+        footer_tagline: 'Instant campus menu directory & direct vendor connect for NIT Kurukshetra.',
         footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
         footer_copyright: 'Built with ❤️ for NIT Kurukshetra students',
         
@@ -63,8 +68,9 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
         company_twitter: '',
         company_logo_url: '',
         company_favicon_url: '',
-        company_mission: 'Empowering campus students with transparent prices, instant menus, and zero-commission food ordering.'
+        company_mission: 'Empowering campus students with transparent prices, instant menus, and zero-commission food discovery.'
       },
+
 
       async init() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -498,31 +504,166 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             </div>
           </div>
 
-          <!-- TAB 6: ORDERING & WHATSAPP -->
+          <!-- TAB 6: ORDERING & WHATSAPP CONTROLS -->
           <div x-show="activeTab === 'ordering'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 class="font-display text-lg font-bold text-nitkkr-dark">🛍️ Campus Ordering Controls</h3>
-                <p class="text-xs text-nitkkr-gray">Toggle platform availability during campus breaks and set greeting messages</p>
+                <h3 class="font-display text-lg font-bold text-nitkkr-dark flex items-center gap-2">
+                  <span>💬</span> WhatsApp & Campus Ordering Controls
+                </h3>
+                <p class="text-xs text-nitkkr-gray">Configure whether students can order via WhatsApp, toggle WhatsApp buttons, or run as a Call & Visit Directory</p>
               </div>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" x-model="settings.ordering_enabled" :checked="settings.ordering_enabled === 'true'" @change="settings.ordering_enabled = $el.checked ? 'true' : 'false'" class="rounded text-emerald-600" />
-                <span class="text-xs font-bold text-emerald-700">Ordering Enabled</span>
-              </label>
+              <div class="px-3 py-1 rounded-full text-xs font-bold" :class="settings.whatsapp_ordering_enabled === 'true' && settings.show_whatsapp_button !== 'false' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'">
+                <span x-text="settings.whatsapp_ordering_enabled === 'true' && settings.show_whatsapp_button !== 'false' ? '🟢 WhatsApp Active' : '📞 Call & Menu Mode (WhatsApp Off)'"></span>
+              </div>
             </div>
 
-            <div class="space-y-4">
-              <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Maintenance / Off-Peak Notice</label>
-                <input type="text" x-model="settings.maintenance_message" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+            <!-- Mode Selector Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div
+                @click="settings.whatsapp_ordering_enabled = 'false'; settings.show_whatsapp_button = 'false'; settings.how_it_works_step3_title = '3. Call or Visit Counter'; settings.how_it_works_step3_desc = 'Call the vendor directly to check availability or walk up to their campus counter with exact dishes and prices ready. Zero commissions, zero markups!';"
+                class="p-5 rounded-2xl border-2 transition-all cursor-pointer space-y-2 flex flex-col justify-between"
+                :class="settings.whatsapp_ordering_enabled !== 'true' || settings.show_whatsapp_button === 'false' ? 'border-nitkkr-orange bg-nitkkr-cream/40 shadow-xs' : 'border-slate-200 hover:border-slate-300 bg-white'"
+              >
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-sm text-nitkkr-dark flex items-center gap-1.5">
+                      <span>📞</span> Call & Menu Directory (Current)
+                    </span>
+                    <span x-show="settings.whatsapp_ordering_enabled !== 'true' || settings.show_whatsapp_button === 'false'" class="text-nitkkr-orange font-bold text-xs">✓ Selected</span>
+                  </div>
+                  <p class="text-xs text-slate-600 leading-relaxed">
+                    WhatsApp ordering is disabled. Students browse menus, check transparent student prices, and call or visit vendors directly.
+                  </p>
+                </div>
+                <div class="pt-2 text-[11px] font-semibold text-slate-500 flex items-center gap-2">
+                  <span>• Hides WhatsApp button</span>
+                  <span>• Shows Call button</span>
+                </div>
               </div>
 
-              <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Pre-filled WhatsApp Message Template</label>
-                <input type="text" x-model="settings.whatsapp_msg_template" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              <div
+                @click="settings.whatsapp_ordering_enabled = 'true'; settings.show_whatsapp_button = 'true'; settings.how_it_works_step3_title = '3. 1-Tap WhatsApp Order'; settings.how_it_works_step3_desc = 'Tap \'Order on WhatsApp\' to send a pre-filled greeting directly to the vendor owner. Zero commissions, zero middleman markups!';"
+                class="p-5 rounded-2xl border-2 transition-all cursor-pointer space-y-2 flex flex-col justify-between"
+                :class="settings.whatsapp_ordering_enabled === 'true' && settings.show_whatsapp_button !== 'false' ? 'border-emerald-500 bg-emerald-50/40 shadow-xs' : 'border-slate-200 hover:border-slate-300 bg-white'"
+              >
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-sm text-nitkkr-dark flex items-center gap-1.5">
+                      <span>💬</span> WhatsApp 1-Tap Ordering
+                    </span>
+                    <span x-show="settings.whatsapp_ordering_enabled === 'true' && settings.show_whatsapp_button !== 'false'" class="text-emerald-600 font-bold text-xs">✓ Selected</span>
+                  </div>
+                  <p class="text-xs text-slate-600 leading-relaxed">
+                    WhatsApp ordering is enabled. Displays the green "Order on WhatsApp" button on vendor pages with pre-filled greeting text.
+                  </p>
+                </div>
+                <div class="pt-2 text-[11px] font-semibold text-emerald-700 flex items-center gap-2">
+                  <span>• Shows WhatsApp button</span>
+                  <span>• Pre-filled chat template</span>
+                </div>
               </div>
+            </div>
+
+            <!-- Granular Toggles -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div class="p-4 bg-nitkkr-cream/30 border border-nitkkr-orange/20 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-nitkkr-dark block">Enable WhatsApp Ordering</span>
+                  <span class="text-[11px] text-nitkkr-gray">Allow direct WhatsApp messaging link generation</span>
+                </div>
+                <input
+                  type="checkbox"
+                  x-model="settings.whatsapp_ordering_enabled"
+                  :checked="settings.whatsapp_ordering_enabled === 'true'"
+                  @change="settings.whatsapp_ordering_enabled = $el.checked ? 'true' : 'false'"
+                  class="rounded text-emerald-600 cursor-pointer h-5 w-5"
+                />
+              </div>
+
+              <div class="p-4 bg-nitkkr-cream/30 border border-nitkkr-orange/20 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-nitkkr-dark block">Show WhatsApp Button in Menus & Search</span>
+                  <span class="text-[11px] text-nitkkr-gray">Display the floating WhatsApp order bar and search pill</span>
+                </div>
+                <input
+                  type="checkbox"
+                  x-model="settings.show_whatsapp_button"
+                  :checked="settings.show_whatsapp_button !== 'false'"
+                  @change="settings.show_whatsapp_button = $el.checked ? 'true' : 'false'"
+                  class="rounded text-emerald-600 cursor-pointer h-5 w-5"
+                />
+              </div>
+            </div>
+
+            <!-- WhatsApp Template & CTA Labels -->
+            <div class="space-y-4 pt-2 border-t border-slate-100">
+              <h4 class="font-bold text-xs text-nitkkr-dark uppercase tracking-wider">Button CTA & Message Formatting</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-xs font-bold text-nitkkr-dark block mb-1">WhatsApp Button Text</label>
+                  <input type="text" x-model="settings.whatsapp_button_label" placeholder="Order on WhatsApp" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+                </div>
+                <div>
+                  <label class="text-xs font-bold text-nitkkr-dark block mb-1">Pre-filled WhatsApp Message</label>
+                  <input type="text" x-model="settings.whatsapp_msg_template" placeholder="Hi {vendor_name}! I would like to check availability from NITKKR Food." class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+                </div>
+              </div>
+            </div>
+
+            <!-- "How It Works" Step 3 Customizer -->
+            <div class="space-y-4 pt-2 border-t border-slate-100">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="font-bold text-xs text-nitkkr-dark uppercase tracking-wider">📖 "How It Works" Page - Step 3 Customizer</h4>
+                  <p class="text-[11px] text-nitkkr-gray">Customize Step 3 shown on the /how-it-works page</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    @click="settings.how_it_works_step3_title = '3. Call or Visit Counter'; settings.how_it_works_step3_desc = 'Call the vendor directly to check availability or walk up to their campus counter with exact dishes and prices ready. Zero commissions, zero markups!';"
+                    class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Reset to Call / Visit
+                  </button>
+                  <button
+                    type="button"
+                    @click="settings.how_it_works_step3_title = '3. 1-Tap WhatsApp Order'; settings.how_it_works_step3_desc = 'Tap \'Order on WhatsApp\' to send a pre-filled greeting directly to the vendor owner. Zero commissions, zero middleman markups!';"
+                    class="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Reset to WhatsApp
+                  </button>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="text-xs font-bold text-nitkkr-dark block mb-1">Step 3 Title</label>
+                  <input type="text" x-model="settings.how_it_works_step3_title" placeholder="3. Call or Visit Counter" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+                </div>
+                <div>
+                  <label class="text-xs font-bold text-nitkkr-dark block mb-1">Step 3 Description</label>
+                  <textarea x-model="settings.how_it_works_step3_desc" rows="2" placeholder="Call the vendor directly to check availability or walk up to their campus counter..." class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Maintenance Notice -->
+            <div class="space-y-3 pt-2 border-t border-slate-100">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="text-xs font-bold text-nitkkr-dark block">Maintenance / Off-Peak Notice</label>
+                  <span class="text-[11px] text-nitkkr-gray">Shown when overall platform ordering is paused</span>
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" x-model="settings.ordering_enabled" :checked="settings.ordering_enabled === 'true'" @change="settings.ordering_enabled = $el.checked ? 'true' : 'false'" class="rounded text-emerald-600" />
+                  <span class="text-xs font-bold text-emerald-700">Platform Online</span>
+                </label>
+              </div>
+              <input type="text" x-model="settings.maintenance_message" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
             </div>
           </div>
+
 
           <!-- TAB 7: FOOTER BRANDING -->
           <div x-show="activeTab === 'footer'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">

@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 import Layout from '../layouts/Layout.astro';
-import { getCategories } from '../lib/queries';
+import { getCategories, getAllSiteSettings } from '../lib/queries';
 
 const initialQuery = Astro.url.searchParams.get('q')?.trim() || '';
 const initialCategory = Astro.url.searchParams.get('category')?.trim() || '';
@@ -11,6 +11,10 @@ const initialTag = Astro.url.searchParams.get('tag')?.trim() || '';
 const initialTab = Astro.url.searchParams.get('tab')?.trim() || 'dishes';
 
 const categories = await getCategories();
+const settings = await getAllSiteSettings();
+const settingsList = Array.isArray(settings) ? settings : [];
+const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && settingsObj.show_whatsapp_button !== 'false';
 ---
 
 <Layout
@@ -18,7 +22,8 @@ const categories = await getCategories();
   description="Search dishes and food vendors across NIT Kurukshetra campus"
 >
 
-  <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTag, initialTab }}>
+  <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTag, initialTab, showWhatsApp }}>
+
 
 
     function normalizePhonetics(str) {
@@ -558,15 +563,17 @@ const categories = await getCategories();
               >
                 <span>📞</span> Call
               </a>
-              <a
-                :href="`https://wa.me/91${vendor.whatsapp || vendor.phone}`"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
-                aria-label="WhatsApp vendor"
-              >
-                <span>💬</span> WhatsApp
-              </a>
+              <template x-if="showWhatsApp">
+                <a
+                  :href="`https://wa.me/91${vendor.whatsapp || vendor.phone}`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
+                  aria-label="WhatsApp vendor"
+                >
+                  <span>💬</span> WhatsApp
+                </a>
+              </template>
               <a
                 :href="`/v/${vendor.slug}`"
                 class="px-4 py-2 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
@@ -574,6 +581,7 @@ const categories = await getCategories();
                 View Menu →
               </a>
             </div>
+
           </div>
         </template>
 
