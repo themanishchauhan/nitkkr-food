@@ -12,7 +12,10 @@ const {
   ogImage = '/og-default.jpg',
   ogUrl = Astro.url.href,
 } = Astro.props;
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+const siteBase = Astro.site || Astro.url.origin || 'https://nitkkr-food.pages.dev';
+const canonicalURL = new URL(Astro.url.pathname, siteBase);
+const resolvedOgImage = ogImage.startsWith('http') ? ogImage : new URL(ogImage, siteBase).href;
 ---
 <!doctype html>
 <html lang="en">
@@ -33,12 +36,13 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <meta property="og:description" content={description} />
   <meta property="og:url" content={ogUrl} />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content={new URL(ogImage, Astro.site).href} />
+  <meta property="og:image" content={resolvedOgImage} />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
-  <meta name="twitter:image" content={new URL(ogImage, Astro.site).href} />
+  <meta name="twitter:image" content={resolvedOgImage} />
 </head>
+
 <body class="font-body bg-nitkkr-cream text-nitkkr-dark min-h-screen flex flex-col">
 
   <!-- 📲 Smart PWA Install Top Banner -->
