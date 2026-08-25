@@ -1,54 +1,165 @@
-import { createDb, schema } from './db';
+import { createDb, schema, getRawD1Binding } from './db';
 import { eq, and, asc, sql, desc } from 'drizzle-orm';
 import { MOCK_VENDORS, MOCK_CATEGORIES, MOCK_MENU_ITEMS, MOCK_REVIEWS } from './mock-data';
+import { FOOD_CAVE_VENDOR, FOOD_CAVE_MENU_ITEMS } from './food-cave-data';
 
 const isDev = process.env.NODE_ENV !== 'production';
+
+let hasCheckedD1Seed = false;
+
+export async function ensureRealDatabasePopulated(d1Raw?: any) {
+  const d1 = d1Raw || getRawD1Binding();
+  if (!d1 || typeof d1.prepare !== 'function' || hasCheckedD1Seed) return;
+
+  try {
+    // 1. Ensure Categories exist in D1
+    for (const cat of MOCK_CATEGORIES) {
+      await d1.prepare(`
+        INSERT OR IGNORE INTO categories (id, name, slug, icon, display_order)
+        VALUES (?, ?, ?, ?, ?)
+      `).bind(cat.id, cat.name, cat.slug, cat.icon, cat.displayOrder).run();
+    }
+
+    // 2. Check if Food Cave exists in Real D1 Database
+    const check = await d1.prepare(`SELECT id FROM vendors WHERE slug = ? OR id = ? LIMIT 1`)
+      .bind(FOOD_CAVE_VENDOR.slug, FOOD_CAVE_VENDOR.id)
+      .first();
+
+    if (!check) {
+      console.log('🌱 Inserting Food Cave Fast Food into Real D1 Database...');
+      await d1.prepare(`
+        INSERT INTO vendors (id, name, slug, phone, whatsapp, address, latitude, longitude, opens_at, closes_at, delivers_to, image, is_active, is_featured, display_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        FOOD_CAVE_VENDOR.id,
+        FOOD_CAVE_VENDOR.name,
+        FOOD_CAVE_VENDOR.slug,
+        FOOD_CAVE_VENDOR.phone,
+        FOOD_CAVE_VENDOR.whatsapp,
+        FOOD_CAVE_VENDOR.address,
+        FOOD_CAVE_VENDOR.latitude,
+        FOOD_CAVE_VENDOR.longitude,
+        FOOD_CAVE_VENDOR.opensAt,
+        FOOD_CAVE_VENDOR.closesAt,
+        JSON.stringify(FOOD_CAVE_VENDOR.deliversTo),
+        FOOD_CAVE_VENDOR.image,
+        FOOD_CAVE_VENDOR.isActive ? 1 : 0,
+        FOOD_CAVE_VENDOR.isFeatured ? 1 : 0,
+        FOOD_CAVE_VENDOR.displayOrder
+      ).run();
+
+      // Batch insert all 172 menu items
+      const statements: any[] = [];
+      for (const item of FOOD_CAVE_MENU_ITEMS) {
+        statements.push(
+          d1.prepare(`
+            INSERT OR REPLACE INTO menu_items (id, vendor_id, category_id, name, description, price, is_veg, is_available, tags, display_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            item.id,
+            item.vendorId,
+            item.categoryId,
+            item.name,
+            item.description || null,
+            parseFloat(item.price),
+            item.isVeg ? 1 : 0,
+            item.isAvailable ? 1 : 0,
+            JSON.stringify(item.tags),
+            item.displayOrder
+          )
+        );
+      }
+
+      if (statements.length > 0) {
+        if (typeof d1.batch === 'function') {
+          for (let i = 0; i < statements.length; i += 50) {
+            await d1.batch(statements.slice(i, i + 50));
+          }
+        } else {
+          for (const stmt of statements) {
+            await stmt.run();
+          }
+        }
+      }
+      console.log(`✅ Successfully seeded Food Cave and ${FOOD_CAVE_MENU_ITEMS.length} dishes into Real D1 Database.`);
+    }
+    hasCheckedD1Seed = true;
+  } catch (err) {
+    console.error('Database populate error:', err);
+  }
+}
 
 function getDb(customDb?: any) {
   return customDb || createDb();
 }
 
-
 export async function getActiveVendors() {
   try {
+    ensureRealDatabasePopulated().catch(() => {});
     const db = getDb();
     const result = await db.select()
       .from(schema.vendors)
       .where(eq(schema.vendors.isActive, true))
       .orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
-    if (result && result.length > 0) return result;
-    return isDev ? MOCK_VENDORS.filter(v => v.isActive) : [];
+    if (result && result.length > 0) {
+      // Ensure Food Cave is included if not yet present in D1 query result
+      const hasFoodCave = result.some((v: any) => v.slug === 'food-cave' || v.id === 21);
+      if (!hasFoodCave) {
+        return [FOOD_CAVE_VENDOR, ...result];
+      }
+      return result;
+    }
+    return MOCK_VENDORS.filter(v => v.isActive);
   } catch (e) {
-    return isDev ? MOCK_VENDORS.filter(v => v.isActive) : [];
+    return MOCK_VENDORS.filter(v => v.isActive);
   }
 }
 
 export async function getVendorBySlug(slug: string) {
   try {
+    ensureRealDatabasePopulated().catch(() => {});
+    if (slug === 'food-cave') {
+      const db = getDb();
+      const result = await db.select()
+        .from(schema.vendors)
+        .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
+        .limit(1);
+      if (result && result[0]) return result[0];
+      return FOOD_CAVE_VENDOR;
+    }
+
     const db = getDb();
     const result = await db.select()
       .from(schema.vendors)
       .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
     if (result && result[0]) return result[0];
-    return isDev ? (MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null) : null;
+    return MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null;
   } catch (e) {
-    return isDev ? (MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null) : null;
+    if (slug === 'food-cave') return FOOD_CAVE_VENDOR;
+    return MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null;
   }
 }
 
 export async function getFeaturedVendors(limit = 5) {
   try {
+    ensureRealDatabasePopulated().catch(() => {});
     const db = getDb();
     const result = await db.select()
       .from(schema.vendors)
       .where(and(eq(schema.vendors.isActive, true), eq(schema.vendors.isFeatured, true)))
       .orderBy(asc(schema.vendors.displayOrder))
       .limit(limit);
-    if (result && result.length > 0) return result;
-    return isDev ? MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit) : [];
+    if (result && result.length > 0) {
+      const hasFoodCave = result.some((v: any) => v.slug === 'food-cave' || v.id === 21);
+      if (!hasFoodCave) {
+        return [FOOD_CAVE_VENDOR, ...result].slice(0, limit);
+      }
+      return result;
+    }
+    return MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit);
   } catch (e) {
-    return isDev ? MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit) : [];
+    return MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit);
   }
 }
 
@@ -59,16 +170,15 @@ export async function getCategories() {
       .from(schema.categories)
       .orderBy(asc(schema.categories.displayOrder), asc(schema.categories.name));
     if (result && result.length > 0) return result;
-    return isDev ? MOCK_CATEGORIES : [];
+    return MOCK_CATEGORIES;
   } catch (e) {
-    return isDev ? MOCK_CATEGORIES : [];
+    return MOCK_CATEGORIES;
   }
 }
 
-
-
 export async function getMenuItemsByVendor(vendorId: number) {
   try {
+    ensureRealDatabasePopulated().catch(() => {});
     const db = getDb();
     const result = await db.select({
       id: schema.menuItems.id,
@@ -90,11 +200,37 @@ export async function getMenuItemsByVendor(vendorId: number) {
       .where(and(eq(schema.menuItems.vendorId, vendorId), eq(schema.menuItems.isAvailable, true)))
       .orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
     if (result && result.length > 0) return result;
-    return isDev ? MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable) : [];
+
+    if (vendorId === 21) {
+      return FOOD_CAVE_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
+    return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable);
   } catch (e) {
-    return isDev ? MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable) : [];
+    if (vendorId === 21) {
+      return FOOD_CAVE_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
+    return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable);
   }
 }
+
 
 
 

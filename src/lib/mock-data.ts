@@ -1,3 +1,5 @@
+import { FOOD_CAVE_VENDOR, FOOD_CAVE_MENU_ITEMS } from './food-cave-data';
+
 export const MOCK_CATEGORIES = [
   { id: 1, name: 'Fast Food', slug: 'fast-food', icon: '🍔', displayOrder: 1 },
   { id: 2, name: 'Chinese & Momos', slug: 'chinese', icon: '🥢', displayOrder: 2 },
@@ -10,10 +12,12 @@ export const MOCK_CATEGORIES = [
 ];
 
 export const MOCK_VENDORS = [
+  FOOD_CAVE_VENDOR,
   {
     id: 1,
     name: 'Momo Corner',
     slug: 'momo-corner',
+
     phone: '+91 98765 43210',
     whatsapp: '919876543210',
     address: 'Opposite Hostel 4 Gate, Campus Market',
@@ -373,7 +377,11 @@ export const MOCK_VENDORS = [
 ];
 
 export const MOCK_MENU_ITEMS = [
+  // Vendor 21: Food Cave Fast Food (172 Authentic Dishes)
+  ...FOOD_CAVE_MENU_ITEMS,
+
   // Vendor 1: Momo Corner
+
   { id: 101, vendorId: 1, categoryId: 2, name: 'Steamed Paneer Momos (8 pcs)', description: 'Fresh homemade soft momos served with spicy red chutney and mayo', price: '70.00', image: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400&auto=format&fit=crop&q=80', isVeg: true, isAvailable: true, tags: ['bestseller', 'spicy', 'snack'], displayOrder: 1, createdAt: new Date(), categoryName: 'Chinese & Momos', categorySlug: 'chinese', categoryIcon: '🥢' },
   { id: 102, vendorId: 1, categoryId: 2, name: 'Kurkure Veg Momos (6 pcs)', description: 'Ultra crunchy coated fried momos with special seasoning', price: '90.00', image: 'https://images.unsplash.com/photo-1625220194771-7ebdea0b70b9?w=400&auto=format&fit=crop&q=80', isVeg: true, isAvailable: true, tags: ['bestseller', 'crispy'], displayOrder: 2, createdAt: new Date(), categoryName: 'Chinese & Momos', categorySlug: 'chinese', categoryIcon: '🥢' },
   { id: 103, vendorId: 1, categoryId: 2, name: 'Tandoori Gravy Momos (8 pcs)', description: 'Tandoor roasted momos tossed in rich creamy gravy', price: '110.00', image: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=400&auto=format&fit=crop&q=80', isVeg: true, isAvailable: true, tags: ['popular', 'chef-special'], displayOrder: 3, createdAt: new Date(), categoryName: 'Chinese & Momos', categorySlug: 'chinese', categoryIcon: '🥢' },
