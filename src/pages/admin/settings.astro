@@ -168,6 +168,13 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
           <span>🛍️</span> Ordering & WhatsApp
         </button>
         <button
+          @click="activeTab = 'pages'"
+          :class="activeTab === 'pages' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
+          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
+        >
+          <span>📄</span> Page Content & FAQs
+        </button>
+        <button
           @click="activeTab = 'custom'"
           :class="activeTab === 'custom' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
           class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
@@ -175,6 +182,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
           <span>🎛️</span> Custom Settings CRUD
         </button>
       </div>
+
 
       <!-- TAB 1: GENERAL & BRANDING -->
       <div x-show="activeTab === 'general'" class="space-y-5">
@@ -296,13 +304,48 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
         </div>
       </div>
 
-      <!-- TAB 4: DYNAMIC CUSTOM SETTINGS CRUD -->
+      <!-- TAB 4: PAGES & LEGAL CONTENT EDITOR -->
+      <div x-show="activeTab === 'pages'" class="space-y-5">
+
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+            <span>📜</span> Terms & Conditions Page Content
+          </h2>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Custom Terms & Conditions Text / Notice</label>
+            <textarea x-model="settings.terms_custom_text" rows="4" placeholder="Enter custom terms, platform guidelines, or policies..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors"></textarea>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+            <span>🔒</span> Privacy Policy Custom Guidelines
+          </h2>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Custom Privacy Notice</label>
+            <textarea x-model="settings.privacy_custom_text" rows="4" placeholder="Enter privacy assurances, student data safety policies..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors"></textarea>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+            <span>ℹ️</span> About Us Story & Mission
+          </h2>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Custom About Story</label>
+            <textarea x-model="settings.about_custom_text" rows="4" placeholder="Tell students about the NITKKR food platform origin and mission..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: DYNAMIC CUSTOM SETTINGS CRUD -->
       <div x-show="activeTab === 'custom'" class="space-y-5">
         <!-- Add New Setting Card -->
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6">
           <h2 class="font-display font-bold text-base text-nitkkr-dark mb-3 flex items-center gap-2">
             <span>➕</span> Add Custom Setting Key-Value
           </h2>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Key Name (e.g. delivery_note, festival_tag)</label>
