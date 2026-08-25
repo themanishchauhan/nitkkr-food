@@ -16,9 +16,9 @@ export async function getActiveVendors() {
       .where(eq(schema.vendors.isActive, true))
       .orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
     if (result && result.length > 0) return result;
-    return isDev ? MOCK_VENDORS.filter(v => v.isActive) : [];
+    return MOCK_VENDORS.filter(v => v.isActive);
   } catch (e) {
-    return isDev ? MOCK_VENDORS.filter(v => v.isActive) : [];
+    return MOCK_VENDORS.filter(v => v.isActive);
   }
 }
 
@@ -30,9 +30,9 @@ export async function getVendorBySlug(slug: string) {
       .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
     if (result && result[0]) return result[0];
-    return isDev ? (MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null) : null;
+    return MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null;
   } catch (e) {
-    return isDev ? (MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null) : null;
+    return MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null;
   }
 }
 
@@ -45,9 +45,9 @@ export async function getFeaturedVendors(limit = 5) {
       .orderBy(asc(schema.vendors.displayOrder))
       .limit(limit);
     if (result && result.length > 0) return result;
-    return isDev ? MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit) : [];
+    return MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit);
   } catch (e) {
-    return isDev ? MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit) : [];
+    return MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit);
   }
 }
 
@@ -58,11 +58,12 @@ export async function getCategories() {
       .from(schema.categories)
       .orderBy(asc(schema.categories.displayOrder), asc(schema.categories.name));
     if (result && result.length > 0) return result;
-    return isDev ? MOCK_CATEGORIES : [];
+    return MOCK_CATEGORIES;
   } catch (e) {
-    return isDev ? MOCK_CATEGORIES : [];
+    return MOCK_CATEGORIES;
   }
 }
+
 
 
 export async function getMenuItemsByVendor(vendorId: number) {
@@ -88,11 +89,12 @@ export async function getMenuItemsByVendor(vendorId: number) {
       .where(and(eq(schema.menuItems.vendorId, vendorId), eq(schema.menuItems.isAvailable, true)))
       .orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
     if (result && result.length > 0) return result;
-    return isDev ? MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable) : [];
+    return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable);
   } catch (e) {
-    return isDev ? MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable) : [];
+    return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable);
   }
 }
+
 
 export async function getMenuItemsWithReviewStats(vendorId: number) {
   try {
