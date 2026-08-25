@@ -4,166 +4,13 @@ import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
 ---
 
-<Layout title="Website Settings Management - NITKKR Food Admin">
+<Layout title="Website Settings Management - NITKKR Food Admin" description="Control live hero text, announcement banners, ads, sponsors, and footer branding">
   <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
     <div
-      x-data="{
-        sidebarOpen: false,
-        vendors: [],
-        categories: [],
-        menuItems: [],
-        reviews: [],
-        settings: {
-          homepage_title: 'Hungry? We got you. 🍜',
-          homepage_tagline: 'Search 20+ food stalls around NITKKR',
-          meta_description: 'Search 20+ food stalls around NIT Kurukshetra. View menus, prices, and order via WhatsApp or call directly.',
-          announcement_banner_enabled: 'false',
-          announcement_banner_text: '',
-          announcement_banner_type: 'info',
-          ad_banner_enabled: 'false',
-          ad_banner_badge: '⚡ SPONSORED DEAL',
-          ad_banner_title: 'Kurukshetra Protein & Shake Hub',
-          ad_banner_description: '15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID.',
-          ad_banner_image: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=300&auto=format&fit=crop&q=80',
-          ad_banner_cta: 'Claim Offer 💬',
-          ad_banner_link: 'https://wa.me/919876543210?text=Hi!%20I%20want%20to%20claim%20the%20NIT%20student%20discount.',
-          ordering_enabled: 'true',
-          maintenance_message: 'Ordering is temporarily paused for campus break. Stalls reopen tomorrow at 8 AM.',
-          whatsapp_msg_template: 'Hi [stall_name]! I would like to order from NITKKR Food.',
-          footer_tagline: 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.',
-
-          footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
-          footer_copyright: 'Built with ❤️ for NIT Kurukshetra students',
-          terms_custom_text: '',
-          privacy_custom_text: '',
-          about_custom_text: ''
-        },
-        customKey: '',
-        customValue: '',
-        search: '',
-        activeTab: 'general',
-        saving: false,
-        message: '',
-        async init() {
-          await this.loadSettings();
-          try {
-            const [vRes, cRes, mRes, rRes] = await Promise.all([
-              fetch('/api/admin/vendors').catch(() => null),
-              fetch('/api/admin/categories').catch(() => null),
-              fetch('/api/admin/menu').catch(() => null),
-              fetch('/api/admin/reviews').catch(() => null)
-            ]);
-            if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
-            if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
-            if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
-            if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
-          } catch(e) {}
-        },
-
-        async loadSettings() {
-          try {
-            const res = await fetch('/api/admin/settings');
-            if (res.ok) {
-              const data = await res.json();
-              this.settings = Object.assign({}, this.settings, data.settings || {});
-            }
-          } catch (e) {
-            console.error('Failed to load settings:', e);
-          }
-        },
-        async saveSingleSetting(key, value) {
-          try {
-            const res = await fetch('/api/admin/settings', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ key, value: String(value ?? '') })
-            });
-            if (res.ok) {
-              this.settings[key] = value;
-              this.showToast('✅ Saved ' + key);
-            } else {
-              this.showToast('❌ Failed to save ' + key);
-            }
-          } catch (e) {
-            this.showToast('❌ Error saving setting');
-          }
-        },
-        async saveAllSettings() {
-          this.saving = true;
-          try {
-            const res = await fetch('/api/admin/settings', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ settings: this.settings })
-            });
-            if (res.ok) {
-              this.showToast('🎉 All website settings saved successfully!');
-            } else {
-              this.showToast('❌ Failed to save settings');
-            }
-          } catch (err) {
-            this.showToast('❌ Network error saving settings');
-          } finally {
-            this.saving = false;
-          }
-        },
-        async addCustomSetting() {
-          if (!this.customKey.trim()) {
-            this.showToast('❌ Setting key name is required');
-            return;
-          }
-          const formattedKey = this.customKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
-          await this.saveSingleSetting(formattedKey, this.customValue);
-          this.customKey = '';
-          this.customValue = '';
-          await this.loadSettings();
-        },
-        async deleteSetting(key) {
-          if (!confirm('Are you sure you want to delete the setting: ' + key + '?')) return;
-          try {
-            const res = await fetch('/api/admin/settings?key=' + encodeURIComponent(key), {
-              method: 'DELETE'
-            });
-            if (res.ok) {
-              delete this.settings[key];
-              this.showToast('🗑️ Deleted ' + key);
-              await this.loadSettings();
-            } else {
-              this.showToast('❌ Failed to delete');
-            }
-          } catch (e) {
-            this.showToast('❌ Network error');
-          }
-        },
-        showToast(msg) {
-          this.message = msg;
-          setTimeout(() => { this.message = ''; }, 3500);
-        },
-        get customSettingsList() {
-          const standardKeys = [
-            'homepage_title', 'homepage_tagline', 'contact_email', 'support_whatsapp',
-            'announcement_banner_enabled', 'announcement_banner_text', 'announcement_banner_type',
-            'ad_banner_enabled', 'ad_banner_badge', 'ad_banner_title', 'ad_banner_description', 'ad_banner_image', 'ad_banner_cta', 'ad_banner_link',
-            'ordering_enabled', 'maintenance_message', 'meta_description', 'meta_keywords',
-            'instagram_url', 'whatsapp_channel_url', 'pwa_banner_enabled', 'whatsapp_msg_template',
-            'terms_custom_text', 'privacy_custom_text', 'about_custom_text',
-            'footer_tagline', 'footer_custom_note', 'footer_copyright'
-          ];
-          return Object.entries(this.settings).filter(([k]) => {
-            const isStandard = standardKeys.includes(k);
-            const matchesSearch = !this.search || k.toLowerCase().includes(this.search.toLowerCase()) || String(this.settings[k] || '').toLowerCase().includes(this.search.toLowerCase());
-            return !isStandard && matchesSearch;
-          });
-        },
-        async logout() {
-          if (!confirm('Log out from Founder Panel?')) return;
-          await fetch('/api/admin/auth', { method: 'DELETE' });
-          window.location.href = '/';
-        }
-      }"
-      x-init="init()"
+      x-data="settingsManager()"
       class="flex-1 flex flex-col lg:flex-row min-h-screen"
     >
+
 
       <!-- Shared Sidebar Component -->
       <AdminSidebar currentPath="/admin/settings" />
@@ -574,4 +421,170 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
 
     </div>
   </section>
+
+  <script is:inline>
+    function settingsManager() {
+      return {
+        sidebarOpen: false,
+        vendors: [],
+        categories: [],
+        menuItems: [],
+        reviews: [],
+        settings: {
+          homepage_title: 'Hungry? We got you. 🍜',
+          homepage_tagline: 'Search 20+ food stalls around NITKKR',
+          meta_description: 'Search 20+ food stalls around NIT Kurukshetra. View menus, prices, and order via WhatsApp or call directly.',
+          announcement_banner_enabled: 'false',
+          announcement_banner_text: '',
+          announcement_banner_type: 'info',
+          ad_banner_enabled: 'false',
+          ad_banner_badge: '⚡ SPONSORED DEAL',
+          ad_banner_title: 'Kurukshetra Protein & Shake Hub',
+          ad_banner_description: '15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID.',
+          ad_banner_image: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=300&auto=format&fit=crop&q=80',
+          ad_banner_cta: 'Claim Offer 💬',
+          ad_banner_link: 'https://wa.me/919876543210?text=Hi!%20I%20want%20to%20claim%20the%20NIT%20student%20discount.',
+          ordering_enabled: 'true',
+          maintenance_message: 'Ordering is temporarily paused for campus break. Stalls reopen tomorrow at 8 AM.',
+          whatsapp_msg_template: 'Hi [stall_name]! I would like to order from NITKKR Food.',
+          footer_tagline: 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.',
+          footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
+          footer_copyright: 'Built with ❤️ for NIT Kurukshetra students',
+          terms_custom_text: '',
+          privacy_custom_text: '',
+          about_custom_text: ''
+        },
+        customKey: '',
+        customValue: '',
+        search: '',
+        activeTab: 'general',
+        saving: false,
+        message: '',
+
+        async init() {
+          await this.loadSettings();
+          try {
+            const [vRes, cRes, mRes, rRes] = await Promise.all([
+              fetch('/api/admin/vendors').catch(() => null),
+              fetch('/api/admin/categories').catch(() => null),
+              fetch('/api/admin/menu').catch(() => null),
+              fetch('/api/admin/reviews').catch(() => null)
+            ]);
+            if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
+            if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
+            if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
+            if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
+          } catch(e) {}
+        },
+
+        async loadSettings() {
+          try {
+            const res = await fetch('/api/admin/settings');
+            if (res.ok) {
+              const data = await res.json();
+              this.settings = Object.assign({}, this.settings, data.settings || {});
+            }
+          } catch (e) {
+            console.error('Failed to load settings:', e);
+          }
+        },
+
+        async saveSingleSetting(key, value) {
+          try {
+            const res = await fetch('/api/admin/settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ key, value: String(value ?? '') })
+            });
+            if (res.ok) {
+              this.settings[key] = value;
+              this.showToast('✅ Saved ' + key);
+            } else {
+              this.showToast('❌ Failed to save ' + key);
+            }
+          } catch (e) {
+            this.showToast('❌ Error saving setting');
+          }
+        },
+
+        async saveAllSettings() {
+          this.saving = true;
+          try {
+            const res = await fetch('/api/admin/settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ settings: this.settings })
+            });
+            if (res.ok) {
+              this.showToast('🎉 All website settings saved successfully!');
+            } else {
+              this.showToast('❌ Failed to save settings');
+            }
+          } catch (err) {
+            this.showToast('❌ Network error saving settings');
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async addCustomSetting() {
+          if (!this.customKey.trim()) {
+            this.showToast('❌ Setting key name is required');
+            return;
+          }
+          const formattedKey = this.customKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+          await this.saveSingleSetting(formattedKey, this.customValue);
+          this.customKey = '';
+          this.customValue = '';
+          await this.loadSettings();
+        },
+
+        async deleteSetting(key) {
+          if (!confirm('Are you sure you want to delete the setting: ' + key + '?')) return;
+          try {
+            const res = await fetch('/api/admin/settings?key=' + encodeURIComponent(key), {
+              method: 'DELETE'
+            });
+            if (res.ok) {
+              delete this.settings[key];
+              this.showToast('🗑️ Deleted ' + key);
+              await this.loadSettings();
+            } else {
+              this.showToast('❌ Failed to delete');
+            }
+          } catch (e) {
+            this.showToast('❌ Network error');
+          }
+        },
+
+        showToast(msg) {
+          this.message = msg;
+          setTimeout(() => { this.message = ''; }, 3500);
+        },
+
+        get customSettingsList() {
+          const standardKeys = [
+            'homepage_title', 'homepage_tagline', 'contact_email', 'support_whatsapp',
+            'announcement_banner_enabled', 'announcement_banner_text', 'announcement_banner_type',
+            'ad_banner_enabled', 'ad_banner_badge', 'ad_banner_title', 'ad_banner_description', 'ad_banner_image', 'ad_banner_cta', 'ad_banner_link',
+            'ordering_enabled', 'maintenance_message', 'meta_description', 'meta_keywords',
+            'instagram_url', 'whatsapp_channel_url', 'pwa_banner_enabled', 'whatsapp_msg_template',
+            'terms_custom_text', 'privacy_custom_text', 'about_custom_text',
+            'footer_tagline', 'footer_custom_note', 'footer_copyright'
+          ];
+          return Object.entries(this.settings).filter(([k]) => {
+            const isStandard = standardKeys.includes(k);
+            const matchesSearch = !this.search || k.toLowerCase().includes(this.search.toLowerCase()) || String(this.settings[k] || '').toLowerCase().includes(this.search.toLowerCase());
+            return !isStandard && matchesSearch;
+          });
+        },
+
+        async logout() {
+          if (!confirm('Log out from Founder Panel?')) return;
+          await fetch('/api/admin/auth', { method: 'DELETE' });
+          window.location.href = '/';
+        }
+      };
+    }
+  </script>
 </Layout>
