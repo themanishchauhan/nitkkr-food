@@ -5,7 +5,7 @@ interface Props {
 }
 const { placeholder = 'What are you craving? momos, biryani, burger...', autoFocus = false } = Astro.props;
 ---
-<form action="/search" method="GET" class="w-full" role="search">
+<form action="/search" method="GET" class="w-full" role="search" onsubmit="document.activeElement instanceof HTMLElement && document.activeElement.blur()">
   <label for="search-input" class="sr-only">Search food</label>
   <div class="relative">
     <input
@@ -18,8 +18,10 @@ const { placeholder = 'What are you craving? momos, biryani, burger...', autoFoc
              placeholder:text-nitkkr-gray"
       autofocus={autoFocus}
       autocomplete="off"
+      enterkeyhint="search"
       aria-label="Search food items"
     />
+
     <button
       type="submit"
       class="absolute right-3 top-1/2 -translate-y-1/2 text-nitkkr-orange hover:text-nitkkr-orange-dark transition-colors"
