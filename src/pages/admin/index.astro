@@ -3,10 +3,10 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 ---
 
-<Layout title="NITKKR Food - Founder Command Hub" description="Live Founder Operations & Campus Food Control Center">
-  <section class="min-h-screen bg-slate-950 text-slate-100 flex flex-col lg:flex-row">
+<Layout title="NITKKR Food - Founder Operations & Control Hub" description="Complete Campus Food & Website CRUD Operations Center">
+  <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
     
-    <!-- Alpine Root Data Scope -->
+    <!-- Alpine Global State Scope -->
     <div
       x-data="{
         sidebarOpen: false,
@@ -15,13 +15,57 @@ import Layout from '../../layouts/Layout.astro';
         categories: [],
         menuItems: [],
         reviews: [],
-        settings: {},
+        settings: {
+          homepage_title: 'Hungry? We got you. 🍜',
+          homepage_tagline: 'Search 20+ food stalls around NITKKR',
+          announcement_banner_enabled: 'false',
+          announcement_banner_text: '',
+          announcement_banner_type: 'info',
+          ad_banner_enabled: 'false',
+          ad_banner_badge: '⚡ SPONSORED DEAL',
+          ad_banner_title: '',
+          ad_banner_description: '',
+          ad_banner_cta: 'Claim Offer 💬',
+          ad_banner_link: '#'
+        },
         currentTime: '',
+        activeView: 'overview',
+        showAddStallModal: false,
+        showAddDishModal: false,
+        savingStall: false,
+        savingDish: false,
+        savingSettings: false,
+        toastMsg: '',
         
+        // New Stall Form Model
+        newStall: {
+          name: '',
+          phone: '',
+          whatsapp: '',
+          address: '',
+          opensAt: '09:00',
+          closesAt: '23:00',
+          deliversTo: 'Hostels, Academic Block',
+          image: '',
+          isActive: true,
+          isFeatured: false
+        },
+
+        // New Dish Form Model
+        newDish: {
+          vendorId: '',
+          categoryId: '',
+          name: '',
+          price: '',
+          description: '',
+          isVeg: true,
+          isAvailable: true
+        },
+
         async init() {
           this.updateClock();
           setInterval(() => this.updateClock(), 1000);
-          await this.loadDashboardData();
+          await this.loadAllData();
         },
 
         updateClock() {
@@ -29,14 +73,19 @@ import Layout from '../../layouts/Layout.astro';
           this.currentTime = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
         },
 
-        async loadDashboardData() {
+        showToast(msg) {
+          this.toastMsg = msg;
+          setTimeout(() => { this.toastMsg = ''; }, 3500);
+        },
+
+        async loadAllData() {
           this.loading = true;
           try {
             const [vRes, cRes, mRes, rRes, sRes] = await Promise.all([
               fetch('/api/admin/vendors').catch(() => null),
               fetch('/api/admin/categories').catch(() => null),
               fetch('/api/admin/menu').catch(() => null),
-              fetch('/api/reviews').catch(() => null),
+              fetch('/api/admin/reviews').catch(() => null),
               fetch('/api/admin/settings').catch(() => null),
             ]);
 
@@ -58,7 +107,7 @@ import Layout from '../../layouts/Layout.astro';
             }
             if (sRes && sRes.ok) {
               const d = await sRes.json();
-              this.settings = d.settings || {};
+              this.settings = Object.assign({}, this.settings, d.settings || {});
             }
           } catch (err) {
             console.error('Error loading dashboard data:', err);
@@ -76,14 +125,110 @@ import Layout from '../../layouts/Layout.astro';
             });
             if (res.ok) {
               vendor.isActive = !vendor.isActive;
+              this.showToast(vendor.name + ' marked as ' + (vendor.isActive ? 'Open 🟢' : 'Closed 🔴'));
             }
           } catch (e) {
             alert('Failed to update status');
           }
         },
 
+        async createStall() {
+          if (!this.newStall.name.trim()) {
+            alert('Stall name is required');
+            return;
+          }
+          this.savingStall = true;
+          try {
+            const payload = {
+              ...this.newStall,
+              deliversTo: this.newStall.deliversTo.split(',').map(s => s.trim()).filter(Boolean)
+            };
+            const res = await fetch('/api/admin/vendors', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.vendor) this.vendors.unshift(data.vendor);
+              this.showAddStallModal = false;
+              this.newStall = { name: '', phone: '', whatsapp: '', address: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels, Academic Block', image: '', isActive: true, isFeatured: false };
+              this.showToast('✅ New food stall created successfully!');
+            } else {
+              const err = await res.json();
+              alert(err.error || 'Failed to create stall');
+            }
+          } catch (e) {
+            alert('Server error creating stall');
+          } finally {
+            this.savingStall = false;
+          }
+        },
+
+        async createDish() {
+          if (!this.newDish.vendorId || !this.newDish.name.trim() || !this.newDish.price) {
+            alert('Please select stall, enter dish name and price');
+            return;
+          }
+          this.savingDish = true;
+          try {
+            const res = await fetch('/api/admin/menu', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.newDish)
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.item) this.menuItems.unshift(data.item);
+              this.showAddDishModal = false;
+              this.newDish = { vendorId: '', categoryId: '', name: '', price: '', description: '', isVeg: true, isAvailable: true };
+              this.showToast('🍱 New dish added to menu!');
+            } else {
+              const err = await res.json();
+              alert(err.error || 'Failed to create dish');
+            }
+          } catch (e) {
+            alert('Server error creating dish');
+          } finally {
+            this.savingDish = false;
+          }
+        },
+
+        async saveQuickSettings() {
+          this.savingSettings = true;
+          try {
+            const res = await fetch('/api/admin/settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ settings: this.settings })
+            });
+            if (res.ok) {
+              this.showToast('⚡ Website settings updated live!');
+            } else {
+              alert('Failed to save settings');
+            }
+          } catch (e) {
+            alert('Error saving settings');
+          } finally {
+            this.savingSettings = false;
+          }
+        },
+
+        async deleteReview(id) {
+          if (!confirm('Delete this review?')) return;
+          try {
+            const res = await fetch('/api/reviews?id=' + id, { method: 'DELETE' });
+            if (res.ok) {
+              this.reviews = this.reviews.filter(r => r.id !== id);
+              this.showToast('Review removed');
+            }
+          } catch (e) {
+            alert('Failed to delete review');
+          }
+        },
+
         async logout() {
-          if (!confirm('Log out from Founder Panel?')) return;
+          if (!confirm('Log out from Founder Operations Hub?')) return;
           await fetch('/api/admin/auth', { method: 'DELETE' });
           window.location.href = '/';
         },
@@ -106,99 +251,109 @@ import Layout from '../../layouts/Layout.astro';
       class="flex-1 flex flex-col lg:flex-row min-h-screen"
     >
 
-      <!-- 🌟 Ultra-Modern Glassmorphic Sidebar -->
-      <aside class="w-full lg:w-64 bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/80 flex-shrink-0 flex flex-col justify-between p-5 lg:min-h-screen">
+      <!-- Toast Notification -->
+      <div
+        x-show="toastMsg"
+        x-transition
+        class="fixed bottom-6 right-6 z-50 bg-nitkkr-dark text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-2 border border-nitkkr-orange/40"
+      >
+        <span class="text-base">🔔</span>
+        <span x-text="toastMsg"></span>
+      </div>
+
+      <!-- 🎨 Unified NITKKR Food Aesthetic Sidebar -->
+      <aside class="w-full lg:w-64 bg-white border-r border-nitkkr-orange/20 flex-shrink-0 flex flex-col justify-between p-5 lg:min-h-screen shadow-sm">
         <div>
-          <!-- Brand / Founder Profile Badge -->
-          <div class="flex items-center justify-between pb-6 border-b border-slate-800/80">
+          <!-- Brand Badge -->
+          <div class="flex items-center justify-between pb-5 border-b border-nitkkr-orange/15">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-xl shadow-lg shadow-orange-500/20">
+              <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-nitkkr-orange to-amber-500 flex items-center justify-center text-xl shadow-md text-white">
                 🍜
               </div>
               <div>
-                <h2 class="font-display font-bold text-sm tracking-wide text-white">NITKKR Food</h2>
+                <h2 class="font-display font-bold text-base text-nitkkr-dark">NITKKR Food</h2>
                 <div class="flex items-center gap-1.5 mt-0.5">
-                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span class="text-[10px] font-mono font-medium text-emerald-400 uppercase tracking-wider">Ops Live</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span class="text-[10px] font-mono font-bold text-emerald-600 uppercase tracking-wider">Ops Hub</span>
                 </div>
               </div>
             </div>
 
-            <!-- Mobile Toggle -->
-            <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 text-slate-400 hover:text-white">
+            <!-- Mobile Drawer Button -->
+            <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 text-nitkkr-gray hover:text-nitkkr-dark">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
           </div>
 
           <!-- Navigation Links -->
           <nav class="mt-6 space-y-1.5" :class="sidebarOpen ? 'block' : 'hidden lg:block'">
-            <a href="/admin" class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-amber-500/15 to-orange-500/10 text-amber-400 border border-amber-500/30 rounded-2xl font-bold text-xs shadow-xs transition-all">
+            <a href="/admin" class="flex items-center gap-3 px-4 py-3 bg-nitkkr-orange text-white rounded-2xl font-bold text-xs shadow-md shadow-nitkkr-orange/20 transition-all">
               <span class="text-base">📊</span>
-              <span>Command Hub</span>
+              <span>Dashboard Hub</span>
             </a>
 
-            <a href="/admin/stalls" class="flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-2xl font-semibold text-xs transition-all group">
+            <a href="/admin/stalls" class="flex items-center justify-between px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-2xl font-semibold text-xs transition-all group">
               <div class="flex items-center gap-3">
                 <span class="text-base group-hover:scale-110 transition-transform">🏪</span>
                 <span>Campus Stalls</span>
               </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700" x-text="vendors.length"></span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-nitkkr-cream text-nitkkr-orange font-bold border border-nitkkr-orange/20" x-text="vendors.length"></span>
             </a>
 
-            <a href="/admin/categories" class="flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-2xl font-semibold text-xs transition-all group">
+            <a href="/admin/categories" class="flex items-center justify-between px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-2xl font-semibold text-xs transition-all group">
               <div class="flex items-center gap-3">
                 <span class="text-base group-hover:scale-110 transition-transform">🍽️</span>
                 <span>Categories</span>
               </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700" x-text="categories.length"></span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-nitkkr-cream text-nitkkr-orange font-bold border border-nitkkr-orange/20" x-text="categories.length"></span>
             </a>
 
-            <a href="/admin/menu-items" class="flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-2xl font-semibold text-xs transition-all group">
+            <a href="/admin/menu-items" class="flex items-center justify-between px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-2xl font-semibold text-xs transition-all group">
               <div class="flex items-center gap-3">
                 <span class="text-base group-hover:scale-110 transition-transform">🍱</span>
-                <span>Dishes & Prices</span>
+                <span>Menu Dishes & Prices</span>
               </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700" x-text="menuItems.length"></span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-nitkkr-cream text-nitkkr-orange font-bold border border-nitkkr-orange/20" x-text="menuItems.length"></span>
             </a>
 
-            <a href="/admin/reviews" class="flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-2xl font-semibold text-xs transition-all group">
+            <a href="/admin/reviews" class="flex items-center justify-between px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-2xl font-semibold text-xs transition-all group">
               <div class="flex items-center gap-3">
                 <span class="text-base group-hover:scale-110 transition-transform">⭐</span>
                 <span>Student Reviews</span>
               </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 border border-slate-700" x-text="reviews.length"></span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-300" x-text="reviews.length"></span>
             </a>
 
-            <a href="/admin/settings" class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-2xl font-semibold text-xs transition-all group">
+            <a href="/admin/settings" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-2xl font-semibold text-xs transition-all group">
               <span class="text-base group-hover:rotate-45 transition-transform">⚙️</span>
               <span>Website Control Center</span>
             </a>
           </nav>
         </div>
 
-        <!-- Founder Account & Live Site Link -->
-        <div class="mt-8 pt-4 border-t border-slate-800/80 space-y-3" :class="sidebarOpen ? 'block' : 'hidden lg:block'">
+        <!-- Founder Account Footer -->
+        <div class="mt-8 pt-4 border-t border-nitkkr-orange/15 space-y-3" :class="sidebarOpen ? 'block' : 'hidden lg:block'">
           <a
             href="/"
             target="_blank"
-            class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700/80 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all border border-slate-700/60 shadow-sm"
+            class="w-full py-2.5 px-4 bg-nitkkr-cream hover:bg-nitkkr-orange/10 text-nitkkr-orange font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all border border-nitkkr-orange/20 shadow-xs"
           >
             <span>🌐</span> View Live Website ↗
           </a>
 
-          <div class="flex items-center justify-between p-2.5 bg-slate-950/60 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between p-2.5 bg-nitkkr-cream rounded-xl border border-nitkkr-orange/20">
             <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center text-xs">
+              <div class="w-8 h-8 rounded-lg bg-nitkkr-orange text-white font-bold flex items-center justify-center text-xs shadow-xs">
                 MC
               </div>
               <div class="truncate">
-                <p class="text-xs font-bold text-white truncate">Manish Chauhan</p>
-                <p class="text-[10px] text-slate-400">Founder & Admin</p>
+                <p class="text-xs font-bold text-nitkkr-dark truncate">Manish Chauhan</p>
+                <p class="text-[10px] text-nitkkr-gray">Founder & Admin</p>
               </div>
             </div>
             <button
               @click="logout()"
-              class="text-slate-400 hover:text-rose-400 p-1.5 transition-colors cursor-pointer"
+              class="text-nitkkr-gray hover:text-rose-600 p-1.5 transition-colors cursor-pointer"
               title="Logout"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -211,194 +366,247 @@ import Layout from '../../layouts/Layout.astro';
       <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-7xl">
         <div class="space-y-8">
           
-          <!-- Top Founder Hero Header -->
-          <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <!-- Top Founder Hero Card (Matching public hero) -->
+          <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div class="space-y-2 z-10">
-              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-bold">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-[11px] font-bold">
                 <span>⚡</span> NIT Kurukshetra Campus Realtime Operations
               </div>
-              <h1 class="font-display text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+              <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-nitkkr-dark tracking-tight">
                 Welcome back, Manish 👋
               </h1>
-              <p class="text-xs sm:text-sm text-slate-400 max-w-xl">
-                Real-time campus food traffic, vendor availability, dish catalogs, and instant settings management.
+              <p class="text-xs sm:text-sm text-nitkkr-gray max-w-xl">
+                Full CRUD control center for campus food stalls, dish menus, prices, ads, announcements, and website branding.
               </p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3 z-10">
-              <div class="px-4 py-2 bg-slate-950/80 border border-slate-800 rounded-2xl text-center">
-                <span class="text-[10px] font-mono uppercase text-slate-400 block">Campus Time</span>
-                <span class="font-mono text-sm font-bold text-amber-400" x-text="currentTime"></span>
+              <div class="px-4 py-2 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-2xl text-center">
+                <span class="text-[10px] font-mono uppercase text-nitkkr-gray block">Campus Time</span>
+                <span class="font-mono text-sm font-bold text-nitkkr-orange" x-text="currentTime"></span>
               </div>
-              <a
-                href="/admin/stalls"
-                class="px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+              <button
+                @click="showAddStallModal = true"
+                class="px-5 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-2xl shadow-md shadow-nitkkr-orange/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
               >
                 <span>➕</span> Add New Stall
-              </a>
+              </button>
+              <button
+                @click="showAddDishModal = true"
+                class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+              >
+                <span>🍱</span> Add New Dish
+              </button>
             </div>
 
-            <!-- Glowing Abstract Background Accent -->
-            <div class="absolute -top-24 -right-24 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -top-24 -right-24 w-72 h-72 bg-nitkkr-orange/5 rounded-full blur-3xl pointer-events-none"></div>
           </div>
 
-          <!-- 📊 Key Metric Cards (Glowing Cards) -->
+          <!-- 📊 Key Metric Cards (Warm Cream & White Aesthetic) -->
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             
             <!-- Card 1: Total Stalls -->
-            <div class="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-800 p-5 space-y-3 relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-xl">
+            <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-3 shadow-xs hover:border-nitkkr-orange/50 transition-all group">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-400">Total Stalls</span>
-                <div class="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-lg">
+                <span class="text-xs font-bold text-nitkkr-gray">Campus Stalls</span>
+                <div class="w-9 h-9 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-lg">
                   🏪
                 </div>
               </div>
               <div class="flex items-baseline gap-2">
-                <span class="font-display text-3xl sm:text-4xl font-extrabold text-white" x-text="vendors.length"></span>
-                <span class="text-[11px] font-bold text-emerald-400" x-text="activeVendorsCount + ' active'"></span>
+                <span class="font-display text-3xl sm:text-4xl font-extrabold text-nitkkr-orange" x-text="vendors.length"></span>
+                <span class="text-[11px] font-bold text-emerald-600" x-text="activeVendorsCount + ' active'"></span>
               </div>
-              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+              <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-nitkkr-gray">
                 <span>Gate 1, Market & DB Hall</span>
-                <a href="/admin/stalls" class="text-amber-400 hover:underline font-semibold">Manage →</a>
+                <a href="/admin/stalls" class="text-nitkkr-orange hover:underline font-bold">Manage →</a>
               </div>
             </div>
 
             <!-- Card 2: Total Menu Items -->
-            <div class="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-800 p-5 space-y-3 relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-xl">
+            <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-3 shadow-xs hover:border-emerald-500/50 transition-all group">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-400">Dishes Listed</span>
-                <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-lg">
+                <span class="text-xs font-bold text-nitkkr-gray">Menu Catalog</span>
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-lg">
                   🍱
                 </div>
               </div>
               <div class="flex items-baseline gap-2">
-                <span class="font-display text-3xl sm:text-4xl font-extrabold text-white" x-text="menuItems.length"></span>
-                <span class="text-[11px] font-bold text-emerald-400" x-text="vegCount + ' veg'"></span>
+                <span class="font-display text-3xl sm:text-4xl font-extrabold text-emerald-700" x-text="menuItems.length"></span>
+                <span class="text-[11px] font-bold text-emerald-600" x-text="vegCount + ' veg'"></span>
               </div>
-              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+              <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-nitkkr-gray">
                 <span x-text="categories.length + ' categories'"></span>
-                <a href="/admin/menu-items" class="text-amber-400 hover:underline font-semibold">Edit prices →</a>
+                <a href="/admin/menu-items" class="text-emerald-700 hover:underline font-bold">Edit prices →</a>
               </div>
             </div>
 
             <!-- Card 3: Student Reviews -->
-            <div class="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-800 p-5 space-y-3 relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-xl">
+            <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-3 shadow-xs hover:border-amber-500/50 transition-all group">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-400">Student Reviews</span>
-                <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-lg">
+                <span class="text-xs font-bold text-nitkkr-gray">Student Reviews</span>
+                <div class="w-9 h-9 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-lg">
                   ⭐
                 </div>
               </div>
               <div class="flex items-baseline gap-2">
-                <span class="font-display text-3xl sm:text-4xl font-extrabold text-white" x-text="reviews.length"></span>
-                <span class="text-[11px] font-bold text-amber-400" x-text="'★ ' + avgRating"></span>
+                <span class="font-display text-3xl sm:text-4xl font-extrabold text-amber-600" x-text="reviews.length"></span>
+                <span class="text-[11px] font-bold text-amber-700" x-text="'★ ' + avgRating"></span>
               </div>
-              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Verified Campus Feedback</span>
-                <a href="/admin/reviews" class="text-amber-400 hover:underline font-semibold">Read all →</a>
+              <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-nitkkr-gray">
+                <span>Verified Feedback</span>
+                <a href="/admin/reviews" class="text-amber-600 hover:underline font-bold">Read all →</a>
               </div>
             </div>
 
             <!-- Card 4: In-Feed Sponsor / Ads -->
-            <div class="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-800 p-5 space-y-3 relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-xl">
+            <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-3 shadow-xs hover:border-blue-500/50 transition-all group">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-400">In-Feed Sponsors</span>
-                <div class="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-lg">
+                <span class="text-xs font-bold text-nitkkr-gray">In-Feed Sponsors</span>
+                <div class="w-9 h-9 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-lg">
                   ⚡
                 </div>
               </div>
               <div class="flex items-baseline gap-2">
-                <span class="font-display text-2xl sm:text-3xl font-extrabold" :class="settings.ad_banner_enabled === 'true' ? 'text-emerald-400' : 'text-slate-500'" x-text="settings.ad_banner_enabled === 'true' ? 'ACTIVE' : 'OFF'"></span>
+                <span class="font-display text-2xl sm:text-3xl font-extrabold" :class="settings.ad_banner_enabled === 'true' ? 'text-emerald-600' : 'text-slate-400'" x-text="settings.ad_banner_enabled === 'true' ? 'ACTIVE' : 'DISABLED'"></span>
               </div>
-              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+              <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-nitkkr-gray">
                 <span>Homepage & Menu Ads</span>
-                <a href="/admin/settings" class="text-amber-400 hover:underline font-semibold">Configure →</a>
+                <a href="/admin/settings" class="text-blue-600 hover:underline font-bold">Configure →</a>
               </div>
             </div>
 
           </div>
 
-          <!-- ⚡ Fast Quick Command Hub (Interactive Glass Cards) -->
-          <div>
-            <h3 class="font-display text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <span>🚀</span> Founder Operations Matrix
-            </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              
-              <a href="/admin/stalls" class="p-5 bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-3xl transition-all shadow-lg hover:-translate-y-1 group">
-                <div class="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 border border-orange-500/20 flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">
-                  🏪
-                </div>
-                <h4 class="font-bold text-sm text-white group-hover:text-amber-400 transition-colors">Manage Campus Stalls</h4>
-                <p class="text-xs text-slate-400 mt-1">Add eateries, toggle active status, update WhatsApp numbers & opening timings.</p>
-              </a>
+          <!-- ⚡ Quick Website Content CRUD Customizer -->
+          <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+              <div>
+                <h3 class="font-display text-lg font-bold text-nitkkr-dark flex items-center gap-2">
+                  <span>🎛️</span> Instant Website Content & Hero Customizer
+                </h3>
+                <p class="text-xs text-nitkkr-gray">Edit text and announcements live on the public site without touching code</p>
+              </div>
+              <button
+                @click="saveQuickSettings()"
+                :disabled="savingSettings"
+                class="px-5 py-2.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 self-start"
+              >
+                <span x-show="!savingSettings">💾 Save Website Text</span>
+                <span x-show="savingSettings">Saving...</span>
+              </button>
+            </div>
 
-              <a href="/admin/menu-items" class="p-5 bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-3xl transition-all shadow-lg hover:-translate-y-1 group">
-                <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">
-                  🍱
-                </div>
-                <h4 class="font-bold text-sm text-white group-hover:text-emerald-400 transition-colors">Dish Catalogs & Prices</h4>
-                <p class="text-xs text-slate-400 mt-1">Update dish prices, veg/non-veg tags, 1-tap food photo presets & availability.</p>
-              </a>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Homepage Hero Title -->
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Homepage Main Title (H1)</label>
+                <input
+                  type="text"
+                  x-model="settings.homepage_title"
+                  class="w-full px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
+                  placeholder="e.g. Hungry? We got you. 🍜"
+                />
+              </div>
 
-              <a href="/admin/settings" class="p-5 bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-3xl transition-all shadow-lg hover:-translate-y-1 group">
-                <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">
-                  ⚡
-                </div>
-                <h4 class="font-bold text-sm text-white group-hover:text-amber-400 transition-colors">Ads & Sponsor Banners</h4>
-                <p class="text-xs text-slate-400 mt-1">Configure in-feed sponsored deals with real-time visual previews.</p>
-              </a>
+              <!-- Homepage Tagline -->
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Homepage Sub-Tagline</label>
+                <input
+                  type="text"
+                  x-model="settings.homepage_tagline"
+                  class="w-full px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
+                  placeholder="e.g. Search 20+ food stalls around NITKKR"
+                />
+              </div>
 
-              <a href="/admin/settings" class="p-5 bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-3xl transition-all shadow-lg hover:-translate-y-1 group">
-                <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">
-                  📢
+              <!-- Live Campus Announcement Text -->
+              <div class="space-y-1.5 md:col-span-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-bold text-nitkkr-dark">Broadcast Campus Announcement</label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" x-model="settings.announcement_banner_enabled" true-value="true" false-value="false" class="rounded text-nitkkr-orange">
+                    <span class="text-xs font-bold text-nitkkr-orange">Show Banner</span>
+                  </label>
                 </div>
-                <h4 class="font-bold text-sm text-white group-hover:text-blue-400 transition-colors">Broadcast Live Alert</h4>
-                <p class="text-xs text-slate-400 mt-1">Push instant campus banners, fest offers, or rain alerts to all student phones.</p>
-              </a>
-
+                <div class="flex gap-3">
+                  <select
+                    x-model="settings.announcement_banner_type"
+                    class="px-3 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden"
+                  >
+                    <option value="info">📢 Info</option>
+                    <option value="offer">🎉 Offer</option>
+                    <option value="warning">⚠️ Notice</option>
+                    <option value="danger">🚨 Urgent</option>
+                  </select>
+                  <input
+                    type="text"
+                    x-model="settings.announcement_banner_text"
+                    class="flex-1 px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
+                    placeholder="e.g. Late Night Canteens open till 3:30 AM during End-Sem exams! 🌙"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- 🏪 Real-Time Stall Status Matrix & Quick Open/Close -->
-          <div class="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
               <div>
-                <h3 class="font-display text-lg font-bold text-white flex items-center gap-2">
-                  <span>🏪</span> Live Stall Availability Control
+                <h3 class="font-display text-lg font-bold text-nitkkr-dark flex items-center gap-2">
+                  <span>🏪</span> Live Stall Availability & Quick CRUD
                 </h3>
-                <p class="text-xs text-slate-400">1-tap toggle to mark stalls open or closed across campus in real time</p>
+                <p class="text-xs text-nitkkr-gray">1-tap toggle to mark stalls open or closed across campus in real time</p>
               </div>
-              <a href="/admin/stalls" class="text-xs font-bold text-amber-400 hover:underline">
-                View All Details →
-              </a>
+              <div class="flex items-center gap-3">
+                <button
+                  @click="showAddStallModal = true"
+                  class="px-4 py-2 bg-nitkkr-orange/10 text-nitkkr-orange hover:bg-nitkkr-orange hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  ➕ Add Stall
+                </button>
+                <a href="/admin/stalls" class="text-xs font-bold text-nitkkr-orange hover:underline">
+                  Full Stall Manager →
+                </a>
+              </div>
             </div>
 
             <!-- Stalls List Grid -->
+            <template x-if="vendors.length === 0">
+              <div class="text-center py-10 bg-nitkkr-cream/40 rounded-2xl border border-dashed border-nitkkr-orange/30">
+                <span class="text-3xl block mb-2">🏪</span>
+                <p class="text-xs font-bold text-nitkkr-dark">No stalls in database yet</p>
+                <button @click="showAddStallModal = true" class="mt-3 px-4 py-2 bg-nitkkr-orange text-white text-xs font-bold rounded-xl">
+                  ➕ Create First Stall
+                </button>
+              </div>
+            </template>
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <template x-for="vendor in vendors" :key="vendor.id">
-                <div class="p-4 bg-slate-950/80 border border-slate-800/80 rounded-2xl flex items-center justify-between gap-3 hover:border-slate-700 transition-all">
+                <div class="p-4 bg-nitkkr-cream/40 border border-nitkkr-orange/20 rounded-2xl flex items-center justify-between gap-3 hover:border-nitkkr-orange/50 transition-all">
                   <div class="min-w-0">
                     <div class="flex items-center gap-2">
-                      <span class="w-2 h-2 rounded-full" :class="vendor.isActive ? 'bg-emerald-400' : 'bg-rose-500'"></span>
-                      <h5 class="font-bold text-xs text-white truncate" x-text="vendor.name"></h5>
+                      <span class="w-2.5 h-2.5 rounded-full" :class="vendor.isActive ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+                      <h5 class="font-bold text-xs text-nitkkr-dark truncate" x-text="vendor.name"></h5>
                     </div>
-                    <p class="text-[11px] text-slate-400 truncate mt-0.5" x-text="vendor.address || 'Campus Eatery'"></p>
-                    <span class="text-[10px] font-mono text-slate-500" x-text="vendor.opensAt + ' - ' + vendor.closesAt"></span>
+                    <p class="text-[11px] text-nitkkr-gray truncate mt-0.5" x-text="vendor.address || 'Campus Eatery'"></p>
+                    <span class="text-[10px] font-mono text-nitkkr-gray font-semibold" x-text="vendor.opensAt + ' - ' + vendor.closesAt"></span>
                   </div>
 
                   <div class="flex items-center gap-2 flex-shrink-0">
                     <button
                       @click="toggleVendorStatus(vendor)"
                       class="px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
-                      :class="vendor.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'"
+                      :class="vendor.isActive ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-300 hover:bg-rose-200'"
                       x-text="vendor.isActive ? 'Open' : 'Closed'"
                     >
                     </button>
                     <a
                       :href="'/v/' + vendor.slug"
                       target="_blank"
-                      class="p-1.5 text-slate-400 hover:text-amber-400 transition-colors"
+                      class="p-1.5 text-nitkkr-gray hover:text-nitkkr-orange transition-colors"
                       title="View Menu"
                     >
                       ↗
@@ -409,48 +617,122 @@ import Layout from '../../layouts/Layout.astro';
             </div>
           </div>
 
-          <!-- ⭐ Live Student Review Feed -->
-          <div class="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="font-display text-lg font-bold text-white flex items-center gap-2">
-                  <span>⭐</span> Recent Campus Food Feedback
-                </h3>
-                <p class="text-xs text-slate-400">Authentic student reviews from NIT Kurukshetra hostels</p>
-              </div>
-              <a href="/admin/reviews" class="text-xs font-bold text-amber-400 hover:underline">
-                Moderate All →
-              </a>
-            </div>
-
-            <template x-if="reviews.length === 0">
-              <div class="text-center py-10 text-slate-500 text-xs bg-slate-950/40 rounded-2xl border border-dashed border-slate-800">
-                <span class="text-3xl block mb-2">🍜</span>
-                No student reviews posted yet. As students review dishes, they will appear here live!
-              </div>
-            </template>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <template x-for="r in reviews.slice(0, 6)" :key="r.id">
-                <div class="p-4 bg-slate-950/70 border border-slate-800/80 rounded-2xl space-y-2">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 font-bold text-xs flex items-center justify-center" x-text="r.studentName ? r.studentName.charAt(0).toUpperCase() : 'S'"></div>
-                      <div>
-                        <h6 class="font-bold text-xs text-white" x-text="r.studentName || 'NIT Student'"></h6>
-                        <p class="text-[10px] text-slate-400" x-text="r.menuItemName ? (r.menuItemName + (r.vendorName ? ' @ ' + r.vendorName : '')) : 'General Feedback'"></p>
-                      </div>
-                    </div>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30" x-text="'★ ' + r.rating"></span>
-                  </div>
-                  <p class="text-xs text-slate-300 italic" x-text="'“' + (r.comment || 'Great taste!') + '”'"></p>
-                </div>
-              </template>
-            </div>
-          </div>
-
         </div>
       </main>
+
+      <!-- ➕ Modal: Add New Stall -->
+      <div
+        x-show="showAddStallModal"
+        x-transition
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+        @click.self="showAddStallModal = false"
+      >
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 border border-nitkkr-orange/30 shadow-2xl">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="font-display text-lg font-bold text-nitkkr-dark">🏪 Add New Campus Food Stall</h3>
+            <button @click="showAddStallModal = false" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">✕</button>
+          </div>
+
+          <form @submit.prevent="createStall()" class="space-y-4">
+            <div>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Stall Name *</label>
+              <input type="text" x-model="newStall.name" required placeholder="e.g. Night Canteen H-7" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Phone Number</label>
+                <input type="text" x-model="newStall.phone" placeholder="+91 98765 43210" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">WhatsApp Number</label>
+                <input type="text" x-model="newStall.whatsapp" placeholder="919876543210" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Campus Location / Address</label>
+              <input type="text" x-model="newStall.address" placeholder="e.g. Near Gate 1 / Market Complex" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Opens At</label>
+                <input type="time" x-model="newStall.opensAt" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Closes At</label>
+                <input type="time" x-model="newStall.closesAt" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <button type="button" @click="showAddStallModal = false" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Cancel</button>
+              <button type="submit" :disabled="savingStall" class="px-6 py-2.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white rounded-xl text-xs font-bold shadow-sm">
+                <span x-show="!savingStall">Create Stall</span>
+                <span x-show="savingStall">Saving...</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ➕ Modal: Add New Dish -->
+      <div
+        x-show="showAddDishModal"
+        x-transition
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+        @click.self="showAddDishModal = false"
+      >
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 border border-nitkkr-orange/30 shadow-2xl">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="font-display text-lg font-bold text-nitkkr-dark">🍱 Add New Dish to Menu</h3>
+            <button @click="showAddDishModal = false" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">✕</button>
+          </div>
+
+          <form @submit.prevent="createDish()" class="space-y-4">
+            <div>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Select Stall *</label>
+              <select x-model="newDish.vendorId" required class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
+                <option value="">-- Choose Food Stall --</option>
+                <template x-for="v in vendors" :key="v.id">
+                  <option :value="v.id" x-text="v.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Dish Name *</label>
+                <input type="text" x-model="newDish.name" required placeholder="e.g. Cheese Maggi" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Price (₹) *</label>
+                <input type="number" x-model="newDish.price" required placeholder="50" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4 pt-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="newDish.isVeg" class="rounded text-emerald-600">
+                <span class="text-xs font-bold text-emerald-700">🌱 Pure Veg</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="newDish.isAvailable" class="rounded text-nitkkr-orange">
+                <span class="text-xs font-bold text-nitkkr-dark">In Stock</span>
+              </label>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <button type="button" @click="showAddDishModal = false" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Cancel</button>
+              <button type="submit" :disabled="savingDish" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm">
+                <span x-show="!savingDish">Add Dish</span>
+                <span x-show="savingDish">Saving...</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
 
     </div>
   </section>

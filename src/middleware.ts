@@ -27,13 +27,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
       const token = match ? match[1] : (context.cookies.get('admin_session')?.value || null);
 
       if (!token) {
-        return context.redirect('/admin/login');
+        return Response.redirect(new URL('/admin/login', context.request.url).toString(), 302);
       }
 
       const session = await verifySessionToken(token);
       if (!session) {
-        return context.redirect('/admin/login');
+        return Response.redirect(new URL('/admin/login', context.request.url).toString(), 302);
       }
+
 
       // Add user info to locals for use in components
       context.locals.admin = session;
