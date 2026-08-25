@@ -80,3 +80,36 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 };
+
+export const DELETE: APIRoute = async ({ request, url }) => {
+  if (!await isAuthenticated(request)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    const key = url.searchParams.get('key');
+    if (!key) {
+      return new Response(JSON.stringify({ error: 'Key required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const db = getDb();
+    await db.delete(schema.siteSettings).where(eq(schema.siteSettings.key, key));
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Delete setting error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to delete setting' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};

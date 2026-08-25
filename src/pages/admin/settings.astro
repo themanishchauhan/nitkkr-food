@@ -3,157 +3,384 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { getAllSiteSettings } from '../../lib/queries';
 
-const settings = await getAllSiteSettings();
-const settingsObj = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+const initialSettings = await getAllSiteSettings();
+const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 ---
 
-<Layout title="Site Settings - NITKKR Food Admin">
-  <section class="min-h-screen bg-nitkkr-cream">
-    <div x-data="settingsPage()" x-init="loadSettings()" class="min-h-screen bg-nitkkr-cream">
-      <div class="max-w-3xl mx-auto px-4 py-8">
-        <div class="flex items-center justify-between mb-8">
+<Layout title="Website Settings Management - NITKKR Food Admin">
+  <section class="min-h-screen bg-nitkkr-cream pb-16">
+    <div
+      x-data="{
+        settings: {},
+        customKey: '',
+        customValue: '',
+        search: '',
+        activeTab: 'general',
+        saving: false,
+        message: '',
+        async init() {
+          await this.loadSettings();
+        },
+        async loadSettings() {
+          try {
+            const res = await fetch('/api/admin/settings');
+            if (res.ok) {
+              const data = await res.json();
+              this.settings = data.settings || {};
+            }
+          } catch (e) {
+            console.error('Failed to load settings:', e);
+          }
+        },
+        async saveSingleSetting(key, value) {
+          try {
+            const res = await fetch('/api/admin/settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ key, value: String(value) })
+            });
+            if (res.ok) {
+              this.settings[key] = value;
+              this.showToast('✅ Saved ' + key);
+            } else {
+              this.showToast('❌ Failed to save ' + key);
+            }
+          } catch (e) {
+            this.showToast('❌ Error saving setting');
+          }
+        },
+        async saveAllSettings() {
+          this.saving = true;
+          try {
+            for (const [key, value] of Object.entries(this.settings)) {
+              await fetch('/api/admin/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value: String(value ?? '') })
+              });
+            }
+            this.showToast('🎉 All website settings saved successfully!');
+          } catch (err) {
+            this.showToast('❌ Failed to save settings');
+          } finally {
+            this.saving = false;
+          }
+        },
+        async addCustomSetting() {
+          if (!this.customKey.trim()) {
+            this.showToast('❌ Setting key name is required');
+            return;
+          }
+          const formattedKey = this.customKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+          await this.saveSingleSetting(formattedKey, this.customValue);
+          this.customKey = '';
+          this.customValue = '';
+          await this.loadSettings();
+        },
+        async deleteSetting(key) {
+          if (!confirm('Are you sure you want to delete the setting: ' + key + '?')) return;
+          try {
+            const res = await fetch('/api/admin/settings?key=' + encodeURIComponent(key), {
+              method: 'DELETE'
+            });
+            if (res.ok) {
+              delete this.settings[key];
+              this.showToast('🗑️ Deleted ' + key);
+              await this.loadSettings();
+            } else {
+              this.showToast('❌ Failed to delete');
+            }
+          } catch (e) {
+            this.showToast('❌ Network error');
+          }
+        },
+        showToast(msg) {
+          this.message = msg;
+          setTimeout(() => { this.message = ''; }, 3500);
+        },
+        get customSettingsList() {
+          const standardKeys = [
+            'homepage_title', 'homepage_tagline', 'contact_email', 'support_whatsapp',
+            'announcement_banner_enabled', 'announcement_banner_text', 'announcement_banner_type',
+            'ordering_enabled', 'maintenance_message', 'meta_description', 'meta_keywords',
+            'instagram_url', 'whatsapp_channel_url', 'pwa_banner_enabled', 'whatsapp_msg_template'
+          ];
+          return Object.entries(this.settings).filter(([k]) => {
+            const isStandard = standardKeys.includes(k);
+            const matchesSearch = !this.search || k.toLowerCase().includes(this.search.toLowerCase()) || String(this.settings[k] || '').toLowerCase().includes(this.search.toLowerCase());
+            return !isStandard && matchesSearch;
+          });
+        }
+      }"
+      x-init="init()"
+      class="max-w-4xl mx-auto px-4 py-8"
+    >
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <a href="/admin" class="text-xs text-nitkkr-gray hover:text-nitkkr-orange mb-1 inline-block">← Back to Dashboard</a>
+          <h1 class="font-display text-3xl font-bold text-nitkkr-dark flex items-center gap-2">
+            <span>⚙️</span> Website Control Center
+          </h1>
+          <p class="text-xs text-nitkkr-gray mt-0.5">Manage live website configuration, announcements, branding, and custom parameters</p>
+        </div>
+
+        <button
+          @click="saveAllSettings()"
+          :disabled="saving"
+          class="px-5 py-2.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+        >
+          <span x-text="saving ? 'Saving...' : '💾 Save All Changes'"></span>
+        </button>
+      </div>
+
+      <!-- Live Toast Alert -->
+      <div
+        x-show="message"
+        x-cloak
+        x-transition
+        class="fixed top-5 right-5 z-50 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 text-sm font-semibold flex items-center gap-2"
+      >
+        <span x-text="message"></span>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex border-b border-nitkkr-orange/20 mb-6 gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          @click="activeTab = 'general'"
+          :class="activeTab === 'general' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
+          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
+        >
+          <span>🏠</span> General & Branding
+        </button>
+        <button
+          @click="activeTab = 'announcements'"
+          :class="activeTab === 'announcements' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
+          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
+        >
+          <span>📢</span> Banners & Alerts
+        </button>
+        <button
+          @click="activeTab = 'ordering'"
+          :class="activeTab === 'ordering' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
+          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
+        >
+          <span>🛍️</span> Ordering & WhatsApp
+        </button>
+        <button
+          @click="activeTab = 'custom'"
+          :class="activeTab === 'custom' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
+          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
+        >
+          <span>🎛️</span> Custom Settings CRUD
+        </button>
+      </div>
+
+      <!-- TAB 1: GENERAL & BRANDING -->
+      <div x-show="activeTab === 'general'" class="space-y-5">
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+            <span>✨</span> Homepage Hero
+          </h2>
           <div>
-            <a href="/admin" class="text-xs text-nitkkr-gray hover:text-nitkkr-orange mb-1 inline-block">← Back to Dashboard</a>
-            <h1 class="font-display text-3xl font-bold text-nitkkr-dark flex items-center gap-2">
-              <span>⚙️</span> Site Settings
-            </h1>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Homepage Headline</label>
+            <input type="text" x-model="settings.homepage_title" placeholder="Hungry? We got you. 🍜" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Sub-tagline</label>
+            <input type="text" x-model="settings.homepage_tagline" placeholder="Search 20+ food stalls around NIT Kurukshetra" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
           </div>
         </div>
 
-        <div class="space-y-6">
-          <!-- Homepage Settings -->
-          <div class="card p-6 bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm">
-            <h2 class="font-display font-bold text-lg text-nitkkr-dark mb-4 flex items-center gap-2">
-              <span>🏠</span> Homepage Settings
-            </h2>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Homepage Title</label>
-                <input type="text" x-model="settings.homepage_title" placeholder="Hungry? We got you." class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Homepage Tagline</label>
-                <input type="text" x-model="settings.homepage_tagline" placeholder="Search 20+ food stalls around NITKKR" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-              </div>
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+            <span>🔍</span> SEO & Contact
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Support Email</label>
+              <input type="email" x-model="settings.contact_email" placeholder="contact@nitkkr-food.com" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Support WhatsApp</label>
+              <input type="tel" x-model="settings.support_whatsapp" placeholder="+91 98765 43210" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
             </div>
           </div>
-
-          <!-- Contact Settings -->
-          <div class="card p-6 bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm">
-            <h2 class="font-display font-bold text-lg text-nitkkr-dark mb-4 flex items-center gap-2">
-              <span>📧</span> Contact & SEO
-            </h2>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Contact Email</label>
-                <input type="email" x-model="settings.contact_email" placeholder="admin@nitkkr-food.com" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Meta Description</label>
-                <textarea x-model="settings.meta_description" rows="3" placeholder="Find food around NIT Kurukshetra instantly" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange resize-none"></textarea>
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Meta Keywords</label>
-                <input type="text" x-model="settings.meta_keywords" placeholder="food, NITKKR, campus food, hostel food, delivery" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Social Links -->
-          <div class="card p-6 bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm">
-            <h2 class="font-display font-bold text-lg text-nitkkr-dark mb-4 flex items-center gap-2">
-              <span>🔗</span> Social Links
-            </h2>
-            <div class="space-y-4">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Facebook URL</label>
-                  <input type="url" x-model="settings.facebook_url" placeholder="https://facebook.com/nitkkrfood" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Instagram URL</label>
-                  <input type="url" x-model="settings.instagram_url" placeholder="https://instagram.com/nitkkrfood" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Twitter/X URL</label>
-                  <input type="url" x-model="settings.twitter_url" placeholder="https://x.com/nitkkrfood" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-nitkkr-dark mb-1">WhatsApp Number</label>
-                  <input type="tel" x-model="settings.whatsapp_number" placeholder="+91 98765 43210" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Save Button -->
-          <div class="flex justify-end pt-4">
-            <button @click="saveSettings()" :disabled="saving" class="px-6 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-sm rounded-xl transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              <span x-show="!saving">Save All Settings</span>
-              <span x-show="saving">Saving...</span>
-            </button>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Meta Description (SEO)</label>
+            <textarea x-model="settings.meta_description" rows="2" placeholder="Find food around NIT Kurukshetra instantly. Browse 20+ campus stalls, menus, prices..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors resize-none"></textarea>
           </div>
         </div>
       </div>
 
-      <script is:inline>
-        function settingsPage() {
-          return {
-            settings: {
-              homepage_title: '',
-              homepage_tagline: '',
-              contact_email: '',
-              meta_description: '',
-              meta_keywords: '',
-              facebook_url: '',
-              instagram_url: '',
-              twitter_url: '',
-              whatsapp_number: '',
-            },
-            saving: false,
+      <!-- TAB 2: BANNERS & ANNOUNCEMENTS -->
+      <div x-show="activeTab === 'announcements'" class="space-y-5">
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+                <span>📢</span> Campus Live Alert Banner
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">Show an urgent campus broadcast at the top of the homepage</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="settings.announcement_banner_enabled" value="true" class="sr-only peer" />
+              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
 
-            async init() {
-              await this.loadSettings();
-            },
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Banner Announcement Text</label>
+            <input type="text" x-model="settings.announcement_banner_text" placeholder="🎉 Special Fest Discount: Get 10% off at Momo Corner today!" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
+          </div>
 
-            async loadSettings() {
-              try {
-                const res = await fetch('/api/admin/settings');
-                if (res.ok) {
-                  const data = await res.json();
-                  this.settings = data.settings || {};
-                }
-              } catch (e) {
-                console.error('Failed to load settings:', e);
-              }
-            },
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Banner Theme Style</label>
+            <select x-model="settings.announcement_banner_type" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-nitkkr-orange">
+              <option value="info">🔵 Info / Announcement (Blue)</option>
+              <option value="offer">🎉 Offer / Discount (Orange/Amber)</option>
+              <option value="warning">⚠️ Notice / Weather Alert (Yellow)</option>
+              <option value="danger">🚨 Urgent / Stall Closed (Red)</option>
+            </select>
+          </div>
+        </div>
 
-            async saveSettings() {
-              this.saving = true;
-              try {
-                for (const [key, value] of Object.entries(this.settings)) {
-                  const res = await fetch('/api/admin/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key, value })
-                  });
-                  if (!res.ok) {
-                    const data = await res.json();
-                    alert(data.error || 'Failed to save ' + key);
-                    return;
-                  }
-                }
-                alert('✅ All settings saved successfully!');
-              } catch (err) {
-                console.error('Save settings error:', err);
-                alert('Failed to save settings');
-              } finally {
-                this.saving = false;
-              }
-            }
-          };
-        }
-      </script>
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+            <span>🔗</span> Social & Community Channels
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Instagram URL</label>
+              <input type="url" x-model="settings.instagram_url" placeholder="https://instagram.com/nitkkr_food" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">WhatsApp Channel / Group Link</label>
+              <input type="url" x-model="settings.whatsapp_channel_url" placeholder="https://chat.whatsapp.com/..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: ORDERING & WHATSAPP CONFIG -->
+      <div x-show="activeTab === 'ordering'" class="space-y-5">
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+                <span>🛍️</span> Campus Ordering Status
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">Toggle overall platform ordering state</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="settings.ordering_enabled" value="true" class="sr-only peer" />
+              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Maintenance / Off-Peak Notice (Shown when ordering disabled)</label>
+            <input type="text" x-model="settings.maintenance_message" placeholder="Ordering is temporarily paused for campus break. Stalls reopen tomorrow at 8 AM." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+            <span>💬</span> WhatsApp Order Template
+          </h2>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Pre-filled WhatsApp Message Template</label>
+            <textarea x-model="settings.whatsapp_msg_template" rows="2" placeholder="Hi {stall_name}! I would like to order from NITKKR Food." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors resize-none"></textarea>
+            <span class="text-[10px] text-slate-400 mt-1 block">Students will send this initial greeting to stall owners with 1 tap.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: DYNAMIC CUSTOM SETTINGS CRUD -->
+      <div x-show="activeTab === 'custom'" class="space-y-5">
+        <!-- Add New Setting Card -->
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6">
+          <h2 class="font-display font-bold text-base text-nitkkr-dark mb-3 flex items-center gap-2">
+            <span>➕</span> Add Custom Setting Key-Value
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Key Name (e.g. delivery_note, festival_tag)</label>
+              <input type="text" x-model="customKey" placeholder="e.g. night_delivery_charges" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Setting Value</label>
+              <input type="text" x-model="customValue" placeholder="e.g. ₹10 after 11 PM" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button
+              type="button"
+              @click="addCustomSetting()"
+              class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+            >
+              <span>💾</span> Save Custom Setting
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Settings Table / List -->
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+                <span>🗄️</span> All Custom Setting Keys ({customSettingsList.length})
+              </h3>
+              <p class="text-xs text-slate-500">Manage and edit dynamic database parameters</p>
+            </div>
+            <input
+              type="text"
+              x-model="search"
+              placeholder="Search keys..."
+              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange"
+            />
+          </div>
+
+          <template x-if="customSettingsList.length === 0">
+            <div class="text-center py-8 text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              No custom setting keys created yet. Use the form above to add one!
+            </div>
+          </template>
+
+          <div class="space-y-2.5">
+            <template x-for="[k, v] in customSettingsList" :key="k">
+              <div class="p-3.5 bg-slate-50/80 hover:bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
+                <div class="min-w-0 flex-1">
+                  <span class="font-mono text-xs font-bold text-nitkkr-orange block truncate" x-text="k"></span>
+                  <input
+                    type="text"
+                    x-model="settings[k]"
+                    @change="saveSingleSetting(k, settings[k])"
+                    class="mt-1 w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-nitkkr-orange"
+                  />
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    @click="saveSingleSetting(k, settings[k])"
+                    class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    @click="deleteSetting(k)"
+                    class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 </Layout>
