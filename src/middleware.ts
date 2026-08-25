@@ -2,6 +2,15 @@ import { defineMiddleware } from 'astro:middleware';
 import { verifySessionToken } from './lib/auth';
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  // Capture Cloudflare Workers runtime environment and store DB globally for queries
+  const cfEnv = (context.locals as any)?.runtime?.env;
+  if (cfEnv) {
+    (globalThis as any).__CF_ENV__ = cfEnv;
+    if (cfEnv.DB) {
+      (globalThis as any).DB = cfEnv.DB;
+    }
+  }
+
   const url = new URL(context.request.url);
   const path = url.pathname.replace(/\/$/, '') || '/';
 
@@ -9,6 +18,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (path === '/ops-manish-770' || path === '/admin/login' || path.startsWith('/api/admin/auth')) {
     return next();
   }
+
 
   // 2. Protect all /admin UI pages
   if (path.startsWith('/admin')) {

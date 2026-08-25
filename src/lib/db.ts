@@ -18,12 +18,14 @@ export function createDb(env?: { DB?: D1Database; DATABASE_URL?: string }): Data
   // Check for Cloudflare D1 binding (production)
   const d1 = env?.DB || 
              (globalThis as any).DB || 
+             (globalThis as any).__CF_ENV__?.DB ||
              (globalThis as any).env?.DB || 
              (globalThis as any).__cf_env?.DB;
 
   if (d1 && typeof d1.prepare === 'function') {
     return drizzleD1(d1, { schema });
   }
+
 
   // Fallback to libSQL for local development
   try {
