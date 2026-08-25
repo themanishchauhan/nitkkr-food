@@ -4,427 +4,11 @@ import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
 ---
 
-<Layout title="Website Settings Management - NITKKR Food Admin" description="Control live hero text, announcement banners, ads, sponsors, and footer branding">
+<Layout title="Website Control Center - NITKKR Food Admin" description="Manage hero text, banners, ads, ordering controls, and global settings">
   <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
+    
     <div
-      x-data="settingsManager()"
-      class="flex-1 flex flex-col lg:flex-row min-h-screen"
-    >
-
-
-      <!-- Shared Sidebar Component -->
-      <AdminSidebar currentPath="/admin/settings" />
-
-      <!-- Main Content Area -->
-      <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-6xl">
-        <div class="space-y-8">
-
-        <!-- Header -->
-        <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-[11px] font-bold mb-2">
-              <span>⚙️</span> Global Configuration
-            </div>
-            <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-nitkkr-dark">
-              Website Control Center
-            </h1>
-            <p class="text-xs sm:text-sm text-nitkkr-gray mt-1">
-              Control live hero text, announcement banners, ads/sponsors, footer & content
-            </p>
-          </div>
-
-          <button
-            @click="saveAllSettings()"
-            :disabled="saving"
-            class="px-6 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-2xl shadow-md shadow-nitkkr-orange/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-          >
-            <span x-text="saving ? 'Saving...' : '💾 Save All Changes'"></span>
-          </button>
-        </div>
-
-
-      <!-- Live Toast Alert -->
-      <div
-        x-show="message"
-        x-cloak
-        x-transition
-        class="fixed top-5 right-5 z-50 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 text-sm font-semibold flex items-center gap-2"
-      >
-        <span x-text="message"></span>
-      </div>
-
-      <!-- Navigation Tabs -->
-      <div class="flex border-b border-nitkkr-orange/20 mb-6 gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <button
-          @click="activeTab = 'general'"
-          :class="activeTab === 'general' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
-        >
-          <span>🏠</span> General & Hero
-        </button>
-        <button
-          @click="activeTab = 'announcements'"
-          :class="activeTab === 'announcements' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
-        >
-          <span>📢</span> Live Banners
-        </button>
-        <button
-          @click="activeTab = 'ads'"
-          :class="activeTab === 'ads' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
-        >
-          <span>⚡</span> Ads & Sponsors
-        </button>
-        <button
-          @click="activeTab = 'ordering'"
-          :class="activeTab === 'ordering' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
-        >
-          <span>🛍️</span> Ordering & WhatsApp
-        </button>
-        <button
-          @click="activeTab = 'footer'"
-          :class="activeTab === 'footer' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
-        >
-          <span>🦶</span> Footer Customization
-        </button>
-        <button
-          @click="activeTab = 'pages'"
-          :class="activeTab === 'pages' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
-        >
-          <span>📄</span> Page Content & FAQs
-        </button>
-        <button
-          @click="activeTab = 'custom'"
-          :class="activeTab === 'custom' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
-        >
-          <span>🎛️</span> Custom CRUD
-        </button>
-      </div>
-
-      <!-- TAB 1: GENERAL & HERO -->
-      <div x-show="activeTab === 'general'" class="space-y-5">
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>✨</span> Homepage Hero Headline & Subtitle
-          </h2>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Hero Main Title (Large Text)</label>
-            <input type="text" x-model="settings.homepage_title" placeholder="Hungry? We got you. 🍜" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Hero Subtitle</label>
-            <input type="text" x-model="settings.homepage_tagline" placeholder="Search 20+ food stalls around NIT Kurukshetra" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>🔍</span> SEO & Meta Tags
-          </h2>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Meta Description (Shown on Google & WhatsApp share previews)</label>
-            <textarea x-model="settings.meta_description" rows="2" placeholder="Search 20+ food stalls around NIT Kurukshetra. View menus, prices, and order via WhatsApp..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors resize-none"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 2: LIVE BANNERS & ANNOUNCEMENTS -->
-      <div x-show="activeTab === 'announcements'" class="space-y-5">
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-                <span>📢</span> Campus Live Alert Banner
-              </h2>
-              <p class="text-xs text-slate-500 mt-0.5">Show an urgent campus broadcast at the top of the homepage</p>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" x-model="settings.announcement_banner_enabled" :checked="settings.announcement_banner_enabled === 'true'" @change="settings.announcement_banner_enabled = $el.checked ? 'true' : 'false'" class="sr-only peer" />
-              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Banner Announcement Text</label>
-            <input type="text" x-model="settings.announcement_banner_text" placeholder="🎉 Special Fest Discount: Get 10% off at Momo Corner today!" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Banner Theme Style</label>
-            <select x-model="settings.announcement_banner_type" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-nitkkr-orange">
-              <option value="info">🔵 Info / Announcement (Blue)</option>
-              <option value="offer">🎉 Offer / Discount (Orange/Amber)</option>
-              <option value="warning">⚠️ Notice / Weather Alert (Yellow)</option>
-              <option value="danger">🚨 Urgent / Stall Closed (Red)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 3: ADS & SPONSOR CARDS -->
-      <div x-show="activeTab === 'ads'" class="space-y-5">
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-                <span>⚡</span> In-Feed Ad & Sponsor Card
-              </h2>
-              <p class="text-xs text-slate-500 mt-0.5">Display promotional banners between categories and stall menus</p>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" x-model="settings.ad_banner_enabled" :checked="settings.ad_banner_enabled === 'true'" @change="settings.ad_banner_enabled = $el.checked ? 'true' : 'false'" class="sr-only peer" />
-              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Badge Tag (e.g. SPONSORED, 15% OFF)</label>
-              <input type="text" x-model="settings.ad_banner_badge" placeholder="⚡ SPONSORED DEAL" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Sponsor / Brand Title</label>
-              <input type="text" x-model="settings.ad_banner_title" placeholder="Kurukshetra Protein & Shake Hub" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Ad Description / Offer Details</label>
-            <textarea x-model="settings.ad_banner_description" rows="2" placeholder="15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange resize-none"></textarea>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Button CTA Text</label>
-              <input type="text" x-model="settings.ad_banner_cta" placeholder="Claim Offer 💬" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Target URL / WhatsApp Link</label>
-              <input type="text" x-model="settings.ad_banner_link" placeholder="https://wa.me/919876543210" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Banner Photo / Logo URL</label>
-            <input type="text" x-model="settings.ad_banner_image" placeholder="https://images.unsplash.com/..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
-          </div>
-
-          <!-- Live Ad Preview -->
-          <div class="pt-4 border-t border-slate-100">
-            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">👁️ Live Ad Preview (How students will see it):</span>
-            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 p-0.5 shadow-md">
-              <div class="bg-gradient-to-br from-slate-900 to-slate-950 rounded-[14px] p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="flex items-center gap-3 min-w-0">
-                  <template x-if="settings.ad_banner_image">
-                    <img :src="settings.ad_banner_image" class="w-12 h-12 rounded-xl object-cover border border-white/20 flex-shrink-0" />
-                  </template>
-                  <template x-if="!settings.ad_banner_image">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-xl flex-shrink-0">🔥</div>
-                  </template>
-                  <div class="min-w-0">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30 inline-block mb-0.5" x-text="settings.ad_banner_badge || 'SPONSORED'"></span>
-                    <h4 class="font-display font-bold text-sm text-white truncate" x-text="settings.ad_banner_title || 'Sponsor Headline'"></h4>
-                    <p class="text-xs text-slate-300 truncate" x-text="settings.ad_banner_description || 'Special promo message'"></p>
-                  </div>
-                </div>
-                <div class="flex-shrink-0">
-                  <span class="inline-flex items-center gap-1 px-3.5 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black text-xs rounded-xl shadow-xs" x-text="settings.ad_banner_cta || 'Claim Offer →'"></span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 4: ORDERING & WHATSAPP CONFIG -->
-      <div x-show="activeTab === 'ordering'" class="space-y-5">
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-                <span>🛍️</span> Campus Ordering Status
-              </h2>
-              <p class="text-xs text-slate-500 mt-0.5">Toggle overall platform ordering state</p>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" x-model="settings.ordering_enabled" :checked="settings.ordering_enabled === 'true'" @change="settings.ordering_enabled = $el.checked ? 'true' : 'false'" class="sr-only peer" />
-              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Maintenance / Off-Peak Notice (Shown when ordering disabled)</label>
-            <input type="text" x-model="settings.maintenance_message" placeholder="Ordering is temporarily paused for campus break. Stalls reopen tomorrow at 8 AM." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>💬</span> WhatsApp Order Template
-          </h2>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Pre-filled WhatsApp Message Template</label>
-            <textarea x-model="settings.whatsapp_msg_template" rows="2" placeholder="Hi [stall_name]! I would like to order from NITKKR Food." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors resize-none"></textarea>
-            <span class="text-[10px] text-slate-400 mt-1 block">Students will send this initial greeting to stall owners with 1 tap.</span>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 5: FOOTER CUSTOMIZATION -->
-      <div x-show="activeTab === 'footer'" class="space-y-5">
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>🦶</span> Footer Text Controls
-          </h2>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Footer Sub-Headline / Tagline</label>
-            <input type="text" x-model="settings.footer_tagline" placeholder="Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Bottom Disclaimer / Note</label>
-            <input type="text" x-model="settings.footer_custom_note" placeholder="Zero Commissions • Direct Vendor Connect" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Copyright Line</label>
-            <input type="text" x-model="settings.footer_copyright" placeholder="Built with ❤️ for NIT Kurukshetra students" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 6: PAGES & LEGAL CONTENT EDITOR -->
-      <div x-show="activeTab === 'pages'" class="space-y-5">
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>📜</span> Terms & Conditions Page Content
-          </h2>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Custom Terms & Conditions Text / Notice</label>
-            <textarea x-model="settings.terms_custom_text" rows="4" placeholder="Enter custom terms, platform guidelines, or policies..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors"></textarea>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>🔒</span> Privacy Policy Custom Guidelines
-          </h2>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Custom Privacy Notice</label>
-            <textarea x-model="settings.privacy_custom_text" rows="4" placeholder="Enter privacy assurances, student data safety policies..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors"></textarea>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>ℹ️</span> About Us Story & Mission
-          </h2>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Custom About Story</label>
-            <textarea x-model="settings.about_custom_text" rows="4" placeholder="Tell students about the NITKKR food platform origin and mission..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 7: DYNAMIC CUSTOM SETTINGS CRUD -->
-      <div x-show="activeTab === 'custom'" class="space-y-5">
-        <!-- Add New Setting Card -->
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6">
-          <h2 class="font-display font-bold text-base text-nitkkr-dark mb-3 flex items-center gap-2">
-            <span>➕</span> Add Custom Setting Key-Value
-          </h2>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Key Name (e.g. delivery_note, festival_tag)</label>
-              <input type="text" x-model="customKey" placeholder="e.g. night_delivery_charges" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Setting Value</label>
-              <input type="text" x-model="customValue" placeholder="e.g. ₹10 after 11 PM" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
-            </div>
-          </div>
-          <div class="mt-4 flex justify-end">
-            <button
-              type="button"
-              @click="addCustomSetting()"
-              class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-            >
-              <span>💾</span> Save Custom Setting
-            </button>
-          </div>
-        </div>
-
-        <!-- Custom Settings Table / List -->
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h3 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-                <span>🗄️</span> All Custom Setting Keys (<span x-text="customSettingsList.length"></span>)
-              </h3>
-
-              <p class="text-xs text-slate-500">Manage and edit dynamic database parameters</p>
-            </div>
-            <input
-              type="text"
-              x-model="search"
-              placeholder="Search keys..."
-              class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange"
-            />
-          </div>
-
-          <template x-if="customSettingsList.length === 0">
-            <div class="text-center py-8 text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
-              No custom setting keys created yet. Use the form above to add one!
-            </div>
-          </template>
-
-          <div class="space-y-2.5">
-            <template x-for="[k, v] in customSettingsList" :key="k">
-              <div class="p-3.5 bg-slate-50/80 hover:bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
-                <div class="min-w-0 flex-1">
-                  <span class="font-mono text-xs font-bold text-nitkkr-orange block truncate" x-text="k"></span>
-                  <input
-                    type="text"
-                    x-model="settings[k]"
-                    @change="saveSingleSetting(k, settings[k])"
-                    class="mt-1 w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-nitkkr-orange"
-                  />
-                </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    type="button"
-                    @click="saveSingleSetting(k, settings[k])"
-                    class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    @click="deleteSetting(k)"
-                    class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </template>
-          </div>
-        </div>
-      </div>
-      </div>
-      </main>
-
-    </div>
-  </section>
-
-  <script is:inline>
-    function settingsManager() {
-      return {
+      x-data="{
         sidebarOpen: false,
         vendors: [],
         categories: [],
@@ -446,7 +30,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           ad_banner_link: 'https://wa.me/919876543210?text=Hi!%20I%20want%20to%20claim%20the%20NIT%20student%20discount.',
           ordering_enabled: 'true',
           maintenance_message: 'Ordering is temporarily paused for campus break. Stalls reopen tomorrow at 8 AM.',
-          whatsapp_msg_template: 'Hi [stall_name]! I would like to order from NITKKR Food.',
+          whatsapp_msg_template: 'Hi stall_name! I would like to order from NITKKR Food.',
           footer_tagline: 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.',
           footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
           footer_copyright: 'Built with ❤️ for NIT Kurukshetra students',
@@ -454,38 +38,42 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           privacy_custom_text: '',
           about_custom_text: ''
         },
+        activeTab: 'general',
         customKey: '',
         customValue: '',
         search: '',
-        activeTab: 'general',
         saving: false,
-        message: '',
+        toastMsg: '',
 
         async init() {
-          await this.loadSettings();
+          await this.loadAll();
+        },
+
+        showToast(msg) {
+          this.toastMsg = msg;
+          setTimeout(() => { this.toastMsg = ''; }, 3500);
+        },
+
+        async loadAll() {
           try {
-            const [vRes, cRes, mRes, rRes] = await Promise.all([
+            const [sRes, vRes, cRes, mRes, rRes] = await Promise.all([
+              fetch('/api/admin/settings').catch(() => null),
               fetch('/api/admin/vendors').catch(() => null),
               fetch('/api/admin/categories').catch(() => null),
               fetch('/api/admin/menu').catch(() => null),
               fetch('/api/admin/reviews').catch(() => null)
             ]);
+
+            if (sRes && sRes.ok) {
+              const d = await sRes.json();
+              this.settings = Object.assign({}, this.settings, d.settings || {});
+            }
             if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
             if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
             if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
             if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
-          } catch(e) {}
-        },
-
-        async loadSettings() {
-          try {
-            const res = await fetch('/api/admin/settings');
-            if (res.ok) {
-              const data = await res.json();
-              this.settings = Object.assign({}, this.settings, data.settings || {});
-            }
           } catch (e) {
-            console.error('Failed to load settings:', e);
+            console.error('Load error', e);
           }
         },
 
@@ -536,7 +124,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           await this.saveSingleSetting(formattedKey, this.customValue);
           this.customKey = '';
           this.customValue = '';
-          await this.loadSettings();
+          await this.loadAll();
         },
 
         async deleteSetting(key) {
@@ -548,7 +136,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             if (res.ok) {
               delete this.settings[key];
               this.showToast('🗑️ Deleted ' + key);
-              await this.loadSettings();
+              await this.loadAll();
             } else {
               this.showToast('❌ Failed to delete');
             }
@@ -557,34 +145,282 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           }
         },
 
-        showToast(msg) {
-          this.message = msg;
-          setTimeout(() => { this.message = ''; }, 3500);
-        },
-
-        get customSettingsList() {
-          const standardKeys = [
-            'homepage_title', 'homepage_tagline', 'contact_email', 'support_whatsapp',
-            'announcement_banner_enabled', 'announcement_banner_text', 'announcement_banner_type',
-            'ad_banner_enabled', 'ad_banner_badge', 'ad_banner_title', 'ad_banner_description', 'ad_banner_image', 'ad_banner_cta', 'ad_banner_link',
-            'ordering_enabled', 'maintenance_message', 'meta_description', 'meta_keywords',
-            'instagram_url', 'whatsapp_channel_url', 'pwa_banner_enabled', 'whatsapp_msg_template',
-            'terms_custom_text', 'privacy_custom_text', 'about_custom_text',
-            'footer_tagline', 'footer_custom_note', 'footer_copyright'
-          ];
-          return Object.entries(this.settings).filter(([k]) => {
-            const isStandard = standardKeys.includes(k);
-            const matchesSearch = !this.search || k.toLowerCase().includes(this.search.toLowerCase()) || String(this.settings[k] || '').toLowerCase().includes(this.search.toLowerCase());
-            return !isStandard && matchesSearch;
-          });
-        },
-
         async logout() {
           if (!confirm('Log out from Founder Panel?')) return;
           await fetch('/api/admin/auth', { method: 'DELETE' });
           window.location.href = '/';
         }
-      };
-    }
-  </script>
+      }"
+      x-init="init()"
+      class="flex-1 flex flex-col lg:flex-row min-h-screen"
+    >
+
+      <!-- Toast Notification -->
+      <div
+        x-show="toastMsg"
+        x-transition
+        class="fixed bottom-6 right-6 z-50 bg-nitkkr-dark text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-2 border border-nitkkr-orange/40"
+      >
+        <span class="text-base">🔔</span>
+        <span x-text="toastMsg"></span>
+      </div>
+
+      <!-- Shared Sidebar Component -->
+      <AdminSidebar currentPath="/admin/settings" />
+
+      <!-- Main Content Area -->
+      <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-6xl">
+        <div class="space-y-8">
+
+          <!-- Header -->
+          <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-[11px] font-bold mb-2">
+                <span>⚙️</span> Global Configuration & Live Customizer
+              </div>
+              <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-nitkkr-dark">
+                Website Control Center
+              </h1>
+              <p class="text-xs sm:text-sm text-nitkkr-gray mt-1">
+                Control live hero text, announcement banners, ads/sponsors, footer branding & dynamic parameters.
+              </p>
+            </div>
+
+            <button
+              @click="saveAllSettings()"
+              :disabled="saving"
+              class="px-6 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-2xl shadow-md shadow-nitkkr-orange/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+            >
+              <span x-text="saving ? 'Saving...' : '💾 Save All Changes'"></span>
+            </button>
+          </div>
+
+          <!-- Navigation Tabs -->
+          <div class="flex flex-wrap gap-2 pb-2">
+            <button
+              @click="activeTab = 'general'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="activeTab === 'general' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>🏠</span> General & Hero
+            </button>
+
+            <button
+              @click="activeTab = 'announcements'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="activeTab === 'announcements' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>📢</span> Live Banners
+            </button>
+
+            <button
+              @click="activeTab = 'ads'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="activeTab === 'ads' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>⚡</span> Ads & Sponsors
+            </button>
+
+            <button
+              @click="activeTab = 'ordering'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="activeTab === 'ordering' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>🛍️</span> Ordering & WhatsApp
+            </button>
+
+            <button
+              @click="activeTab = 'footer'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="activeTab === 'footer' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>🦶</span> Footer Branding
+            </button>
+
+            <button
+              @click="activeTab = 'custom'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="activeTab === 'custom' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>🎛️</span> Custom CRUD
+            </button>
+          </div>
+
+          <!-- TAB 1: GENERAL & HERO -->
+          <div x-show="activeTab === 'general'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div>
+              <h3 class="font-display text-lg font-bold text-nitkkr-dark">✨ Homepage Hero & SEO Meta</h3>
+              <p class="text-xs text-nitkkr-gray">Live title, subtitle, and search description shown across the platform</p>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Homepage Main Title (H1)</label>
+                <input type="text" x-model="settings.homepage_title" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Homepage Subtitle / Tagline</label>
+                <input type="text" x-model="settings.homepage_tagline" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Meta Description (SEO & WhatsApp previews)</label>
+                <textarea x-model="settings.meta_description" rows="2" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden leading-relaxed"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: LIVE BANNERS & ANNOUNCEMENTS -->
+          <div x-show="activeTab === 'announcements'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 class="font-display text-lg font-bold text-nitkkr-dark">📢 Campus Live Alert Banner</h3>
+                <p class="text-xs text-nitkkr-gray">Show an urgent campus broadcast at the top of the homepage</p>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="settings.announcement_banner_enabled" :checked="settings.announcement_banner_enabled === 'true'" @change="settings.announcement_banner_enabled = $el.checked ? 'true' : 'false'" class="rounded text-nitkkr-orange" />
+                <span class="text-xs font-bold text-nitkkr-dark">Show Banner</span>
+              </label>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Banner Announcement Text</label>
+                <input type="text" x-model="settings.announcement_banner_text" placeholder="e.g. Late Night Canteens open till 3:30 AM during exams!" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Banner Theme Style</label>
+                <select x-model="settings.announcement_banner_type" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
+                  <option value="info">🔵 Info / Announcement (Blue)</option>
+                  <option value="offer">🎉 Offer / Discount (Orange/Amber)</option>
+                  <option value="warning">⚠️ Notice / Weather Alert (Yellow)</option>
+                  <option value="danger">🚨 Urgent / Stall Closed (Red)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: ADS & SPONSORS -->
+          <div x-show="activeTab === 'ads'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 class="font-display text-lg font-bold text-nitkkr-dark">⚡ In-Feed Ad & Sponsor Card</h3>
+                <p class="text-xs text-nitkkr-gray">Display promotional sponsor cards between food stalls on the homepage</p>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="settings.ad_banner_enabled" :checked="settings.ad_banner_enabled === 'true'" @change="settings.ad_banner_enabled = $el.checked ? 'true' : 'false'" class="rounded text-nitkkr-orange" />
+                <span class="text-xs font-bold text-nitkkr-dark">Active Sponsor</span>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Badge Tag</label>
+                <input type="text" x-model="settings.ad_banner_badge" placeholder="⚡ SPONSORED DEAL" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Sponsor / Brand Title</label>
+                <input type="text" x-model="settings.ad_banner_title" placeholder="Kurukshetra Protein & Shake Hub" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Offer Description</label>
+                <input type="text" x-model="settings.ad_banner_description" placeholder="15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID." class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Button CTA Text</label>
+                <input type="text" x-model="settings.ad_banner_cta" placeholder="Claim Offer 💬" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Target WhatsApp / Link</label>
+                <input type="text" x-model="settings.ad_banner_link" placeholder="https://wa.me/919876543210" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Banner Image URL</label>
+                <input type="text" x-model="settings.ad_banner_image" placeholder="https://images.unsplash.com/..." class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: ORDERING & WHATSAPP -->
+          <div x-show="activeTab === 'ordering'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 class="font-display text-lg font-bold text-nitkkr-dark">🛍️ Campus Ordering Controls</h3>
+                <p class="text-xs text-nitkkr-gray">Toggle platform availability during campus breaks and set greeting messages</p>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="settings.ordering_enabled" :checked="settings.ordering_enabled === 'true'" @change="settings.ordering_enabled = $el.checked ? 'true' : 'false'" class="rounded text-emerald-600" />
+                <span class="text-xs font-bold text-emerald-700">Ordering Enabled</span>
+              </label>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Maintenance / Off-Peak Notice</label>
+                <input type="text" x-model="settings.maintenance_message" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Pre-filled WhatsApp Message Template</label>
+                <input type="text" x-model="settings.whatsapp_msg_template" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 5: FOOTER BRANDING -->
+          <div x-show="activeTab === 'footer'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div class="pb-3 border-b border-slate-100">
+              <h3 class="font-display text-lg font-bold text-nitkkr-dark">🦶 Footer Branding Controls</h3>
+              <p class="text-xs text-nitkkr-gray">Controls text displayed at the bottom of every page</p>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Footer Tagline</label>
+                <input type="text" x-model="settings.footer_tagline" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Footer Highlight Note</label>
+                <input type="text" x-model="settings.footer_custom_note" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Copyright Line</label>
+                <input type="text" x-model="settings.footer_copyright" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 6: CUSTOM CRUD -->
+          <div x-show="activeTab === 'custom'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div class="pb-3 border-b border-slate-100">
+              <h3 class="font-display text-lg font-bold text-nitkkr-dark">🎛️ Dynamic Parameter CRUD</h3>
+              <p class="text-xs text-nitkkr-gray">Add and modify custom database key-values directly</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Key Name</label>
+                <input type="text" x-model="customKey" placeholder="e.g. night_delivery_fee" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Value</label>
+                <input type="text" x-model="customValue" placeholder="e.g. ₹10" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div class="sm:col-span-2 flex justify-end">
+                <button @click="addCustomSetting()" class="px-5 py-2.5 bg-nitkkr-dark hover:bg-black text-white text-xs font-bold rounded-xl transition-all cursor-pointer">
+                  ➕ Save Key
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+  </section>
 </Layout>
