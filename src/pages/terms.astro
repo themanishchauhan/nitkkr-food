@@ -1,0 +1,54 @@
+---
+export const prerender = false;
+import Layout from '../layouts/Layout.astro';
+import { getAllSiteSettings } from '../lib/queries';
+
+const settings = await getAllSiteSettings();
+const settingsObj = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+const customTerms = settingsObj.terms_custom_text || '';
+---
+
+<Layout title="Terms & Conditions - NITKKR Food" description="Terms and conditions for using NITKKR Food campus directory.">
+  <section class="min-h-screen bg-nitkkr-cream py-12 px-4">
+    <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 border border-amber-200/80 shadow-sm space-y-6">
+      <div>
+        <a href="/" class="text-xs text-slate-500 hover:text-nitkkr-orange mb-2 inline-block font-semibold">← Back to Home</a>
+        <h1 class="font-display text-2xl sm:text-3xl font-bold text-nitkkr-dark">📜 Terms & Conditions</h1>
+        <p class="text-xs text-slate-500 mt-1">Last updated: August 2026</p>
+      </div>
+
+      {customTerms ? (
+        <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+          {customTerms}
+        </div>
+      ) : null}
+
+      <div class="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">1. Platform Nature</h2>
+          <p>NITKKR Food operates as an independent student-led digital food directory and menu aggregator for eateries and stalls around NIT Kurukshetra. We provide menu information, stall timings, and direct WhatsApp/Phone ordering connections.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">2. Food Orders & Payments</h2>
+          <p>All food preparation, packaging, pricing, delivery, and payment transactions happen directly between the customer (student) and the respective independent food vendor. NITKKR Food does not process payments or charge commission on orders.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">3. Menu Accuracy & Availability</h2>
+          <p>While stall owners strive to keep dish availability and prices up-to-date, real-time availability may vary during peak hostel hours. Please confirm exact dish availability directly with the stall owner via WhatsApp or Call.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">4. Community Reviews & Guidelines</h2>
+          <p>Student reviews must be authentic and respectful. Abusive, spam, or defamatory content will be moderated and removed by the campus admin team.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">5. Contact Us</h2>
+          <p>For questions or feedback regarding platform terms, reach out via our <a href="/contact" class="text-nitkkr-orange font-bold hover:underline">Contact page</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

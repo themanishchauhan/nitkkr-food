@@ -1,0 +1,54 @@
+---
+export const prerender = false;
+import Layout from '../layouts/Layout.astro';
+import { getAllSiteSettings } from '../lib/queries';
+
+const settings = await getAllSiteSettings();
+const settingsObj = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+const customPrivacy = settingsObj.privacy_custom_text || '';
+---
+
+<Layout title="Privacy Policy - NITKKR Food" description="Privacy policy and data protection guidelines for NITKKR Food.">
+  <section class="min-h-screen bg-nitkkr-cream py-12 px-4">
+    <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 border border-amber-200/80 shadow-sm space-y-6">
+      <div>
+        <a href="/" class="text-xs text-slate-500 hover:text-nitkkr-orange mb-2 inline-block font-semibold">← Back to Home</a>
+        <h1 class="font-display text-2xl sm:text-3xl font-bold text-nitkkr-dark">🔒 Privacy Policy</h1>
+        <p class="text-xs text-slate-500 mt-1">Last updated: August 2026</p>
+      </div>
+
+      {customPrivacy ? (
+        <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+          {customPrivacy}
+        </div>
+      ) : null}
+
+      <div class="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">1. Information We Collect</h2>
+          <p>We respect your privacy. When you browse NITKKR Food, no personal tracking or account registration is required. If you submit a review, we store the display name / hostel name and review text you voluntarily provide.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">2. Local Device Storage</h2>
+          <p>We use browser local storage solely to remember your preferred filter selections, PWA banner dismissal, and student name for quick review submission.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">3. WhatsApp & External Services</h2>
+          <p>When you click "Order on WhatsApp" or "Call", you transition directly to WhatsApp or your device's phone app. Your phone number is shared only with the vendor you choose to contact.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">4. Analytics & Security</h2>
+          <p>We utilize privacy-preserving, cookie-less server metrics to count page views and ensure website stability across campus.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">5. Data Inquiries</h2>
+          <p>If you would like a review removed, please reach out to us at our <a href="/contact" class="text-nitkkr-orange font-bold hover:underline">Contact page</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
