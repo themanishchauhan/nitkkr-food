@@ -2,6 +2,8 @@ import { drizzle as drizzleD1 } from 'drizzle-orm/d1';
 import type { D1Database } from '@cloudflare/workers-types';
 import * as schema from './schema';
 
+export { schema };
+
 /**
  * Creates a chainable Promise-like mock that resolves to an empty array
  * for any Drizzle query chain when D1 is uninitialized.
@@ -18,7 +20,6 @@ function createQueryProxy(result: any = []) {
       if (prop === 'finally') {
         return (cb: any) => Promise.resolve(result).finally(cb);
       }
-      // Any chained method call (e.g. .from(), .where(), .orderBy(), .limit(), .set(), .values())
       return (...args: any[]) => new Proxy({}, handler);
     }
   };
@@ -29,19 +30,26 @@ function createQueryProxy(result: any = []) {
  * Creates a Drizzle database instance from the provided environment.
  * Pure Cloudflare D1 Native without Node.js dependencies.
  */
-export function createDb(env?: { DB?: D1Database; DATABASE_URL?: string }): any {
-  // Check for Cloudflare D1 binding (production)
+export function createDb(env?: { DB?: D1Database; [key: string]: any }): any {
+  // Check for Cloudflare D1 binding
   const d1 = env?.DB || 
-             (globalThis as any).DB || 
-             (globalThis as any).__CF_ENV__?.DB ||
-             (globalThis as any).env?.DB || 
-             (globalThis as any).__cf_env?.DB;
+             (env as any)?.runtime?.env?.DB ||
+             (env as any)?.locals?.runtime?.env?.DB;
 
   if (d1 && typeof d1.prepare === 'function') {
     return drizzleD1(d1, { schema });
   }
 
-  // Pure in-memory safe mock database for environments where D1 is initializing
+  // Check globals safely without writing to them
+  const fallbackD1 = (globalThis as any).DB || 
+                     (globalThis as any).__CF_ENV__?.DB || 
+                     (globalThis as any).env?.DB;
+
+  if (fallbackD1 && typeof fallbackD1.prepare === 'function') {
+    return drizzleD1(fallbackD1, { schema });
+  }
+
+  // Pure in-memory safe mock database for local build/prerender steps
   return {
     select: (...args: any[]) => createQueryProxy([]),
     insert: (...args: any[]) => createQueryProxy([]),
@@ -51,24 +59,14 @@ export function createDb(env?: { DB?: D1Database; DATABASE_URL?: string }): any 
 }
 
 /**
- * Get DB instance from Astro context (for API routes)
+ * Get DB instance from Astro context (for API routes and pages)
  */
 export function getDbFromContext(context: any): any {
+  if (context?.locals?.db) {
+    return context.locals.db;
+  }
   const env = context?.locals?.runtime?.env || 
               context?.request?.env || 
-              (globalThis as any).env ||
               context?.env;
-  
-  return createDb(env);
+  return createDb(env ? { DB: env.DB || env } : undefined);
 }
-
-export const getDbFromEnv = createDb;
-
-export const db = {
-  select: (...args: any[]) => createDb().select(...args),
-  insert: (...args: any[]) => createDb().insert(...args),
-  update: (...args: any[]) => createDb().update(...args),
-  delete: (...args: any[]) => createDb().delete(...args),
-};
-
-export { schema };

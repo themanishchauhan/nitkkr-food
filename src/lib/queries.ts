@@ -4,9 +4,10 @@ import { MOCK_VENDORS, MOCK_CATEGORIES, MOCK_MENU_ITEMS, MOCK_REVIEWS } from './
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-function getDb() {
-  return createDb();
+function getDb(customDb?: any) {
+  return customDb || createDb();
 }
+
 
 export async function getActiveVendors() {
   try {

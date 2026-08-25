@@ -1,9 +1,11 @@
 ---
 interface Props {
-  categories: Array<{ slug: string; name: string; icon: string }>;
+  categories: Array<{ slug: string; name: string; icon?: string | null; [key: string]: any }>;
   menuItems: Array<{ categorySlug?: string | null; categoryName?: string | null; [key: string]: any }>;
+  [key: string]: any;
 }
 const { categories, menuItems } = Astro.props;
+
 ---
 <div x-data={`{ activeCat: 'all', categories: ${JSON.stringify(categories)}, menuItems: ${JSON.stringify(menuItems)} }`} class="mb-6">
   <!-- Horizontal Category Tabs -->

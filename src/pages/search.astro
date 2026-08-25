@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 import Layout from '../layouts/Layout.astro';
-import { getCategories, getAllMenuItemsForSearch, getActiveVendors } from '../lib/queries';
+import { getCategories } from '../lib/queries';
 
 const initialQuery = Astro.url.searchParams.get('q')?.trim() || '';
 const initialCategory = Astro.url.searchParams.get('category')?.trim() || '';
@@ -10,8 +10,6 @@ const initialIsVeg = Astro.url.searchParams.get('isVeg')?.trim() || '';
 const initialTag = Astro.url.searchParams.get('tag')?.trim() || '';
 const initialTab = Astro.url.searchParams.get('tab')?.trim() || 'dishes';
 
-const allItems = await getAllMenuItemsForSearch();
-const allVendors = await getActiveVendors();
 const categories = await getCategories();
 ---
 
@@ -19,7 +17,8 @@ const categories = await getCategories();
   title={initialQuery ? `Search: ${initialQuery} - NITKKR Food` : 'Search Food & Stalls - NITKKR Food'}
   description="Search dishes and food stalls across NIT Kurukshetra campus"
 >
-  <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTag, initialTab, allItems, allVendors }}>
+  <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTag, initialTab }}>
+
 
     function normalizePhonetics(str) {
       return (str || '').toLowerCase()
@@ -97,8 +96,31 @@ const categories = await getCategories();
         vibeTag: initialTag || 'all',
         maxPrice: initialMaxPrice || '',
         vegFilter: initialIsVeg === 'true' ? 'veg' : (initialIsVeg === 'false' ? 'nonveg' : 'all'),
-        allItems: allItems || [],
-        allVendors: allVendors || [],
+        allItems: [],
+        allVendors: [],
+        loading: true,
+
+        async init() {
+          try {
+            const [itemsRes, vendorsRes] = await Promise.all([
+              fetch('/api/search.json?limit=250').catch(() => null),
+              fetch('/api/admin/vendors').catch(() => null)
+            ]);
+            if (itemsRes && itemsRes.ok) {
+              const data = await itemsRes.json();
+              this.allItems = data.results || [];
+            }
+            if (vendorsRes && vendorsRes.ok) {
+              const data = await vendorsRes.json();
+              this.allVendors = data.vendors || [];
+            }
+          } catch (e) {
+            console.error('Failed to load search index', e);
+          } finally {
+            this.loading = false;
+          }
+        },
+
 
         isVendorOpen(opensAt, closesAt) {
           if (!opensAt || !closesAt) return true;
@@ -258,8 +280,10 @@ const categories = await getCategories();
 
   <section
     x-data="searchPage()"
+    x-init="init()"
     class="min-h-screen bg-nitkkr-cream pb-20"
   >
+
     <div class="max-w-2xl mx-auto px-4 py-8">
       <div class="mb-5">
         <a href="/" class="inline-flex items-center gap-2 text-nitkkr-gray hover:text-nitkkr-orange transition-colors mb-4 text-sm font-medium">

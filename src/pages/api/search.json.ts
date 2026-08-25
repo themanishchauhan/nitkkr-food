@@ -105,7 +105,23 @@ export const GET: APIRoute = async ({ request }) => {
       filtered = filtered.filter((i: any) => !i.isVeg);
     }
 
-    // 4. Keyword & Typo-Tolerant Search
+    // 4. Tag Filter (UX-6)
+    const tag = url.searchParams.get('tag')?.trim() || '';
+    if (tag && tag !== 'all') {
+      const targetTag = tag.toLowerCase();
+      filtered = filtered.filter((i: any) => {
+        let tagsArray: string[] = [];
+        if (Array.isArray(i.tags)) {
+          tagsArray = i.tags;
+        } else if (typeof i.tags === 'string') {
+          try { tagsArray = JSON.parse(i.tags); } catch { tagsArray = [i.tags]; }
+        }
+        return tagsArray.some(t => String(t).toLowerCase() === targetTag || String(t).toLowerCase().includes(targetTag));
+      });
+    }
+
+    // 5. Keyword & Typo-Tolerant Search
+
     if (query) {
       const rawQuery = query.toLowerCase().trim();
       const tokens = rawQuery.split(/\s+/).filter(Boolean);
