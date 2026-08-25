@@ -8,7 +8,7 @@ export const prerender = false;
 async function ensureSiteSettingsTable(rawD1: any) {
   try {
     if (rawD1 && typeof rawD1.prepare === 'function') {
-      await rawD1.prepare('CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
+      await rawD1.prepare('CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);').run();
     }
   } catch (e) {
     console.error('Error ensuring site_settings table in D1:', e);
@@ -54,9 +54,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get settings error:', error);
-    return new Response(JSON.stringify({ settings: {} }), {
+    return new Response(JSON.stringify({ settings: {}, error: error?.message }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -86,10 +86,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
       const entries = Object.entries(body.settings);
       
       if (rawD1 && typeof rawD1.prepare === 'function') {
-        const stmt = rawD1.prepare('INSERT INTO site_settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?2;');
         const batchStatements = entries
           .filter(([key]) => Boolean(key))
-          .map(([key, value]) => stmt.bind(key, String(value ?? '')));
+          .map(([key, value]) => 
+            rawD1.prepare('INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)')
+                 .bind(String(key), String(value ?? ''))
+          );
         
         if (batchStatements.length > 0) {
           await rawD1.batch(batchStatements);
@@ -119,8 +121,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     if (rawD1 && typeof rawD1.prepare === 'function') {
-      await rawD1.prepare('INSERT INTO site_settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?2;')
-        .bind(key, String(value)).run();
+      await rawD1.prepare('INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)')
+        .bind(String(key), String(value)).run();
     } else {
       await db.insert(schema.siteSettings).values({ key, value: String(value) })
         .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value: String(value) } });
@@ -130,9 +132,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update setting error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to update setting' }), {
+    return new Response(JSON.stringify({ error: error?.message || 'Failed to update setting' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -164,7 +166,7 @@ export const DELETE: APIRoute = async ({ request, locals, url }) => {
     await ensureSiteSettingsTable(rawD1);
 
     if (rawD1 && typeof rawD1.prepare === 'function') {
-      await rawD1.prepare('DELETE FROM site_settings WHERE key = ?1').bind(key).run();
+      await rawD1.prepare('DELETE FROM site_settings WHERE key = ?').bind(String(key)).run();
     } else {
       const db = createDb(locals);
       await db.delete(schema.siteSettings).where(eq(schema.siteSettings.key, key));
@@ -174,9 +176,9 @@ export const DELETE: APIRoute = async ({ request, locals, url }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Delete setting error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to delete setting' }), {
+    return new Response(JSON.stringify({ error: error?.message || 'Failed to delete setting' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
