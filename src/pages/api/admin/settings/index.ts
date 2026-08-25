@@ -13,11 +13,12 @@ async function isAuthenticated(request: Request): Promise<boolean> {
   return !!session;
 }
 
-function getDb() {
-  return createDb();
+function getDb(locals?: any) {
+  const env = locals?.runtime?.env || (globalThis as any).DB || (globalThis as any).env?.DB;
+  return createDb(env ? { DB: env } : undefined);
 }
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
   if (!await isAuthenticated(request)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
@@ -26,7 +27,7 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   try {
-    const db = getDb();
+    const db = getDb(locals);
     const settings = await db.select().from(schema.siteSettings);
     const settingsObj = settings.reduce((acc, setting) => {
       acc[setting.key] = setting.value;
@@ -46,7 +47,7 @@ export const GET: APIRoute = async ({ request }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   if (!await isAuthenticated(request)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
@@ -55,10 +56,26 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    const db = getDb();
+    const db = getDb(locals);
     const body = await request.json();
-    const { key, value } = body;
 
+    // 1. Batch settings update: { settings: { key: value, ... } }
+    if (body.settings && typeof body.settings === 'object') {
+      const entries = Object.entries(body.settings);
+      for (const [key, value] of entries) {
+        if (key) {
+          await db.insert(schema.siteSettings).values({ key, value: String(value ?? '') })
+            .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value: String(value ?? '') } });
+        }
+      }
+      return new Response(JSON.stringify({ success: true, count: entries.length }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 2. Single setting update: { key, value }
+    const { key, value } = body;
     if (!key || value === undefined) {
       return new Response(JSON.stringify({ error: 'Key and value required' }), {
         status: 400,
@@ -66,8 +83,8 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    await db.insert(schema.siteSettings).values({ key, value })
-      .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value } });
+    await db.insert(schema.siteSettings).values({ key, value: String(value) })
+      .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value: String(value) } });
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -82,7 +99,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ request, url }) => {
+export const DELETE: APIRoute = async ({ request, url, locals }) => {
   if (!await isAuthenticated(request)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
@@ -99,7 +116,7 @@ export const DELETE: APIRoute = async ({ request, url }) => {
       });
     }
 
-    const db = getDb();
+    const db = getDb(locals);
     await db.delete(schema.siteSettings).where(eq(schema.siteSettings.key, key));
 
     return new Response(JSON.stringify({ success: true }), {

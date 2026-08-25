@@ -10,8 +10,8 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
 <Layout title="Website Settings Management - NITKKR Food Admin">
   <section class="min-h-screen bg-nitkkr-cream pb-16">
     <div
-      x-data="{
-        settings: {},
+      x-data={`{
+        settings: ${JSON.stringify(initialSettingsObj)},
         customKey: '',
         customValue: '',
         search: '',
@@ -26,7 +26,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
             const res = await fetch('/api/admin/settings');
             if (res.ok) {
               const data = await res.json();
-              this.settings = data.settings || {};
+              this.settings = Object.assign({}, this.settings, data.settings || {});
             }
           } catch (e) {
             console.error('Failed to load settings:', e);
@@ -37,7 +37,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
             const res = await fetch('/api/admin/settings', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ key, value: String(value) })
+              body: JSON.stringify({ key, value: String(value ?? '') })
             });
             if (res.ok) {
               this.settings[key] = value;
@@ -52,16 +52,18 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
         async saveAllSettings() {
           this.saving = true;
           try {
-            for (const [key, value] of Object.entries(this.settings)) {
-              await fetch('/api/admin/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key, value: String(value ?? '') })
-              });
+            const res = await fetch('/api/admin/settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ settings: this.settings })
+            });
+            if (res.ok) {
+              this.showToast('🎉 All website settings saved successfully in 1 click!');
+            } else {
+              this.showToast('❌ Failed to save settings');
             }
-            this.showToast('🎉 All website settings saved successfully!');
           } catch (err) {
-            this.showToast('❌ Failed to save settings');
+            this.showToast('❌ Network error saving settings');
           } finally {
             this.saving = false;
           }
@@ -103,7 +105,9 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
             'homepage_title', 'homepage_tagline', 'contact_email', 'support_whatsapp',
             'announcement_banner_enabled', 'announcement_banner_text', 'announcement_banner_type',
             'ordering_enabled', 'maintenance_message', 'meta_description', 'meta_keywords',
-            'instagram_url', 'whatsapp_channel_url', 'pwa_banner_enabled', 'whatsapp_msg_template'
+            'instagram_url', 'whatsapp_channel_url', 'pwa_banner_enabled', 'whatsapp_msg_template',
+            'terms_custom_text', 'privacy_custom_text', 'about_custom_text',
+            'footer_tagline', 'footer_custom_note', 'footer_copyright', 'footer_show_legal', 'footer_show_explore'
           ];
           return Object.entries(this.settings).filter(([k]) => {
             const isStandard = standardKeys.includes(k);
@@ -111,7 +115,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
             return !isStandard && matchesSearch;
           });
         }
-      }"
+      }`}
       x-init="init()"
       class="max-w-4xl mx-auto px-4 py-8"
     >
@@ -122,7 +126,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
           <h1 class="font-display text-3xl font-bold text-nitkkr-dark flex items-center gap-2">
             <span>⚙️</span> Website Control Center
           </h1>
-          <p class="text-xs text-nitkkr-gray mt-0.5">Manage live website configuration, announcements, branding, and custom parameters</p>
+          <p class="text-xs text-nitkkr-gray mt-0.5">Manage live website configuration, announcements, footer, and dynamic parameters</p>
         </div>
 
         <button
@@ -168,6 +172,13 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
           <span>🛍️</span> Ordering & WhatsApp
         </button>
         <button
+          @click="activeTab = 'footer'"
+          :class="activeTab === 'footer' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
+          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
+        >
+          <span>🦶</span> Footer Customization
+        </button>
+        <button
           @click="activeTab = 'pages'"
           :class="activeTab === 'pages' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
           class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
@@ -182,7 +193,6 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
           <span>🎛️</span> Custom Settings CRUD
         </button>
       </div>
-
 
       <!-- TAB 1: GENERAL & BRANDING -->
       <div x-show="activeTab === 'general'" class="space-y-5">
@@ -202,18 +212,8 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
 
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
           <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>🔍</span> SEO & Contact
+            <span>🔍</span> SEO & Meta
           </h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Support Email</label>
-              <input type="email" x-model="settings.contact_email" placeholder="contact@nitkkr-food.com" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Support WhatsApp</label>
-              <input type="tel" x-model="settings.support_whatsapp" placeholder="+91 98765 43210" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
-            </div>
-          </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Meta Description (SEO)</label>
             <textarea x-model="settings.meta_description" rows="2" placeholder="Find food around NIT Kurukshetra instantly. Browse 20+ campus stalls, menus, prices..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors resize-none"></textarea>
@@ -252,22 +252,6 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
             </select>
           </div>
         </div>
-
-        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
-          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>🔗</span> Social & Community Channels
-          </h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Instagram URL</label>
-              <input type="url" x-model="settings.instagram_url" placeholder="https://instagram.com/nitkkr_food" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">WhatsApp Channel / Group Link</label>
-              <input type="url" x-model="settings.whatsapp_channel_url" placeholder="https://chat.whatsapp.com/..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- TAB 3: ORDERING & WHATSAPP CONFIG -->
@@ -304,9 +288,29 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
         </div>
       </div>
 
-      <!-- TAB 4: PAGES & LEGAL CONTENT EDITOR -->
-      <div x-show="activeTab === 'pages'" class="space-y-5">
+      <!-- TAB 4: FOOTER CUSTOMIZATION -->
+      <div x-show="activeTab === 'footer'" class="space-y-5">
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+            <span>🦶</span> Footer Text & Visibility Controls
+          </h2>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Footer Sub-Headline / Tagline</label>
+            <input type="text" x-model="settings.footer_tagline" placeholder="Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Bottom Disclaimer / Note</label>
+            <input type="text" x-model="settings.footer_custom_note" placeholder="Zero Commissions • Direct Vendor Connect" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Copyright Line</label>
+            <input type="text" x-model="settings.footer_copyright" placeholder="Built with ❤️ for NIT Kurukshetra students" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
+          </div>
+        </div>
+      </div>
 
+      <!-- TAB 5: PAGES & LEGAL CONTENT EDITOR -->
+      <div x-show="activeTab === 'pages'" class="space-y-5">
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
           <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
             <span>📜</span> Terms & Conditions Page Content
@@ -338,7 +342,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
         </div>
       </div>
 
-      <!-- TAB 5: DYNAMIC CUSTOM SETTINGS CRUD -->
+      <!-- TAB 6: DYNAMIC CUSTOM SETTINGS CRUD -->
       <div x-show="activeTab === 'custom'" class="space-y-5">
         <!-- Add New Setting Card -->
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6">
