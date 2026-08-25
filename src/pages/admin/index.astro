@@ -1,7 +1,9 @@
 ---
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
+import AdminSidebar from '../../components/AdminSidebar.astro';
 ---
+
 
 <Layout title="NITKKR Food - Founder Operations & Control Hub" description="Complete Campus Food & Website CRUD Operations Center">
   <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
@@ -261,106 +263,9 @@ import Layout from '../../layouts/Layout.astro';
         <span x-text="toastMsg"></span>
       </div>
 
-      <!-- 🎨 Unified NITKKR Food Aesthetic Sidebar -->
-      <aside class="w-full lg:w-64 bg-white border-r border-nitkkr-orange/20 flex-shrink-0 flex flex-col justify-between p-5 lg:min-h-screen shadow-sm">
-        <div>
-          <!-- Brand Badge -->
-          <div class="flex items-center justify-between pb-5 border-b border-nitkkr-orange/15">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-nitkkr-orange to-amber-500 flex items-center justify-center text-xl shadow-md text-white">
-                🍜
-              </div>
-              <div>
-                <h2 class="font-display font-bold text-base text-nitkkr-dark">NITKKR Food</h2>
-                <div class="flex items-center gap-1.5 mt-0.5">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span class="text-[10px] font-mono font-bold text-emerald-600 uppercase tracking-wider">Ops Hub</span>
-                </div>
-              </div>
-            </div>
+      <!-- Shared Sidebar Component -->
+      <AdminSidebar currentPath="/admin" />
 
-            <!-- Mobile Drawer Button -->
-            <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 text-nitkkr-gray hover:text-nitkkr-dark">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-            </button>
-          </div>
-
-          <!-- Navigation Links -->
-          <nav class="mt-6 space-y-1.5" :class="sidebarOpen ? 'block' : 'hidden lg:block'">
-            <a href="/admin" class="flex items-center gap-3 px-4 py-3 bg-nitkkr-orange text-white rounded-2xl font-bold text-xs shadow-md shadow-nitkkr-orange/20 transition-all">
-              <span class="text-base">📊</span>
-              <span>Dashboard Hub</span>
-            </a>
-
-            <a href="/admin/stalls" class="flex items-center justify-between px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-2xl font-semibold text-xs transition-all group">
-              <div class="flex items-center gap-3">
-                <span class="text-base group-hover:scale-110 transition-transform">🏪</span>
-                <span>Campus Stalls</span>
-              </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-nitkkr-cream text-nitkkr-orange font-bold border border-nitkkr-orange/20" x-text="vendors.length"></span>
-            </a>
-
-            <a href="/admin/categories" class="flex items-center justify-between px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-2xl font-semibold text-xs transition-all group">
-              <div class="flex items-center gap-3">
-                <span class="text-base group-hover:scale-110 transition-transform">🍽️</span>
-                <span>Categories</span>
-              </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-nitkkr-cream text-nitkkr-orange font-bold border border-nitkkr-orange/20" x-text="categories.length"></span>
-            </a>
-
-            <a href="/admin/menu-items" class="flex items-center justify-between px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-2xl font-semibold text-xs transition-all group">
-              <div class="flex items-center gap-3">
-                <span class="text-base group-hover:scale-110 transition-transform">🍱</span>
-                <span>Menu Dishes & Prices</span>
-              </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-nitkkr-cream text-nitkkr-orange font-bold border border-nitkkr-orange/20" x-text="menuItems.length"></span>
-            </a>
-
-            <a href="/admin/reviews" class="flex items-center justify-between px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-2xl font-semibold text-xs transition-all group">
-              <div class="flex items-center gap-3">
-                <span class="text-base group-hover:scale-110 transition-transform">⭐</span>
-                <span>Student Reviews</span>
-              </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-300" x-text="reviews.length"></span>
-            </a>
-
-            <a href="/admin/settings" class="flex items-center gap-3 px-4 py-3 text-nitkkr-dark hover:bg-nitkkr-orange/10 rounded-2xl font-semibold text-xs transition-all group">
-              <span class="text-base group-hover:rotate-45 transition-transform">⚙️</span>
-              <span>Website Control Center</span>
-            </a>
-          </nav>
-        </div>
-
-        <!-- Founder Account Footer -->
-        <div class="mt-8 pt-4 border-t border-nitkkr-orange/15 space-y-3" :class="sidebarOpen ? 'block' : 'hidden lg:block'">
-          <a
-            href="/"
-            target="_blank"
-            class="w-full py-2.5 px-4 bg-nitkkr-cream hover:bg-nitkkr-orange/10 text-nitkkr-orange font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all border border-nitkkr-orange/20 shadow-xs"
-          >
-            <span>🌐</span> View Live Website ↗
-          </a>
-
-          <div class="flex items-center justify-between p-2.5 bg-nitkkr-cream rounded-xl border border-nitkkr-orange/20">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-lg bg-nitkkr-orange text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                MC
-              </div>
-              <div class="truncate">
-                <p class="text-xs font-bold text-nitkkr-dark truncate">Manish Chauhan</p>
-                <p class="text-[10px] text-nitkkr-gray">Founder & Admin</p>
-              </div>
-            </div>
-            <button
-              @click="logout()"
-              class="text-nitkkr-gray hover:text-rose-600 p-1.5 transition-colors cursor-pointer"
-              title="Logout"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-            </button>
-          </div>
-        </div>
-      </aside>
 
       <!-- 🚀 Main Operations Dashboard Area -->
       <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-7xl">

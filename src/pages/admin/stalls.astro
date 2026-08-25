@@ -1,135 +1,300 @@
 ---
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
-import { getActiveVendors } from '../../lib/queries';
-const vendors = await getActiveVendors();
+import AdminSidebar from '../../components/AdminSidebar.astro';
 ---
 
-<Layout title="Stalls Management - NITKKR Food Admin">
-  <section class="min-h-screen bg-nitkkr-cream">
-    <div x-data="{
-      vendors: [],
-      showAddModal: false,
-      editingVendor: null,
-      form: { name: '', slug: '', phone: '', address: '', description: '', opensAt: '', closesAt: '', isActive: true, isFeatured: false },
-      loading: false,
-      message: '',
-      async init() {
-        await this.loadVendors();
-      },
-      async loadVendors() {
-        const res = await fetch('/api/admin/vendors');
-        if (res.ok) { const d = await res.json(); this.vendors = d.vendors || []; }
-      },
-      openAdd() { this.editingVendor = null; this.form = { name: '', slug: '', phone: '', address: '', description: '', image: '', opensAt: '08:00', closesAt: '22:00', isActive: true, isFeatured: false }; this.showAddModal = true; },
-      openEdit(v) { this.editingVendor = v; this.form = { name: v.name, slug: v.slug, phone: v.phone || '', address: v.address || '', description: v.description || '', image: v.image || '', opensAt: v.opensAt || '08:00', closesAt: v.closesAt || '22:00', isActive: v.isActive, isFeatured: v.isFeatured }; this.showAddModal = true; },
-      async saveVendor() {
-        this.loading = true;
-        const url = '/api/admin/vendors';
-        const method = this.editingVendor ? 'PATCH' : 'POST';
-        const body = this.editingVendor ? { ...this.form, id: this.editingVendor.id } : this.form;
-        const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        const d = await res.json();
-        if (res.ok) { this.message = this.editingVendor ? '✅ Stall updated!' : '✅ Stall added!'; this.showAddModal = false; await this.loadVendors(); }
-        else { this.message = '❌ ' + (d.error || 'Failed'); }
-        this.loading = false;
-      },
-      async toggleStatus(v) {
-        const res = await fetch('/api/admin/vendors', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: v.id, isActive: !v.isActive }) });
-        if (res.ok) { await this.loadVendors(); }
-      }
-    }" x-init="init()" class="max-w-6xl mx-auto px-4 py-8">
+<Layout title="Stalls Management - NITKKR Food Admin" description="Full CRUD operations for campus food stalls">
+  <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
+    <div
+      x-data="{
+        sidebarOpen: false,
+        vendors: [],
+        categories: [],
+        menuItems: [],
+        reviews: [],
+        showAddModal: false,
+        editingVendor: null,
+        form: { name: '', slug: '', phone: '', whatsapp: '', address: '', description: '', image: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels, Academic Block', isActive: true, isFeatured: false },
+        loading: false,
+        saving: false,
+        toastMsg: '',
 
-      <!-- Header -->
-      <div class="flex items-center justify-between mb-8">
-        <div>
-          <a href="/admin" class="text-xs text-nitkkr-gray hover:text-nitkkr-orange mb-1 inline-block">← Back to Dashboard</a>
-          <h1 class="font-display text-3xl font-bold text-nitkkr-dark flex items-center gap-2">🏪 Stalls Management</h1>
-          <p class="text-sm text-nitkkr-gray mt-1">Manage all campus food stalls</p>
-        </div>
-        <button @click="openAdd()" class="px-5 py-2.5 bg-nitkkr-orange text-white font-bold text-sm rounded-xl hover:bg-nitkkr-orange-dark transition-colors flex items-center gap-2">
-          ➕ Add New Stall
-        </button>
+        async init() {
+          await this.loadAll();
+        },
+
+        showToast(msg) {
+          this.toastMsg = msg;
+          setTimeout(() => { this.toastMsg = ''; }, 3500);
+        },
+
+        async loadAll() {
+          this.loading = true;
+          try {
+            const [vRes, cRes, mRes, rRes] = await Promise.all([
+              fetch('/api/admin/vendors').catch(() => null),
+              fetch('/api/admin/categories').catch(() => null),
+              fetch('/api/admin/menu').catch(() => null),
+              fetch('/api/admin/reviews').catch(() => null)
+            ]);
+
+            if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
+            if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
+            if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
+            if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
+          } catch (e) {
+            console.error('Load error', e);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        openAdd() {
+          this.editingVendor = null;
+          this.form = { name: '', slug: '', phone: '', whatsapp: '', address: '', description: '', image: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels, Academic Block', isActive: true, isFeatured: false };
+          this.showAddModal = true;
+        },
+
+        openEdit(v) {
+          this.editingVendor = v;
+          this.form = {
+            name: v.name,
+            slug: v.slug,
+            phone: v.phone || '',
+            whatsapp: v.whatsapp || '',
+            address: v.address || '',
+            description: v.description || '',
+            image: v.image || '',
+            opensAt: v.opensAt || '09:00',
+            closesAt: v.closesAt || '23:00',
+            deliversTo: Array.isArray(v.deliversTo) ? v.deliversTo.join(', ') : (v.deliversTo || 'Hostels'),
+            isActive: v.isActive,
+            isFeatured: v.isFeatured
+          };
+          this.showAddModal = true;
+        },
+
+        async saveVendor() {
+          if (!this.form.name.trim()) { alert('Stall name is required'); return; }
+          this.saving = true;
+          try {
+            const url = '/api/admin/vendors';
+            const method = this.editingVendor ? 'PATCH' : 'POST';
+            const payload = {
+              ...this.form,
+              id: this.editingVendor ? this.editingVendor.id : undefined,
+              deliversTo: typeof this.form.deliversTo === 'string' ? this.form.deliversTo.split(',').map(s => s.trim()).filter(Boolean) : this.form.deliversTo
+            };
+
+            const res = await fetch(url, {
+              method,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+              this.showToast(this.editingVendor ? '✅ Stall updated successfully!' : '✅ New stall created!');
+              this.showAddModal = false;
+              await this.loadAll();
+            } else {
+              const d = await res.json();
+              alert(d.error || 'Failed to save stall');
+            }
+          } catch (e) {
+            alert('Server error saving stall');
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async toggleStatus(v) {
+          try {
+            const res = await fetch('/api/admin/vendors', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: v.id, isActive: !v.isActive })
+            });
+            if (res.ok) {
+              v.isActive = !v.isActive;
+              this.showToast(v.name + ' marked as ' + (v.isActive ? 'Open 🟢' : 'Closed 🔴'));
+            }
+          } catch (e) {
+            alert('Failed to update status');
+          }
+        },
+
+        async deleteStall(v) {
+          if (!confirm('Are you sure you want to delete ' + v.name + '?')) return;
+          try {
+            const res = await fetch('/api/admin/vendors?id=' + v.id, { method: 'DELETE' });
+            if (res.ok) {
+              this.vendors = this.vendors.filter(x => x.id !== v.id);
+              this.showToast('Stall deleted');
+            } else {
+              alert('Failed to delete stall');
+            }
+          } catch (e) {
+            alert('Error deleting stall');
+          }
+        },
+
+        async logout() {
+          if (!confirm('Log out from Founder Panel?')) return;
+          await fetch('/api/admin/auth', { method: 'DELETE' });
+          window.location.href = '/';
+        }
+      }"
+      x-init="init()"
+      class="flex-1 flex flex-col lg:flex-row min-h-screen"
+    >
+
+      <!-- Toast Notification -->
+      <div
+        x-show="toastMsg"
+        x-transition
+        class="fixed bottom-6 right-6 z-50 bg-nitkkr-dark text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-2 border border-nitkkr-orange/40"
+      >
+        <span class="text-base">🔔</span>
+        <span x-text="toastMsg"></span>
       </div>
 
-      <!-- Message -->
-      <div x-show="message" x-cloak class="mb-4 p-3 bg-green-50 text-green-700 text-sm rounded-xl font-medium" x-text="message"></div>
+      <!-- Shared Sidebar Component -->
+      <AdminSidebar currentPath="/admin/stalls" />
 
-      <!-- Stalls Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <template x-for="v in vendors" :key="v.id">
-          <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-5 flex flex-col gap-3">
-            <div class="flex items-start justify-between">
-              <div>
-                <h2 class="font-display font-bold text-nitkkr-dark" x-text="v.name"></h2>
-                <p class="text-xs text-nitkkr-gray mt-0.5" x-text="v.address || 'No address set'"></p>
+      <!-- Main Content Area -->
+      <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-6xl">
+        <div class="space-y-8">
+
+          <!-- Header -->
+          <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-[11px] font-bold mb-2">
+                <span>🏪</span> Campus Vendors & Eateries
               </div>
-              <span :class="v.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="px-2 py-1 text-xs font-bold rounded-full" x-text="v.isActive ? 'OPEN' : 'CLOSED'"></span>
+              <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-nitkkr-dark">
+                Campus Stalls Manager
+              </h1>
+              <p class="text-xs sm:text-sm text-nitkkr-gray mt-1">
+                Add eateries, edit WhatsApp numbers, set opening hours, and control stall availability.
+              </p>
             </div>
-            <p class="text-xs text-nitkkr-gray" x-text="v.phone ? '📞 ' + v.phone : 'No phone'"></p>
-            <p class="text-xs text-nitkkr-gray" x-text="(v.opensAt || '?') + ' – ' + (v.closesAt || '?')"></p>
-            <div class="flex gap-2 mt-1">
-              <button @click="openEdit(v)" class="flex-1 py-2 border border-nitkkr-orange text-nitkkr-orange text-xs font-bold rounded-xl hover:bg-nitkkr-orange hover:text-white transition-colors">Edit</button>
-              <button @click="toggleStatus(v)" :class="v.isActive ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-600 border-green-200'" class="flex-1 py-2 border text-xs font-bold rounded-xl transition-colors" x-text="v.isActive ? 'Close Stall' : 'Open Stall'"></button>
-            </div>
-          </div>
-        </template>
-      </div>
 
-      <!-- Add/Edit Modal -->
-      <div x-show="showAddModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" @click.outside="showAddModal = false">
-          <h2 class="font-display font-bold text-lg text-nitkkr-dark mb-4" x-text="editingVendor ? 'Edit Stall' : 'Add New Stall'"></h2>
-          <div class="space-y-3">
-            <div>
-              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Stall Name *</label>
-              <input type="text" x-model="form.name" placeholder="Momo Corner" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">URL Slug *</label>
-              <input type="text" x-model="form.slug" placeholder="momo-corner" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Cover Photo URL</label>
-              <input type="url" x-model="form.image" placeholder="https://images.unsplash.com/... or your custom URL" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-              <template x-if="form.image">
-                <div class="mt-2 flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-200">
-                  <img :src="form.image" alt="Preview" class="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                  <span class="text-xs text-slate-500 truncate">Image Preview</span>
+            <button
+              @click="openAdd()"
+              class="px-5 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-2xl shadow-md shadow-nitkkr-orange/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+            >
+              <span>➕</span> Add New Stall
+            </button>
+          </div>
+
+          <!-- Stalls Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <template x-for="v in vendors" :key="v.id">
+              <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-4 shadow-sm hover:border-nitkkr-orange/50 transition-all flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="w-3 h-3 rounded-full flex-shrink-0" :class="v.isActive ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+                      <h4 class="font-bold text-sm text-nitkkr-dark truncate" x-text="v.name"></h4>
+                    </div>
+                    <span x-show="v.isFeatured" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">Featured</span>
+                  </div>
+
+                  <p class="text-xs text-nitkkr-gray line-clamp-1" x-text="v.address || 'Campus Eatery'"></p>
+                  
+                  <div class="mt-3 space-y-1 text-xs text-slate-600 bg-nitkkr-cream/40 p-3 rounded-2xl border border-nitkkr-orange/15">
+                    <p class="font-mono text-[11px]">🕒 <span x-text="v.opensAt + ' - ' + v.closesAt"></span></p>
+                    <p class="font-mono text-[11px]" x-show="v.whatsapp">💬 WA: <span x-text="v.whatsapp"></span></p>
+                  </div>
                 </div>
-              </template>
-            </div>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <button
+                    @click="toggleStatus(v)"
+                    class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    :class="v.isActive ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'"
+                    x-text="v.isActive ? 'Open 🟢' : 'Closed 🔴'"
+                  ></button>
+
+                  <div class="flex items-center gap-1.5">
+                    <a :href="'/v/' + v.slug" target="_blank" class="p-2 text-slate-400 hover:text-nitkkr-orange transition-colors" title="View Menu">↗</a>
+                    <button @click="openEdit(v)" class="p-2 text-slate-600 hover:text-blue-600 font-bold text-xs transition-colors cursor-pointer">Edit</button>
+                    <button @click="deleteStall(v)" class="p-2 text-slate-400 hover:text-rose-600 font-bold text-xs transition-colors cursor-pointer">🗑️</button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- Modal: Add / Edit Stall -->
+      <div
+        x-show="showAddModal"
+        x-transition
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+        @click.self="showAddModal = false"
+      >
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 border border-nitkkr-orange/30 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="font-display text-lg font-bold text-nitkkr-dark" x-text="editingVendor ? '✏️ Edit Stall' : '🏪 Add New Campus Stall'"></h3>
+            <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">✕</button>
+          </div>
+
+          <form @submit.prevent="saveVendor()" class="space-y-4">
             <div>
-              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Phone Number</label>
-              <input type="text" x-model="form.phone" placeholder="9876543210" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Stall Name *</label>
+              <input type="text" x-model="form.name" required class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
             </div>
-            <div>
-              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Location / Address</label>
-              <input type="text" x-model="form.address" placeholder="Near Hostel 4" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
-            </div>
+
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Opens At</label>
-                <input type="time" x-model="form.opensAt" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Phone Number</label>
+                <input type="text" x-model="form.phone" placeholder="+91 98765 43210" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Closes At</label>
-                <input type="time" x-model="form.closesAt" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">WhatsApp Number</label>
+                <input type="text" x-model="form.whatsapp" placeholder="919876543210" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
               </div>
             </div>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" x-model="form.isActive" class="rounded" />
-              <span class="text-sm font-medium text-nitkkr-dark">Mark as Active / Open</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" x-model="form.isFeatured" class="rounded" />
-              <span class="text-sm font-medium text-nitkkr-dark">Feature on Homepage</span>
-            </label>
-          </div>
-          <div class="flex gap-3 mt-5">
-            <button @click="showAddModal = false" class="flex-1 py-2.5 border border-nitkkr-orange/30 text-nitkkr-gray font-bold text-sm rounded-xl hover:bg-nitkkr-cream transition-colors">Cancel</button>
-            <button @click="saveVendor()" :disabled="loading" class="flex-1 py-2.5 bg-nitkkr-orange text-white font-bold text-sm rounded-xl hover:bg-nitkkr-orange-dark transition-colors disabled:opacity-50" x-text="loading ? 'Saving...' : (editingVendor ? 'Update Stall' : 'Add Stall')"></button>
-          </div>
+
+            <div>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Campus Location / Address</label>
+              <input type="text" x-model="form.address" placeholder="e.g. Near Gate 1 / Market Complex" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Opens At</label>
+                <input type="time" x-model="form.opensAt" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Closes At</label>
+                <input type="time" x-model="form.closesAt" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4 pt-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="form.isActive" class="rounded text-nitkkr-orange">
+                <span class="text-xs font-bold text-nitkkr-dark">Stall Open</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="form.isFeatured" class="rounded text-amber-500">
+                <span class="text-xs font-bold text-amber-800">Featured on Homepage</span>
+              </label>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <button type="button" @click="showAddModal = false" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Cancel</button>
+              <button type="submit" :disabled="saving" class="px-6 py-2.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white rounded-xl text-xs font-bold shadow-sm">
+                <span x-show="!saving" x-text="editingVendor ? 'Save Changes' : 'Create Stall'"></span>
+                <span x-show="saving">Saving...</span>
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 
