@@ -8,10 +8,27 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
   document.addEventListener('alpine:init', () => {
     Alpine.data('siteSettingsAdmin', () => ({
       sidebarOpen: false,
-      vendors: [],
-      categories: [],
-      menuItems: [],
-      reviews: [],
+      activeTab: 'general',
+      saving: false,
+      toastMsg: '',
+
+      vibeChips: [
+        { label: 'High Protein 🏋️‍♂️', icon: '⚡', href: '/search?tag=protein', isEnabled: true },
+        { label: 'Late Night 2AM 🌙', icon: '🌙', href: '/search?tag=late-night', isEnabled: true },
+        { label: 'Under ₹50 💸', icon: '💰', href: '/search?maxPrice=50', isEnabled: true },
+        { label: 'Spicy Momos 🔥', icon: '🥢', href: '/search?q=momos', isEnabled: true },
+        { label: 'Cheesy & Loaded 🧀', icon: '🧀', href: '/search?q=cheese', isEnabled: true },
+        { label: 'Thick Shakes 🧋', icon: '🧋', href: '/search?category=beverages', isEnabled: true },
+        { label: 'Pure Veg 🌱', icon: '🌱', href: '/search?isVeg=true', isEnabled: true },
+        { label: 'Non-Veg 🍗', icon: '🍗', href: '/search?isVeg=false', isEnabled: true },
+      ],
+
+      newChip: {
+        label: '',
+        icon: '⚡',
+        href: '/search?q='
+      },
+
       settings: {
         homepage_title: 'Hungry? We got you. 🍜',
         homepage_tagline: 'Search 20+ food stalls around NITKKR',
@@ -31,16 +48,28 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
         whatsapp_msg_template: 'Hi stall_name! I would like to order from NITKKR Food.',
         footer_tagline: 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.',
         footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
-        footer_copyright: 'Built with ❤️ for NIT Kurukshetra students'
+        footer_copyright: 'Built with ❤️ for NIT Kurukshetra students',
+        
+        // 🏢 Company Profile Settings
+        company_name: 'NITKKR Food',
+        founder_name: 'Manish Chauhan',
+        company_legal_entity: 'NITKKR Food Ventures',
+        company_tagline: 'Instant Menu Search & Direct Vendor Connect for Campus',
+        company_support_email: 'support@nitkkr-food.com',
+        company_support_phone: '+91 98765 43210',
+        company_address: 'NIT Kurukshetra Campus, Kurukshetra, Haryana 136119',
+        company_instagram: 'https://instagram.com/nitkkr_food',
+        company_linkedin: '',
+        company_twitter: '',
+        company_logo_url: '',
+        company_favicon_url: '',
+        company_mission: 'Empowering campus students with transparent prices, instant menus, and zero-commission food ordering.'
       },
-      activeTab: 'general',
-      saving: false,
-      toastMsg: '',
 
       async init() {
         const urlParams = new URLSearchParams(window.location.search);
         const tab = urlParams.get('tab');
-        if (tab && ['general', 'announcements', 'ads', 'ordering', 'footer'].includes(tab)) {
+        if (tab && ['general', 'vibes', 'company', 'announcements', 'ads', 'ordering', 'footer'].includes(tab)) {
           this.activeTab = tab;
         }
         await this.loadAll();
@@ -53,37 +82,60 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
 
       async loadAll() {
         try {
-          const [sRes, vRes, cRes, mRes, rRes] = await Promise.all([
-            fetch('/api/admin/settings').catch(() => null),
-            fetch('/api/admin/vendors').catch(() => null),
-            fetch('/api/admin/categories').catch(() => null),
-            fetch('/api/admin/menu').catch(() => null),
-            fetch('/api/admin/reviews').catch(() => null)
-          ]);
-
-          if (sRes && sRes.ok) {
-            const d = await sRes.json();
+          const res = await fetch('/api/admin/settings');
+          if (res.ok) {
+            const d = await res.json();
             this.settings = Object.assign({}, this.settings, d.settings || {});
+            
+            if (this.settings.vibe_chips_json) {
+              try {
+                const parsed = JSON.parse(this.settings.vibe_chips_json);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  this.vibeChips = parsed;
+                }
+              } catch (e) {}
+            }
           }
-          if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
-          if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
-          if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
-          if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
         } catch (e) {
-          console.error('Load error', e);
+          console.error('Load settings error', e);
         }
+      },
+
+      addVibeChip() {
+        if (!this.newChip.label.trim()) {
+          alert('Chip label is required');
+          return;
+        }
+        this.vibeChips.push({
+          label: this.newChip.label.trim(),
+          icon: this.newChip.icon || '⚡',
+          href: this.newChip.href.trim() || '/search?q=' + encodeURIComponent(this.newChip.label.trim()),
+          isEnabled: true
+        });
+        this.newChip = { label: '', icon: '⚡', href: '/search?q=' };
+        this.showToast('Chip added! Click "Save All Changes" to publish.');
+      },
+
+      removeVibeChip(index) {
+        this.vibeChips.splice(index, 1);
+      },
+
+      toggleVibeChip(index) {
+        this.vibeChips[index].isEnabled = !this.vibeChips[index].isEnabled;
       },
 
       async saveAllSettings() {
         this.saving = true;
         try {
+          this.settings.vibe_chips_json = JSON.stringify(this.vibeChips);
+
           const res = await fetch('/api/admin/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ settings: this.settings })
           });
           if (res.ok) {
-            this.showToast('🎉 All website settings saved successfully!');
+            this.showToast('🎉 All website settings & vibe chips saved live!');
           } else {
             const errData = await res.json().catch(() => ({}));
             this.showToast('❌ ' + (errData.error || 'Failed to save settings'));
@@ -104,7 +156,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
   });
 </script>
 
-<Layout title="Website Control Center - NITKKR Food Admin" description="Control live hero text, announcement banners, ads, sponsors, and footer branding">
+<Layout title="Website Control Center - NITKKR Food Admin" description="Control live hero text, Gen-Z vibe tags, company profile, ads, sponsors, and footer branding">
   <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
     
     <div
@@ -139,7 +191,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
                 Website Control Center
               </h1>
               <p class="text-xs sm:text-sm text-nitkkr-gray mt-1">
-                Control live hero text, announcement banners, ads/sponsors, footer branding & dynamic parameters.
+                Customize hero text, Gen-Z vibe tags, company identity, live alert banners, ads, and platform branding.
               </p>
             </div>
 
@@ -160,6 +212,22 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
               :class="activeTab === 'general' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
             >
               <span>🏠</span> General & Hero
+            </button>
+
+            <button
+              @click="activeTab = 'vibes'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="activeTab === 'vibes' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>🔥</span> Vibe Tags Studio (<span x-text="vibeChips.length"></span>)
+            </button>
+
+            <button
+              @click="activeTab = 'company'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="activeTab === 'company' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>🏢</span> Company Profile
             </button>
 
             <button
@@ -220,7 +288,145 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             </div>
           </div>
 
-          <!-- TAB 2: LIVE BANNERS & ANNOUNCEMENTS -->
+          <!-- TAB 2: VIBE TAGS STUDIO -->
+          <div x-show="activeTab === 'vibes'" class="space-y-6">
+            <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div>
+                  <h3 class="font-display text-lg font-bold text-nitkkr-dark flex items-center gap-2">
+                    <span>🔥</span> Gen-Z Vibe Filters & Quick Search Tags
+                  </h3>
+                  <p class="text-xs text-nitkkr-gray">Manage the clickable quick pills shown right below the hero search bar on the homepage</p>
+                </div>
+              </div>
+
+              <!-- Add New Vibe Chip Bar -->
+              <div class="bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-2xl p-4 sm:p-5 space-y-4">
+                <span class="text-xs font-bold text-nitkkr-dark block">➕ Add New Quick Vibe Pill</span>
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div class="sm:col-span-2">
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Icon</label>
+                    <input type="text" x-model="newChip.icon" placeholder="⚡" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs text-center font-bold" />
+                  </div>
+                  <div class="sm:col-span-4">
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Label Text *</label>
+                    <input type="text" x-model="newChip.label" placeholder="e.g. Biryani Craving 🍛" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs font-bold" />
+                  </div>
+                  <div class="sm:col-span-4">
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Target URL (/search?...)</label>
+                    <input type="text" x-model="newChip.href" placeholder="/search?q=biryani" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs font-mono font-semibold" />
+                  </div>
+                  <div class="sm:col-span-2 flex items-end">
+                    <button
+                      @click="addVibeChip()"
+                      class="w-full py-2 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                    >
+                      Add Chip
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Active Chips List -->
+              <div class="space-y-3">
+                <span class="text-xs font-bold text-nitkkr-dark block">Active Vibe Pills on Homepage (<span x-text="vibeChips.length"></span>)</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <template x-for="(chip, idx) in vibeChips" :key="idx">
+                    <div class="bg-white border rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-2xs transition-all" :class="chip.isEnabled ? 'border-amber-200' : 'border-slate-200 opacity-60 bg-slate-50'">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="text-lg flex-shrink-0" x-text="chip.icon"></span>
+                        <div class="min-w-0">
+                          <input type="text" x-model="chip.label" class="text-xs font-bold text-nitkkr-dark bg-transparent border-b border-transparent hover:border-slate-300 focus:border-nitkkr-orange focus:outline-hidden w-full" />
+                          <input type="text" x-model="chip.href" class="text-[10px] text-nitkkr-gray font-mono bg-transparent border-b border-transparent hover:border-slate-300 focus:border-nitkkr-orange focus:outline-hidden w-full truncate" />
+                        </div>
+                      </div>
+
+                      <div class="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          @click="toggleVibeChip(idx)"
+                          class="px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-colors"
+                          :class="chip.isEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'"
+                          x-text="chip.isEnabled ? 'Active 🟢' : 'Hidden ⚪'"
+                        ></button>
+                        <button
+                          @click="removeVibeChip(idx)"
+                          class="text-red-500 hover:text-red-700 p-1 text-xs cursor-pointer font-bold"
+                          title="Delete Chip"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- TAB 3: COMPANY PROFILE & IDENTITY -->
+          <div x-show="activeTab === 'company'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div class="pb-3 border-b border-slate-100">
+              <h3 class="font-display text-lg font-bold text-nitkkr-dark flex items-center gap-2">
+                <span>🏢</span> Company Profile & Corporate Identity
+              </h3>
+              <p class="text-xs text-nitkkr-gray">Configure platform name, legal entity, founder details, campus headquarters, and social links</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Company / Platform Display Name</label>
+                <input type="text" x-model="settings.company_name" placeholder="NITKKR Food" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Founder & Leadership Name(s)</label>
+                <input type="text" x-model="settings.founder_name" placeholder="Manish Chauhan" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Registered Entity / Legal Organization</label>
+                <input type="text" x-model="settings.company_legal_entity" placeholder="NITKKR Food Tech Ventures" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Brand Slogan / Tagline</label>
+                <input type="text" x-model="settings.company_tagline" placeholder="Instant Menu Search & Direct Vendor Connect" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Official Support Email</label>
+                <input type="email" x-model="settings.company_support_email" placeholder="support@nitkkr-food.com" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Official WhatsApp Helpline / Phone</label>
+                <input type="text" x-model="settings.company_support_phone" placeholder="+91 98765 43210" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div class="space-y-1.5 md:col-span-2">
+                <label class="text-xs font-bold text-nitkkr-dark">Campus Headquarters / Operating Address</label>
+                <input type="text" x-model="settings.company_address" placeholder="NIT Kurukshetra Campus, Kurukshetra, Haryana 136119" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Instagram Profile URL</label>
+                <input type="text" x-model="settings.company_instagram" placeholder="https://instagram.com/nitkkr_food" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">LinkedIn Organization URL</label>
+                <input type="text" x-model="settings.company_linkedin" placeholder="https://linkedin.com/company/nitkkr-food" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+
+              <div class="space-y-1.5 md:col-span-2">
+                <label class="text-xs font-bold text-nitkkr-dark">Company Mission & About Summary</label>
+                <textarea x-model="settings.company_mission" rows="3" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden leading-relaxed"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: LIVE BANNERS & ANNOUNCEMENTS -->
           <div x-show="activeTab === 'announcements'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
@@ -251,7 +457,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             </div>
           </div>
 
-          <!-- TAB 3: ADS & SPONSORS -->
+          <!-- TAB 5: ADS & SPONSORS -->
           <div x-show="activeTab === 'ads'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
@@ -292,7 +498,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             </div>
           </div>
 
-          <!-- TAB 4: ORDERING & WHATSAPP -->
+          <!-- TAB 6: ORDERING & WHATSAPP -->
           <div x-show="activeTab === 'ordering'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
@@ -318,7 +524,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             </div>
           </div>
 
-          <!-- TAB 5: FOOTER BRANDING -->
+          <!-- TAB 7: FOOTER BRANDING -->
           <div x-show="activeTab === 'footer'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
             <div class="pb-3 border-b border-slate-100">
               <h3 class="font-display text-lg font-bold text-nitkkr-dark">🦶 Footer Branding Controls</h3>

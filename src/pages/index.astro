@@ -34,8 +34,15 @@ const vendorsWithStatus = (vendors || []).map((v: any) => ({
   isOpen: isVendorOpenNow(v.opensAt, v.closesAt),
   minPrice: minPrices[v.id] ?? null,
 }));
----
 
+let vibeChips: any[] | undefined = undefined;
+if (settingsObj.vibe_chips_json) {
+  try {
+    vibeChips = JSON.parse(settingsObj.vibe_chips_json);
+  } catch (e) {}
+}
+
+---
 
 <Layout title="NITKKR Food - Find Food Around Campus Instantly" description="Search 20+ food stalls around NIT Kurukshetra. View menus, prices, and order via WhatsApp or call directly.">
   <section class="min-h-screen bg-gradient-to-b from-nitkkr-cream to-white pb-12">
@@ -66,7 +73,8 @@ const vendorsWithStatus = (vendors || []).map((v: any) => ({
 
       <SearchBar placeholder="What are you craving? momos, biryani..." />
 
-      <FilterChips />
+      <FilterChips chips={vibeChips} />
+
 
       <!-- Categories Section -->
       <div class="mb-8">
