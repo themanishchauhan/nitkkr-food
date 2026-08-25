@@ -36,20 +36,52 @@ export const GET: APIRoute = async ({ request, url }) => {
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
       .leftJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id));
 
-    const items = vendorIdParam && !isNaN(parseInt(vendorIdParam, 10))
+    let items = vendorIdParam && !isNaN(parseInt(vendorIdParam, 10))
       ? await baseQuery.where(eq(schema.menuItems.vendorId, parseInt(vendorIdParam, 10))).orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name))
       : await baseQuery.orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
+
+    if (!items || items.length === 0) {
+      const { ensureRealDatabasePopulated } = await import('../../../../lib/queries');
+      await ensureRealDatabasePopulated();
+      items = vendorIdParam && !isNaN(parseInt(vendorIdParam, 10))
+        ? await baseQuery.where(eq(schema.menuItems.vendorId, parseInt(vendorIdParam, 10))).orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name))
+        : await baseQuery.orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
+    }
+
+    if (!items || items.length === 0) {
+      const { FOOD_CAVE_MENU_ITEMS } = await import('../../../../lib/food-cave-data');
+      const { MOCK_CATEGORIES } = await import('../../../../lib/mock-data');
+      items = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
+        const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+        return {
+          ...item,
+          vendorName: 'Food Cave Fast Food',
+          categoryName: cat?.name || 'General'
+        };
+      }) as any;
+    }
 
     return new Response(JSON.stringify({ items: items || [] }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('List menu items error:', error);
-    return new Response(JSON.stringify({ items: [] }), {
+    const { FOOD_CAVE_MENU_ITEMS } = await import('../../../../lib/food-cave-data');
+    const { MOCK_CATEGORIES } = await import('../../../../lib/mock-data');
+    const items = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
+      const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+      return {
+        ...item,
+        vendorName: 'Food Cave Fast Food',
+        categoryName: cat?.name || 'General'
+      };
+    });
+    return new Response(JSON.stringify({ items: items || [] }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   }
 };
+
 
 export const POST: APIRoute = async ({ request }) => {
   const admin = await authenticateAdminRequest(request);

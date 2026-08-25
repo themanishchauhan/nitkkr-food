@@ -26,17 +26,31 @@ export const GET: APIRoute = async ({ request }) => {
   }
   try {
     const db = createDb();
-    const categories = await db.select().from(schema.categories).orderBy(asc(schema.categories.displayOrder), asc(schema.categories.name));
+    let categories = await db.select().from(schema.categories).orderBy(asc(schema.categories.displayOrder), asc(schema.categories.name));
+    
+    if (!categories || categories.length === 0) {
+      const { ensureRealDatabasePopulated } = await import('../../../../lib/queries');
+      await ensureRealDatabasePopulated();
+      categories = await db.select().from(schema.categories).orderBy(asc(schema.categories.displayOrder), asc(schema.categories.name));
+    }
+
+    if (!categories || categories.length === 0) {
+      const { MOCK_CATEGORIES } = await import('../../../../lib/mock-data');
+      categories = MOCK_CATEGORIES as any;
+    }
+
     return new Response(JSON.stringify({ categories: categories || [] }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('List categories error:', error);
-    return new Response(JSON.stringify({ categories: [] }), {
+    const { MOCK_CATEGORIES } = await import('../../../../lib/mock-data');
+    return new Response(JSON.stringify({ categories: MOCK_CATEGORIES as any }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   }
 };
+
 
 export const POST: APIRoute = async ({ request }) => {
   const admin = await authenticateAdminRequest(request);

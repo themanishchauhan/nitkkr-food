@@ -7,7 +7,7 @@ export const prerender = false;
 
 export const POST: APIRoute = async ({ locals }) => {
   try {
-    const d1 = (locals as any)?.runtime?.env?.DB || getRawD1Binding();
+    const d1 = (locals as any)?.db || getRawD1Binding();
     if (!d1 || typeof d1.prepare !== 'function') {
       return new Response(JSON.stringify({ 
         success: true, 

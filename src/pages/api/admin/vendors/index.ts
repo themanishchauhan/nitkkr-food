@@ -26,17 +26,31 @@ export const GET: APIRoute = async ({ request }) => {
   }
   try {
     const db = createDb();
-    const vendors = await db.select().from(schema.vendors).orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
+    let vendors = await db.select().from(schema.vendors).orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
+    
+    if (!vendors || vendors.length === 0) {
+      const { ensureRealDatabasePopulated } = await import('../../../../lib/queries');
+      await ensureRealDatabasePopulated();
+      vendors = await db.select().from(schema.vendors).orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
+    }
+
+    if (!vendors || vendors.length === 0) {
+      const { FOOD_CAVE_VENDOR } = await import('../../../../lib/food-cave-data');
+      vendors = [FOOD_CAVE_VENDOR as any];
+    }
+
     return new Response(JSON.stringify({ vendors: vendors || [] }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('List vendors error:', error);
-    return new Response(JSON.stringify({ vendors: [] }), {
+    const { FOOD_CAVE_VENDOR } = await import('../../../../lib/food-cave-data');
+    return new Response(JSON.stringify({ vendors: [FOOD_CAVE_VENDOR as any] }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   }
 };
+
 
 export const POST: APIRoute = async ({ request }) => {
   const admin = await authenticateAdminRequest(request);

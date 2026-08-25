@@ -1,6 +1,7 @@
 import { drizzle as drizzleD1 } from 'drizzle-orm/d1';
 import type { D1Database } from '@cloudflare/workers-types';
 import * as schema from './schema';
+import { env as cfEnv } from 'cloudflare:workers';
 
 export { schema };
 
@@ -13,8 +14,14 @@ export function setActiveD1(d1: any) {
 }
 
 export function getRawD1Binding(): any {
-  return activeD1Binding || 
-         (globalThis as any).DB || 
+  if (activeD1Binding && typeof activeD1Binding.prepare === 'function') {
+    return activeD1Binding;
+  }
+  if (cfEnv?.DB && typeof cfEnv.DB.prepare === 'function') {
+    setActiveD1(cfEnv.DB);
+    return cfEnv.DB;
+  }
+  return (globalThis as any).DB || 
          (globalThis as any).__CF_ENV__?.DB || 
          (globalThis as any).env?.DB;
 }
@@ -46,11 +53,7 @@ function createQueryProxy(result: any = []) {
  * Pure Cloudflare D1 Native without Node.js dependencies.
  */
 export function createDb(env?: { DB?: D1Database; [key: string]: any }): any {
-  // Check for Cloudflare D1 binding
-  const d1 = env?.DB || 
-             (env as any)?.runtime?.env?.DB || 
-             (env as any)?.locals?.runtime?.env?.DB ||
-             getRawD1Binding();
+  const d1 = env?.DB || getRawD1Binding();
 
   if (d1 && typeof d1.prepare === 'function') {
     setActiveD1(d1);
@@ -73,8 +76,5 @@ export function getDbFromContext(context: any): any {
   if (context?.locals?.db) {
     return context.locals.db;
   }
-  const env = context?.locals?.runtime?.env || 
-              context?.request?.env || 
-              context?.env;
-  return createDb(env ? { DB: env.DB || env } : undefined);
+  return createDb(context?.locals);
 }

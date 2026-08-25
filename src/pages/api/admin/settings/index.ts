@@ -25,9 +25,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    const rawD1 = (locals as any)?.runtime?.env?.DB ||
-                  (locals as any)?.db ||
-                  getRawD1Binding();
+    const rawD1 = (locals as any)?.db || getRawD1Binding();
 
     await ensureSiteSettingsTable(rawD1);
     
@@ -73,9 +71,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    const rawD1 = (locals as any)?.runtime?.env?.DB ||
-                  (locals as any)?.db ||
-                  getRawD1Binding();
+    const rawD1 = (locals as any)?.db || getRawD1Binding();
 
     await ensureSiteSettingsTable(rawD1);
     const db = createDb(locals);
@@ -159,9 +155,7 @@ export const DELETE: APIRoute = async ({ request, locals, url }) => {
       });
     }
 
-    const rawD1 = (locals as any)?.runtime?.env?.DB ||
-                  (locals as any)?.db ||
-                  getRawD1Binding();
+    const rawD1 = (locals as any)?.db || getRawD1Binding();
 
     await ensureSiteSettingsTable(rawD1);
 
