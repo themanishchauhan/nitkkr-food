@@ -15,42 +15,51 @@ interface Props {
 const { item } = Astro.props;
 const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price;
 ---
-<div class="bg-white rounded-xl border border-nitkkr-orange/20 p-4 mb-3 flex gap-4
-            hover:border-nitkkr-orange/50 transition-all duration-200">
+<div class="bg-white rounded-2xl border border-nitkkr-orange/20 p-3.5 sm:p-4 mb-3 flex gap-3 sm:gap-4
+            hover:border-nitkkr-orange/50 hover:shadow-xs transition-all duration-200 overflow-hidden">
   <img
     src={item.image || '/placeholder-food.svg'}
     alt=""
-    class="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+    class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover flex-shrink-0"
     loading="lazy"
   />
   <div class="flex-1 min-w-0">
     <div class="flex items-start justify-between gap-2">
-      <h3 class="font-semibold truncate text-nitkkr-dark">{item.name}</h3>
-      <span class="text-nitkkr-orange font-bold text-lg whitespace-nowrap">₹{price.toFixed(0)}</span>
+      <div class="min-w-0">
+        <h3 class="font-bold text-sm sm:text-base text-nitkkr-dark truncate">{item.name}</h3>
+        {item.categoryName && (
+          <p class="text-[11px] text-nitkkr-gray truncate">{item.categoryName}</p>
+        )}
+      </div>
+      <span class="text-nitkkr-orange font-bold text-base sm:text-lg whitespace-nowrap flex-shrink-0">₹{price.toFixed(0)}</span>
     </div>
+
     {item.description && (
-      <p class="text-sm text-nitkkr-gray mt-1 line-clamp-2">{item.description}</p>
+      <p class="text-xs text-nitkkr-gray mt-1 line-clamp-2">{item.description}</p>
     )}
-    <div class="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-nitkkr-cream">
-      <div class="flex flex-wrap gap-1">
+
+    <div class="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-nitkkr-cream">
+      <div class="flex flex-wrap gap-1 items-center">
         {item.isVeg ? (
-          <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium" aria-label="Vegetarian">🌱 Veg</span>
+          <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full" aria-label="Vegetarian">🌱 Veg</span>
         ) : (
-          <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium" aria-label="Non-Vegetarian">🍗 Non-Veg</span>
+          <span class="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full" aria-label="Non-Vegetarian">🍗 Non-Veg</span>
         )}
         {item.tags.map(tag => (
-          <span class="px-2 py-0.5 bg-nitkkr-cream text-nitkkr-orange text-xs rounded-full">{tag}</span>
+          <span class="px-2 py-0.5 bg-nitkkr-cream text-nitkkr-orange text-[10px] font-medium rounded-full">{tag}</span>
         ))}
       </div>
 
-      <button
-        type="button"
-        onclick={`window.dispatchEvent(new CustomEvent('add-to-cart', { detail: { id: ${item.id}, name: ${JSON.stringify(item.name)}, price: ${price} } }))`}
-        class="px-3 py-1.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white rounded-lg font-bold text-xs flex items-center gap-1 shadow-sm transition-all hover:scale-105 active:scale-95"
-        aria-label={`Add ${item.name} to cart`}
-      >
-        <span>+</span> Add
-      </button>
+      <div class="flex items-center gap-1.5 flex-shrink-0 ml-auto">
+        <button
+          type="button"
+          onclick={`window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: ${item.id}, name: ${JSON.stringify(item.name)} } }))`}
+          class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl font-bold text-xs flex items-center gap-1 transition-all cursor-pointer"
+          aria-label={`Rate ${item.name}`}
+        >
+          <span>⭐</span> Rate
+        </button>
+      </div>
     </div>
   </div>
 </div>

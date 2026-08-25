@@ -17,7 +17,7 @@ function getDb() {
   return createDb();
 }
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, url }) => {
   if (!await isAuthenticated(request)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401, headers: { 'Content-Type': 'application/json' },
@@ -25,13 +25,31 @@ export const GET: APIRoute = async ({ request }) => {
   }
   try {
     const db = getDb();
-    const vendors = await db.select().from(schema.vendors).orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
-    return new Response(JSON.stringify({ vendors }), {
+    const idParam = url.searchParams.get('id');
+    if (idParam) {
+      const id = parseInt(idParam, 10);
+      if (!id || isNaN(id)) {
+        return new Response(JSON.stringify({ error: 'Invalid category ID' }), {
+          status: 400, headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      const [category] = await db.select().from(schema.categories).where(eq(schema.categories.id, id)).limit(1);
+      if (!category) {
+        return new Response(JSON.stringify({ error: 'Category not found' }), {
+          status: 404, headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ category }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const categories = await db.select().from(schema.categories).orderBy(asc(schema.categories.displayOrder), asc(schema.categories.name));
+    return new Response(JSON.stringify({ categories }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('List vendors error:', error);
-    return new Response(JSON.stringify({ vendors: [] }), {
+    console.error('List categories error:', error);
+    return new Response(JSON.stringify({ categories: [] }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   }
@@ -46,41 +64,35 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const db = getDb();
     const body = await request.json();
-    const { name, phone, whatsapp, address, opensAt, closesAt, deliversTo, description } = body;
-
-    if (!name?.trim() || !phone?.trim() || !address?.trim()) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: name, phone, address' }), {
+    const { name, icon } = body;
+    if (!name?.trim() || !icon?.trim()) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: name, icon' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
-
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const existing = await db.select({ id: schema.vendors.id }).from(schema.vendors).where(eq(schema.vendors.slug, slug)).limit(1);
-    const finalSlug = existing.length > 0 ? `${slug}-${Date.now()}` : slug;
-
-    const maxOrderResult = await db.select({ maxOrder: sql<number>`max(${schema.vendors.displayOrder})` }).from(schema.vendors);
+    const existing = await db.select({ id: schema.categories.id }).from(schema.categories).where(eq(schema.categories.slug, slug)).limit(1);
+    if (existing.length > 0) {
+      return new Response(JSON.stringify({ error: 'Category slug already exists' }), {
+        status: 409, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const maxOrderResult = await db.select({ maxOrder: sql<number>`max(${schema.categories.displayOrder})` }).from(schema.categories);
     const nextOrder = (maxOrderResult[0]?.maxOrder ?? 0) + 1;
 
-    const [vendor] = await db.insert(schema.vendors).values({
+    const [category] = await db.insert(schema.categories).values({
       name: name.trim(),
-      slug: finalSlug,
-      phone: phone.trim(),
-      whatsapp: whatsapp?.trim() || phone.trim(),
-      address: address.trim(),
-      opensAt: opensAt || '09:00',
-      closesAt: closesAt || '23:00',
-      deliversTo: deliversTo || ['All Hostels'],
-      isActive: true,
-      isFeatured: false,
+      slug,
+      icon: icon.trim(),
       displayOrder: nextOrder,
-    } as any).returning();
+    }).returning();
 
-    return new Response(JSON.stringify({ success: true, vendor }), {
+    return new Response(JSON.stringify({ success: true, category }), {
       status: 201, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Create vendor error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to create vendor' }), {
+    console.error('Create category error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to create category' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }
@@ -95,43 +107,35 @@ export const PATCH: APIRoute = async ({ request }) => {
   try {
     const db = getDb();
     const body = await request.json();
-    const { id, isActive, isFeatured, name, phone, whatsapp, address, opensAt, closesAt, deliversTo } = body;
-
+    const { id, name, icon, displayOrder } = body;
     if (!id || isNaN(parseInt(id, 10))) {
-      return new Response(JSON.stringify({ error: 'Invalid vendor ID' }), {
+      return new Response(JSON.stringify({ error: 'Invalid category ID' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
-
-    const vendorId = parseInt(id, 10);
+    const categoryId = parseInt(id, 10);
     const updateData: Record<string, any> = {};
-    if (typeof isActive === 'boolean') updateData.isActive = isActive;
-    if (typeof isFeatured === 'boolean') updateData.isFeatured = isFeatured;
     if (name?.trim()) updateData.name = name.trim();
-    if (phone?.trim()) updateData.phone = phone.trim();
-    if (whatsapp?.trim()) updateData.whatsapp = whatsapp.trim();
-    if (address?.trim()) updateData.address = address.trim();
-    if (opensAt) updateData.opensAt = opensAt;
-    if (closesAt) updateData.closesAt = closesAt;
-    if (deliversTo) updateData.deliversTo = deliversTo;
+    if (icon?.trim()) updateData.icon = icon.trim();
+    if (displayOrder !== undefined) updateData.displayOrder = displayOrder;
 
     if (Object.keys(updateData).length === 0) {
       return new Response(JSON.stringify({ error: 'No valid fields to update' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
-    const [vendor] = await db.update(schema.vendors).set(updateData).where(eq(schema.vendors.id, vendorId)).returning();
-    if (!vendor) {
-      return new Response(JSON.stringify({ error: 'Vendor not found' }), {
+    const [category] = await db.update(schema.categories).set(updateData).where(eq(schema.categories.id, categoryId)).returning();
+    if (!category) {
+      return new Response(JSON.stringify({ error: 'Category not found' }), {
         status: 404, headers: { 'Content-Type': 'application/json' },
       });
     }
-    return new Response(JSON.stringify({ success: true, vendor }), {
+    return new Response(JSON.stringify({ success: true, category }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Update vendor error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to update vendor' }), {
+    console.error('Update category error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to update category' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }
@@ -148,17 +152,17 @@ export const DELETE: APIRoute = async ({ request, url }) => {
     const idParam = url.searchParams.get('id');
     const id = parseInt(idParam || '', 10);
     if (!id || isNaN(id)) {
-      return new Response(JSON.stringify({ error: 'Invalid vendor ID' }), {
+      return new Response(JSON.stringify({ error: 'Invalid category ID' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
-    await db.delete(schema.vendors).where(eq(schema.vendors.id, id));
+    await db.delete(schema.categories).where(eq(schema.categories.id, id));
     return new Response(JSON.stringify({ success: true }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Delete vendor error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to delete vendor' }), {
+    console.error('Delete category error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to delete category' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }

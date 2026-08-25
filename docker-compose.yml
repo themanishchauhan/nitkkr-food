@@ -1,22 +1,37 @@
 version: '3.8'
 
 services:
-  meilisearch:
-    image: getmeili/meilisearch:v1.11
-    container_name: nitkkr-meilisearch
+  # libSQL server for local development (optional - alternative to file-based SQLite)
+  # Provides HTTP interface compatible with Turso/libSQL
+  libsql:
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    container_name: nitkkr-libsql
     ports:
-      - "7700:7700"
-    environment:
-      - MEILI_MASTER_KEY=masterKey
-      - MEILI_NO_ANALYTICS=true
+      - "8080:8080"
     volumes:
-      - meilisearch_data:/meili_data
+      - ./db/libsql:/var/lib/libsql
+    environment:
+      - LIBSQL_DATABASE_PATH=/var/lib/libsql/local.db
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7700/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Redis for session/cache (optional - for future use)
+  redis:
+    image: redis:7-alpine
+    container_name: nitkkr-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./db/redis:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    profiles:
+      - with-redis
+
 volumes:
-  meilisearch_data:
+  libsql_data:
+  redis_data:

@@ -1,45 +1,223 @@
 ---
+export const prerender = false;
 import Layout from '../layouts/Layout.astro';
-import CartDrawer from '../components/CartDrawer.astro';
-import { getCategories, getAllMenuItemsForSearch } from '../lib/queries';
+import { getCategories, getAllMenuItemsForSearch, getActiveVendors } from '../lib/queries';
 
 const initialQuery = Astro.url.searchParams.get('q')?.trim() || '';
 const initialCategory = Astro.url.searchParams.get('category')?.trim() || '';
+const initialMaxPrice = Astro.url.searchParams.get('maxPrice')?.trim() || '';
+const initialIsVeg = Astro.url.searchParams.get('isVeg')?.trim() || '';
+const initialTab = Astro.url.searchParams.get('tab')?.trim() || 'dishes';
+
 const allItems = await getAllMenuItemsForSearch();
+const allVendors = await getActiveVendors();
 const categories = await getCategories();
 ---
 
 <Layout
-  title={initialQuery ? `Search: ${initialQuery} - NITKKR Food` : 'Search Food - NITKKR Food'}
-  description="Search food items across all stalls around NITKKR"
+  title={initialQuery ? `Search: ${initialQuery} - NITKKR Food` : 'Search Food & Stalls - NITKKR Food'}
+  description="Search dishes and food stalls across NIT Kurukshetra campus"
 >
-  <section
-    x-data={`{
-      query: ${JSON.stringify(initialQuery)},
-      activeCat: ${JSON.stringify(initialCategory || 'all')},
-      allItems: ${JSON.stringify(allItems)},
-      
-      get filteredItems() {
-        let list = this.allItems;
-        if (this.query.trim()) {
-          const q = this.query.toLowerCase().trim();
-          list = list.filter(i =>
-            i.name.toLowerCase().includes(q) ||
-            (i.description && i.description.toLowerCase().includes(q)) ||
-            i.vendorName.toLowerCase().includes(q) ||
-            (i.tags && i.tags.some(t => t.toLowerCase().includes(q)))
-          );
+  <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTab, allItems, allVendors }}>
+    function normalizePhonetics(str) {
+      return (str || '').toLowerCase()
+        .replace(/aa/g, 'a')
+        .replace(/ee/g, 'i')
+        .replace(/oo/g, 'u')
+        .replace(/nn/g, 'n')
+        .replace(/tt/g, 't')
+        .replace(/pp/g, 'p')
+        .replace(/rr/g, 'r')
+        .replace(/ll/g, 'l')
+        .replace(/mm/g, 'm')
+        .replace(/kk/g, 'k')
+        .replace(/ss/g, 's')
+        .replace(/zz/g, 'z')
+        .replace(/ph/g, 'f')
+        .replace(/bh/g, 'b')
+        .replace(/dh/g, 'd')
+        .replace(/th/g, 't')
+        .replace(/sh/g, 's');
+    }
+
+    function levenshteinDist(a, b) {
+      if (a === b) return 0;
+      if (!a.length) return b.length;
+      if (!b.length) return a.length;
+      var matrix = [];
+      for (var i = 0; i <= b.length; i++) matrix[i] = [i];
+      for (var j = 0; j <= a.length; j++) matrix[0][j] = j;
+      for (var i = 1; i <= b.length; i++) {
+        for (var j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+          }
         }
-        if (this.activeCat && this.activeCat !== 'all') {
-          list = list.filter(i => i.categorySlug === this.activeCat || i.categoryName === this.activeCat);
-        }
-        return list;
       }
-    }`}
+      return matrix[b.length][a.length];
+    }
+
+    function isFuzzyTokenMatch(queryToken, targetWords, fullText) {
+      if (fullText.indexOf(queryToken) !== -1) return true;
+
+      // Check singular / plural
+      if (queryToken.endsWith('s') && fullText.indexOf(queryToken.slice(0, -1)) !== -1) return true;
+      if (queryToken.endsWith('es') && fullText.indexOf(queryToken.slice(0, -2)) !== -1) return true;
+
+      var normQuery = normalizePhonetics(queryToken);
+
+      for (var k = 0; k < targetWords.length; k++) {
+        var word = targetWords[k];
+        if (!word) continue;
+
+        if (word.indexOf(queryToken) !== -1 || queryToken.indexOf(word) !== -1) return true;
+
+        var normWord = normalizePhonetics(word);
+        if (normWord.indexOf(normQuery) !== -1 || normQuery.indexOf(normWord) !== -1) return true;
+
+        if (queryToken.length >= 4 && Math.abs(queryToken.length - word.length) <= 2) {
+          var maxAllowedDist = queryToken.length > 5 ? 2 : 1;
+          if (levenshteinDist(queryToken, word) <= maxAllowedDist) return true;
+          if (levenshteinDist(normQuery, normWord) <= maxAllowedDist) return true;
+        }
+      }
+
+      return false;
+    }
+
+    window.searchPage = function() {
+      return {
+        activeTab: initialTab === 'stalls' ? 'stalls' : 'dishes',
+        query: initialQuery || '',
+        activeCat: initialCategory || 'all',
+        maxPrice: initialMaxPrice || '',
+        vegFilter: initialIsVeg === 'true' ? 'veg' : (initialIsVeg === 'false' ? 'nonveg' : 'all'),
+        allItems: allItems || [],
+        allVendors: allVendors || [],
+
+        isVendorOpen(opensAt, closesAt) {
+          if (!opensAt || !closesAt) return true;
+          try {
+            var now = new Date();
+            var ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+            var current = ('0' + ist.getHours()).slice(-2) + ':' + ('0' + ist.getMinutes()).slice(-2);
+            if (opensAt > closesAt) {
+              return current >= opensAt || current <= closesAt;
+            }
+            return current >= opensAt && current <= closesAt;
+          } catch (e) {
+            return true;
+          }
+        },
+
+        get filteredVendors() {
+          if (!this.query.trim()) {
+            return this.allVendors;
+          }
+          var rawQuery = this.query.toLowerCase().trim();
+          var tokens = rawQuery.split(/\s+/).filter(Boolean);
+
+          return this.allVendors.filter(function(v) {
+            var nameLower = (v.name || '').toLowerCase();
+            var addressLower = (v.address || '').toLowerCase();
+            var deliversLower = (v.deliversTo || []).join(' ').toLowerCase();
+            var fullText = nameLower + ' ' + addressLower + ' ' + deliversLower;
+            var targetWords = fullText.split(/[\s,()\/+-]+/).filter(Boolean);
+
+            return tokens.every(function(token) {
+              return isFuzzyTokenMatch(token, targetWords, fullText);
+            });
+          });
+        },
+
+        get matchingStall() {
+          if (!this.query.trim()) return null;
+          var matches = this.filteredVendors;
+          return matches.length > 0 ? matches[0] : null;
+        },
+
+        get filteredItems() {
+          var list = this.allItems;
+
+          // 1. Category Filter
+          if (this.activeCat && this.activeCat !== 'all') {
+            var targetCat = this.activeCat.toLowerCase();
+            list = list.filter(function(i) {
+              return (i.categorySlug && i.categorySlug.toLowerCase() === targetCat) || 
+                     (i.categoryName && i.categoryName.toLowerCase() === targetCat);
+            });
+          }
+
+          // 2. Price Filter
+          if (this.maxPrice && !isNaN(parseFloat(this.maxPrice))) {
+            var maxP = parseFloat(this.maxPrice);
+            list = list.filter(function(i) {
+              return Number(i.price) <= maxP;
+            });
+          }
+
+          // 3. Diet Filter
+          if (this.vegFilter === 'veg') {
+            list = list.filter(function(i) { return i.isVeg === true; });
+          } else if (this.vegFilter === 'nonveg') {
+            list = list.filter(function(i) { return !i.isVeg; });
+          }
+
+          // 4. Keyword & Typo-Tolerant Search
+          if (!this.query.trim()) {
+            return list;
+          }
+
+          var rawQuery = this.query.toLowerCase().trim();
+          var tokens = rawQuery.split(/\s+/).filter(Boolean);
+
+          return list
+            .map(function(item) {
+              var nameLower = (item.name || '').toLowerCase();
+              var descLower = (item.description || '').toLowerCase();
+              var vendorLower = (item.vendorName || '').toLowerCase();
+              var categoryLower = (item.categoryName || '').toLowerCase();
+              var tagsText = (item.tags || []).join(' ').toLowerCase();
+              var fullSearchText = nameLower + ' ' + descLower + ' ' + vendorLower + ' ' + categoryLower + ' ' + tagsText;
+
+              var targetWords = fullSearchText.split(/[\s,()\/+-]+/).filter(Boolean);
+
+              var allTokensMatch = tokens.every(function(token) {
+                return isFuzzyTokenMatch(token, targetWords, fullSearchText);
+              });
+
+              if (!allTokensMatch) return null;
+
+              var score = 0;
+              if (nameLower === rawQuery) score += 100;
+              else if (nameLower.indexOf(rawQuery) === 0) score += 50;
+              else if (nameLower.indexOf(rawQuery) !== -1) score += 30;
+
+              tokens.forEach(function(token) {
+                if (nameLower.indexOf(token) !== -1) score += 15;
+                if (tagsText.indexOf(token) !== -1) score += 8;
+                if (vendorLower.indexOf(token) !== -1) score += 5;
+                if (descLower.indexOf(token) !== -1) score += 2;
+              });
+
+              return { item: item, score: score };
+            })
+            .filter(Boolean)
+            .sort(function(a, b) { return b.score - a.score; })
+            .map(function(entry) { return entry.item; });
+        }
+      };
+    };
+  </script>
+
+  <section
+    x-data="searchPage()"
     class="min-h-screen bg-nitkkr-cream pb-20"
   >
     <div class="max-w-2xl mx-auto px-4 py-8">
-      <div class="mb-6">
+      <div class="mb-5">
         <a href="/" class="inline-flex items-center gap-2 text-nitkkr-gray hover:text-nitkkr-orange transition-colors mb-4 text-sm font-medium">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -52,7 +230,7 @@ const categories = await getCategories();
           <input
             type="search"
             x-model="query"
-            placeholder="Search momos, biryani, burger..."
+            placeholder="Search stalls (Momo Corner) or dishes (paratha)..."
             class="w-full px-6 py-4 pr-14 text-lg bg-white border-2 border-nitkkr-orange/30 rounded-2xl
                    hover:border-nitkkr-orange focus:border-nitkkr-orange focus:outline-none focus:ring-4 focus:ring-nitkkr-orange/10
                    shadow-sm transition-all duration-200"
@@ -60,7 +238,7 @@ const categories = await getCategories();
           />
           <button
             type="button"
-            class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-nitkkr-orange hover:scale-110 transition-transform"
+            class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-nitkkr-orange hover:scale-110 transition-transform cursor-pointer"
             aria-label="Search"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -69,15 +247,109 @@ const categories = await getCategories();
           </button>
         </div>
 
+        <!-- Tab Switcher: Dishes vs Stalls -->
+        <div class="flex gap-2 mt-4 bg-white p-1.5 rounded-2xl border border-nitkkr-orange/20 shadow-xs">
+          <button
+            type="button"
+            @click="activeTab = 'dishes'"
+            :class="activeTab === 'dishes' ? 'bg-nitkkr-orange text-white shadow-sm' : 'text-nitkkr-dark hover:bg-nitkkr-cream'"
+            class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <span>🍱</span>
+            <span>Dishes</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'dishes' ? 'bg-white/20 text-white' : 'bg-nitkkr-orange/10 text-nitkkr-orange'" x-text="filteredItems.length"></span>
+          </button>
+          <button
+            type="button"
+            @click="activeTab = 'stalls'"
+            :class="activeTab === 'stalls' ? 'bg-nitkkr-orange text-white shadow-sm' : 'text-nitkkr-dark hover:bg-nitkkr-cream'"
+            class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <span>🏪</span>
+            <span>Campus Stalls</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'stalls' ? 'bg-white/20 text-white' : 'bg-nitkkr-orange/10 text-nitkkr-orange'" x-text="filteredVendors.length"></span>
+          </button>
+        </div>
+
+        <!-- Filter Controls for Dishes tab -->
+        <div x-show="activeTab === 'dishes'" class="mt-3 space-y-2">
+          <!-- Price & Diet Bar -->
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-semibold text-nitkkr-dark mr-1">💰 Price:</span>
+              <button
+                type="button"
+                @click="maxPrice = ''"
+                :class="maxPrice === '' ? 'bg-nitkkr-orange text-white' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange'"
+                class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              >
+                Any
+              </button>
+              <button
+                type="button"
+                @click="maxPrice = '50'"
+                :class="maxPrice === '50' ? 'bg-nitkkr-orange text-white' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange'"
+                class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              >
+                ≤ ₹50
+              </button>
+              <button
+                type="button"
+                @click="maxPrice = '100'"
+                :class="maxPrice === '100' ? 'bg-nitkkr-orange text-white' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange'"
+                class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              >
+                ≤ ₹100
+              </button>
+              <button
+                type="button"
+                @click="maxPrice = '150'"
+                :class="maxPrice === '150' ? 'bg-nitkkr-orange text-white' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange'"
+                class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              >
+                ≤ ₹150
+              </button>
+            </div>
+
+            <!-- Veg / Non-Veg Toggle -->
+            <div class="flex items-center gap-1.5">
+              <button
+                type="button"
+                @click="vegFilter = (vegFilter === 'veg' ? 'all' : 'veg')"
+                :class="vegFilter === 'veg' ? 'bg-green-600 text-white shadow-xs' : 'bg-white text-green-700 border border-green-300 hover:bg-green-50'"
+                class="px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>🌱</span> Veg Only
+              </button>
+              <button
+                type="button"
+                @click="vegFilter = (vegFilter === 'nonveg' ? 'all' : 'nonveg')"
+                :class="vegFilter === 'nonveg' ? 'bg-red-600 text-white shadow-xs' : 'bg-white text-red-700 border border-red-300 hover:bg-red-50'"
+                class="px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>🍗</span> Non-Veg
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result counter and reset button -->
         <p class="mt-3 text-xs font-semibold text-nitkkr-gray flex items-center justify-between">
-          <span x-text="`Found ${filteredItems.length} item${filteredItems.length !== 1 ? 's' : ''}`"></span>
-          <button x-show="query || activeCat !== 'all'" @click="query = ''; activeCat = 'all'" class="text-nitkkr-orange hover:underline font-bold">Clear Filters</button>
+          <span x-show="activeTab === 'dishes'" x-text="`Found ${filteredItems.length} dish${filteredItems.length !== 1 ? 'es' : ''}`"></span>
+          <span x-show="activeTab === 'stalls'" x-text="`Found ${filteredVendors.length} campus stall${filteredVendors.length !== 1 ? 's' : ''}`"></span>
+          <button
+            x-show="query || activeCat !== 'all' || maxPrice !== '' || vegFilter !== 'all'"
+            @click="query = ''; activeCat = 'all'; maxPrice = ''; vegFilter = 'all'"
+            class="text-nitkkr-orange hover:underline font-bold cursor-pointer"
+          >
+            Reset Filters
+          </button>
         </p>
       </div>
 
-      <!-- Category Filter Pills -->
+      <!-- Category Filter Pills (for Dishes) -->
       {categories.length > 0 && (
-        <div class="mb-6">
+        <div x-show="activeTab === 'dishes'" class="mb-6">
           <div class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none" role="group" aria-label="Filter by category">
             <button
               type="button"
@@ -85,7 +357,7 @@ const categories = await getCategories();
               :class="activeCat === 'all' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange'"
               class="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer"
             >
-              All
+              All Categories
             </button>
             {categories.map((cat: any) => (
               <button
@@ -102,32 +374,118 @@ const categories = await getCategories();
         </div>
       )}
 
-      <!-- Dynamic Filtered Results -->
-      <div class="space-y-3" role="list" aria-label="Search results">
+      <!-- ================= 🏪 STALLS VIEW ================= -->
+      <div x-show="activeTab === 'stalls'" class="space-y-4" role="list">
+        <template x-for="vendor in filteredVendors" :key="vendor.id">
+          <div class="bg-white p-4 rounded-2xl border border-nitkkr-orange/20 hover:border-nitkkr-orange shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4 min-w-0">
+              <img
+                :src="vendor.image || '/placeholder-vendor.svg'"
+                alt=""
+                class="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+                loading="lazy"
+              />
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-bold text-nitkkr-dark text-base truncate" x-text="vendor.name"></h3>
+                  <span
+                    :class="isVendorOpen(vendor.opensAt, vendor.closesAt) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                    class="px-2 py-0.5 text-[10px] font-bold rounded-full whitespace-nowrap"
+                    x-text="isVendorOpen(vendor.opensAt, vendor.closesAt) ? '🟢 OPEN' : '🔴 CLOSED'"
+                  ></span>
+                </div>
+                <p class="text-xs text-nitkkr-gray mt-0.5 flex items-center gap-1">
+                  <span>📍</span>
+                  <span class="truncate" x-text="vendor.address || 'NITKKR Campus'"></span>
+                </p>
+                <p class="text-[11px] text-nitkkr-gray mt-0.5">
+                  <span class="font-semibold text-nitkkr-dark">Hours:</span>
+                  <span x-text="(vendor.opensAt || '09:00') + ' – ' + (vendor.closesAt || '23:00')"></span>
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-nitkkr-cream">
+              <a
+                :href="`tel:+91${vendor.phone}`"
+                class="px-3 py-2 bg-nitkkr-cream hover:bg-nitkkr-orange/10 text-nitkkr-dark rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
+                aria-label="Call stall"
+              >
+                <span>📞</span> Call
+              </a>
+              <a
+                :href="`https://wa.me/91${vendor.whatsapp || vendor.phone}`"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
+                aria-label="WhatsApp stall"
+              >
+                <span>💬</span> WhatsApp
+              </a>
+              <a
+                :href="`/v/${vendor.slug}`"
+                class="px-4 py-2 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+              >
+                View Menu →
+              </a>
+            </div>
+          </div>
+        </template>
+
+        <div x-show="filteredVendors.length === 0" class="text-center py-16 text-nitkkr-gray bg-white rounded-2xl border border-nitkkr-orange/20 p-8">
+          <p class="text-3xl mb-2">🏪</p>
+          <p class="text-lg font-bold text-nitkkr-dark">No food stalls found</p>
+          <p class="text-xs text-nitkkr-gray mt-1">Try searching for a different stall name or location.</p>
+        </div>
+      </div>
+
+      <!-- ================= 🍱 DISHES VIEW ================= -->
+      <div x-show="activeTab === 'dishes'" class="space-y-3" role="list" aria-label="Search results">
+        
+        <!-- Highlighted Matching Stall Banner if query matches a stall -->
+        <template x-if="matchingStall">
+          <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between gap-3 mb-4 shadow-xs">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-2xl">🏪</span>
+              <div class="min-w-0">
+                <p class="text-xs text-amber-800 font-semibold">Matching Stall</p>
+                <h4 class="font-bold text-sm text-nitkkr-dark truncate" x-text="matchingStall.name"></h4>
+                <p class="text-[11px] text-nitkkr-gray truncate" x-text="matchingStall.address"></p>
+              </div>
+            </div>
+            <a
+              :href="`/v/${matchingStall.slug}`"
+              class="px-3 py-1.5 bg-nitkkr-orange text-white text-xs font-bold rounded-xl whitespace-nowrap hover:bg-nitkkr-orange-dark transition-colors"
+            >
+              Open Stall Menu →
+            </a>
+          </div>
+        </template>
+
         <template x-for="item in filteredItems" :key="item.id">
-          <article class="card p-4 flex gap-4 bg-white rounded-2xl border border-nitkkr-orange/20 hover:border-nitkkr-orange hover:shadow-md transition-all" role="listitem">
+          <article class="card p-3.5 sm:p-4 flex gap-3 sm:gap-4 bg-white rounded-2xl border border-nitkkr-orange/20 hover:border-nitkkr-orange hover:shadow-md transition-all overflow-hidden" role="listitem">
             <img
               :src="item.image || '/placeholder-food.svg'"
               alt=""
-              class="w-20 h-20 rounded-xl object-cover flex-shrink-0"
+              class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover flex-shrink-0"
               loading="lazy"
             />
             <div class="flex-1 min-w-0">
               <div class="flex items-start justify-between gap-2">
-                <div>
-                  <h3 class="font-bold text-nitkkr-dark truncate" x-text="item.name"></h3>
+                <div class="min-w-0">
+                  <h3 class="font-bold text-nitkkr-dark text-sm sm:text-base truncate" x-text="item.name"></h3>
                   <p class="text-xs text-nitkkr-gray mt-0.5 flex items-center gap-1">
                     <span aria-hidden="true">🏪</span>
-                    <a :href="`/v/${item.vendorSlug}`" class="hover:text-nitkkr-orange font-medium transition-colors" x-text="item.vendorName"></a>
-                    <span class="text-nitkkr-orange/70" x-text="item.categoryName ? `· ${item.categoryName}` : ''"></span>
+                    <a :href="`/v/${item.vendorSlug}`" class="hover:text-nitkkr-orange font-medium transition-colors truncate" x-text="item.vendorName"></a>
+                    <span class="text-nitkkr-orange/70 truncate" x-text="item.categoryName ? `· ${item.categoryName}` : ''"></span>
                   </p>
                 </div>
-                <span class="text-nitkkr-orange font-bold text-lg whitespace-nowrap" x-text="`₹${Number(item.price).toFixed(0)}`"></span>
+                <span class="text-nitkkr-orange font-bold text-base sm:text-lg whitespace-nowrap flex-shrink-0" x-text="`₹${Number(item.price).toFixed(0)}`"></span>
               </div>
               <p class="text-xs text-nitkkr-gray mt-1 line-clamp-2" x-text="item.description || ''"></p>
               
-              <div class="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-nitkkr-cream">
-                <div class="flex flex-wrap gap-1">
+              <div class="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-nitkkr-cream">
+                <div class="flex flex-wrap gap-1 items-center">
                   <span x-show="item.isVeg" class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">🌱 Veg</span>
                   <span x-show="!item.isVeg" class="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full">🍗 Non-Veg</span>
                   <template x-for="tag in (item.tags || [])" :key="tag">
@@ -135,19 +493,13 @@ const categories = await getCategories();
                   </template>
                 </div>
 
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    @click="window.dispatchEvent(new CustomEvent('add-to-cart', { detail: { id: item.id, name: item.name + ' (' + item.vendorName + ')', price: Number(item.price) } }))"
-                    class="px-3 py-1.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white rounded-lg font-bold text-xs shadow-sm transition-transform active:scale-95 cursor-pointer"
-                  >
-                    + Add
-                  </button>
+                <div class="flex items-center gap-1.5 flex-shrink-0 ml-auto">
                   <a
                     :href="`/v/${item.vendorSlug}`"
-                    class="px-3 py-1.5 bg-nitkkr-cream hover:bg-nitkkr-orange/10 text-nitkkr-dark rounded-lg font-bold text-xs transition-colors"
+                    class="px-3.5 py-1.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1"
                   >
-                    Stall →
+                    <span>View Menu</span>
+                    <span>→</span>
                   </a>
                 </div>
               </div>
@@ -157,13 +509,10 @@ const categories = await getCategories();
 
         <div x-show="filteredItems.length === 0" class="text-center py-16 text-nitkkr-gray bg-white rounded-2xl border border-nitkkr-orange/20 p-8">
           <p class="text-3xl mb-2">🔍</p>
-          <p class="text-lg font-bold text-nitkkr-dark">No items found matching your filters</p>
-          <p class="text-xs text-nitkkr-gray mt-1">Try typing a different keyword or selecting "All" categories above.</p>
+          <p class="text-lg font-bold text-nitkkr-dark">No dishes found matching your filters</p>
+          <p class="text-xs text-nitkkr-gray mt-1">Try switching to the "Campus Stalls" tab above or changing your search terms.</p>
         </div>
       </div>
     </div>
-
-    <!-- Universal Cart Drawer for Search Results -->
-    <CartDrawer vendorName="Campus Eateries" vendorPhone="9876543210" vendorWhatsApp="9876543210" />
   </section>
 </Layout>

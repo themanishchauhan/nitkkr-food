@@ -1,0 +1,281 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { getCategories } from '../../lib/queries';
+
+const initialCategories = await getCategories();
+---
+
+<Layout title="Manage Categories - NITKKR Food Admin">
+  <section class="min-h-screen bg-nitkkr-cream">
+    <div
+      x-data="{
+        categories: [],
+        showModal: false,
+        editingCategory: null,
+        form: {
+          name: '',
+          icon: '🍔',
+          slug: '',
+          displayOrder: 0
+        },
+        saving: false,
+        loading: false,
+        message: '',
+        error: '',
+        async init() {
+          await this.loadCategories();
+        },
+        async loadCategories() {
+          this.loading = true;
+          try {
+            const res = await fetch('/api/admin/categories');
+            if (res.ok) {
+              const data = await res.json();
+              this.categories = data.categories || [];
+            }
+          } catch (e) {
+            console.error('Failed to load categories:', e);
+          } finally {
+            this.loading = false;
+          }
+        },
+        openAdd() {
+          this.editingCategory = null;
+          this.form = { name: '', icon: '🍔', slug: '', displayOrder: 0 };
+          this.error = '';
+          this.showModal = true;
+        },
+        openEdit(cat) {
+          this.editingCategory = cat;
+          this.form = {
+            name: cat.name,
+            icon: cat.icon,
+            slug: cat.slug,
+            displayOrder: cat.displayOrder || 0
+          };
+          this.error = '';
+          this.showModal = true;
+        },
+        updateSlug() {
+          if (!this.editingCategory) {
+            this.form.slug = this.form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          }
+        },
+        async saveCategory() {
+          if (!this.form.name.trim() || !this.form.icon.trim()) {
+            this.error = 'Name and icon are required';
+            return;
+          }
+          if (!this.form.slug.trim()) {
+            this.updateSlug();
+          }
+          this.saving = true;
+          this.error = '';
+          try {
+            const payload = {
+              name: this.form.name.trim(),
+              icon: this.form.icon.trim(),
+              slug: this.form.slug.trim(),
+              displayOrder: parseInt(this.form.displayOrder) || 0
+            };
+
+            let res;
+            if (this.editingCategory) {
+              res = await fetch('/api/admin/categories/' + this.editingCategory.id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+            } else {
+              res = await fetch('/api/admin/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+            }
+            const data = await res.json();
+            if (res.ok && (data.success || data.category)) {
+              this.message = this.editingCategory ? '✅ Category updated!' : '✅ Category added!';
+              this.showModal = false;
+              await this.loadCategories();
+              setTimeout(() => { this.message = ''; }, 3000);
+            } else {
+              this.error = data.error || 'Failed to save category';
+            }
+          } catch (err) {
+            this.error = 'Network error. Please try again.';
+          } finally {
+            this.saving = false;
+          }
+        },
+        async deleteCategory(cat) {
+          if (!confirm('Delete ' + cat.name + '? This will also affect menu items in this category.')) return;
+          try {
+            const res = await fetch('/api/admin/categories/' + cat.id, {
+              method: 'DELETE'
+            });
+            if (res.ok) {
+              this.message = '🗑️ Category deleted!';
+              await this.loadCategories();
+              setTimeout(() => { this.message = ''; }, 3000);
+            } else {
+              this.message = '❌ Failed to delete category';
+            }
+          } catch (e) {
+            this.message = '❌ Network error';
+          }
+        }
+      }"
+      x-init="init()"
+      class="max-w-4xl mx-auto px-4 py-8"
+    >
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <a href="/admin" class="text-xs text-nitkkr-gray hover:text-nitkkr-orange mb-1 inline-block">← Back to Dashboard</a>
+          <h1 class="font-display text-3xl font-bold text-nitkkr-dark flex items-center gap-2">
+            <span>🍽️</span> Manage Categories
+          </h1>
+          <p class="text-sm text-nitkkr-gray mt-1">Organize food dishes into browseable campus categories</p>
+        </div>
+        <button
+          @click="openAdd()"
+          class="px-4 py-2.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-sm rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+        >
+          <span>➕</span> Add New Category
+        </button>
+      </div>
+
+      <!-- Toast message -->
+      <div x-show="message" x-cloak class="mb-4 p-3 bg-green-50 text-green-700 text-sm rounded-xl font-medium shadow-sm border border-green-200" x-text="message"></div>
+
+      <!-- Loading State -->
+      <div x-show="loading && categories.length === 0" class="text-center py-12 text-nitkkr-gray text-sm">Loading categories...</div>
+
+      <!-- Categories Grid -->
+      <div x-show="categories.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <template x-for="cat in categories" :key="cat.id">
+          <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-5 flex flex-col items-center text-center hover:border-nitkkr-orange/40 transition-colors">
+            <span class="text-4xl mb-2" x-text="cat.icon"></span>
+            <h3 class="font-display font-bold text-lg text-nitkkr-dark" x-text="cat.name"></h3>
+            <p class="text-xs text-nitkkr-gray mb-4" x-text="'slug: ' + cat.slug"></p>
+            <div class="flex items-center justify-center gap-2 w-full pt-3 border-t border-nitkkr-cream">
+              <button
+                @click="openEdit(cat)"
+                class="flex-1 py-2 bg-nitkkr-cream hover:bg-nitkkr-orange/10 text-nitkkr-orange border border-nitkkr-orange/30 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+              >
+                Edit
+              </button>
+              <button
+                @click="deleteCategory(cat)"
+                class="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Empty state -->
+      <div x-show="!loading && categories.length === 0" x-cloak class="text-center py-16 bg-white rounded-2xl border border-nitkkr-orange/10">
+        <p class="text-4xl mb-2">🍽️</p>
+        <p class="font-medium text-nitkkr-dark">No categories yet</p>
+        <p class="text-xs text-nitkkr-gray mt-1">Click "Add New Category" to create your first category</p>
+      </div>
+
+      <!-- Add/Edit Modal -->
+      <div
+        x-show="showModal"
+        x-cloak
+        class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+        @click.self="showModal = false"
+      >
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-nitkkr-orange/30">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display font-bold text-lg text-nitkkr-dark" x-text="editingCategory ? 'Edit Category' : 'Add New Category'"></h3>
+            <button @click="showModal = false" class="text-nitkkr-gray hover:text-nitkkr-dark font-bold text-xl cursor-pointer">&times;</button>
+          </div>
+
+          <form @submit.prevent="saveCategory()" class="space-y-4">
+            <div x-show="error" x-cloak class="p-3 bg-red-50 text-red-700 text-xs rounded-xl" x-text="error"></div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Category Name *</label>
+              <input
+                type="text"
+                x-model="form.name"
+                @input="updateSlug()"
+                required
+                placeholder="e.g. Rolls & Wraps"
+                class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Emoji Icon *</label>
+              <div class="flex items-center gap-2">
+                <input
+                  type="text"
+                  x-model="form.icon"
+                  required
+                  placeholder="🌯"
+                  maxlength="4"
+                  class="w-20 px-3 py-2 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-2xl text-center outline-none focus:border-nitkkr-orange"
+                />
+                <div class="flex flex-wrap gap-1">
+                  <template x-for="ic in ['🍔', '🌯', '🍜', '🍕', '☕', '🥤', '🍛', '🍨', '🍰', '🥘']" :key="ic">
+                    <button
+                      type="button"
+                      @click="form.icon = ic"
+                      class="w-8 h-8 rounded-lg hover:bg-nitkkr-cream flex items-center justify-center text-lg cursor-pointer"
+                      x-text="ic"
+                    ></button>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">URL Slug</label>
+              <input
+                type="text"
+                x-model="form.slug"
+                placeholder="rolls-wraps"
+                class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange font-mono text-xs"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Display Order</label>
+              <input
+                type="number"
+                x-model="form.displayOrder"
+                min="0"
+                class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange"
+              />
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button
+                type="button"
+                @click="showModal = false"
+                class="flex-1 py-2.5 border border-nitkkr-orange/30 text-nitkkr-gray font-bold text-sm rounded-xl hover:bg-nitkkr-cream transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="saving"
+                class="flex-1 py-2.5 bg-nitkkr-orange text-white font-bold text-sm rounded-xl hover:bg-nitkkr-orange-dark transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                x-text="saving ? 'Saving...' : (editingCategory ? 'Update Category' : 'Add Category')"
+              ></button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</Layout>

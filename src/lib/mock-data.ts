@@ -403,9 +403,21 @@ export const MOCK_MENU_ITEMS = [
   { id: 901, vendorId: 9, categoryId: 1, name: 'Farmhouse Loaded Pizza (Medium)', description: 'Capsicum, onion, tomato, mushroom, paneer with extra Mozzarella cheese', price: '210.00', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80', isVeg: true, isAvailable: true, tags: ['pizza', 'bestseller'], displayOrder: 1, createdAt: new Date(), categoryName: 'Fast Food', categorySlug: 'fast-food', categoryIcon: '🍔' },
 ];
 
+export const MOCK_REVIEWS = [
+  { id: 1, menuItemId: 301, studentName: 'Aarav Sharma (H-3)', rating: 5, comment: 'One of the best thick shakes on campus! Very thick and creamy.', createdAt: new Date(Date.now() - 3600000 * 24).toISOString() },
+  { id: 2, menuItemId: 301, studentName: 'Priya Verma', rating: 5, comment: 'Super loaded with Oreos. Must try!', createdAt: new Date(Date.now() - 3600000 * 48).toISOString() },
+  { id: 3, menuItemId: 302, studentName: 'Rohan Gupta (H-7)', rating: 4, comment: 'Fresh juice, pure fruit without extra sugar or water. Highly recommend after gym.', createdAt: new Date(Date.now() - 3600000 * 72).toISOString() },
+  { id: 4, menuItemId: 101, studentName: 'Divya S.', rating: 5, comment: 'Paneer momos are super soft and chutney is deliciously spicy!', createdAt: new Date(Date.now() - 3600000 * 12).toISOString() },
+  { id: 5, menuItemId: 102, studentName: 'Nitin Kumar', rating: 4, comment: 'Kurkure momos are super crispy and crunchy.', createdAt: new Date(Date.now() - 3600000 * 30).toISOString() },
+  { id: 6, menuItemId: 201, studentName: 'Rahul Mehra (H-3)', rating: 5, comment: 'Lifesaver during late night coding sessions at 2 AM.', createdAt: new Date(Date.now() - 3600000 * 18).toISOString() },
+  { id: 7, menuItemId: 202, studentName: 'Ananya Roy', rating: 4, comment: 'Classic comfort Maggi with nice melted cheese.', createdAt: new Date(Date.now() - 3600000 * 40).toISOString() },
+  { id: 8, menuItemId: 701, studentName: 'Sameer J.', rating: 5, comment: 'The adrak elaichi chai in kulhad is pure bliss in evening.', createdAt: new Date(Date.now() - 3600000 * 8).toISOString() },
+];
+
 export function addVendorToMock(vendorData: any) {
   const existing = MOCK_VENDORS.find(v => v.id === vendorData.id || v.slug === vendorData.slug);
   if (!existing) {
     MOCK_VENDORS.unshift(vendorData);
   }
 }
+

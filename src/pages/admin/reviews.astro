@@ -1,0 +1,193 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { getAllReviews } from '../../lib/queries';
+
+const initialReviews = await getAllReviews();
+---
+
+<Layout title="Reviews Moderation - NITKKR Food Admin">
+  <section class="min-h-screen bg-nitkkr-cream">
+    <div
+      x-data="{
+        reviews: [],
+        search: '',
+        ratingFilter: 'all',
+        loading: false,
+        message: '',
+        async init() {
+          await this.loadReviews();
+        },
+        async loadReviews() {
+          this.loading = true;
+          try {
+            const res = await fetch('/api/admin/reviews');
+            if (res.ok) {
+              const d = await res.json();
+              this.reviews = d.reviews || [];
+            }
+          } catch (e) {
+            console.error(e);
+          } finally {
+            this.loading = false;
+          }
+        },
+        get filteredReviews() {
+          return this.reviews.filter(r => {
+            const matchesSearch = !this.search || 
+              (r.studentName || '').toLowerCase().includes(this.search.toLowerCase()) ||
+              (r.menuItemName || '').toLowerCase().includes(this.search.toLowerCase()) ||
+              (r.vendorName || '').toLowerCase().includes(this.search.toLowerCase()) ||
+              (r.comment || '').toLowerCase().includes(this.search.toLowerCase());
+            
+            const matchesRating = this.ratingFilter === 'all' || r.rating === parseInt(this.ratingFilter);
+            return matchesSearch && matchesRating;
+          });
+        },
+        get averageRating() {
+          if (this.reviews.length === 0) return '0.0';
+          const sum = this.reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
+          return (sum / this.reviews.length).toFixed(1);
+        },
+        get positivePercentage() {
+          if (this.reviews.length === 0) return 0;
+          const pos = this.reviews.filter(r => r.rating >= 4).length;
+          return Math.round((pos / this.reviews.length) * 100);
+        },
+        async deleteReview(id) {
+          if (!confirm('Are you sure you want to delete this review?')) return;
+          try {
+            const res = await fetch('/api/admin/reviews/' + id, { method: 'DELETE' });
+            if (res.ok) {
+              this.message = '🗑️ Review deleted successfully!';
+              await this.loadReviews();
+              setTimeout(() => { this.message = ''; }, 3000);
+            } else {
+              this.message = '❌ Failed to delete review';
+            }
+          } catch (e) {
+            this.message = '❌ Network error';
+          }
+        },
+        renderStars(rating) {
+          return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+        }
+      }"
+      x-init="init()"
+      class="max-w-6xl mx-auto px-4 py-8"
+    >
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <a href="/admin" class="text-xs text-nitkkr-gray hover:text-nitkkr-orange mb-1 inline-block">← Back to Dashboard</a>
+          <h1 class="font-display text-3xl font-bold text-nitkkr-dark flex items-center gap-2">
+            <span>⭐</span> Reviews & Ratings
+          </h1>
+          <p class="text-sm text-nitkkr-gray mt-1">Moderate student feedback and quality ratings across all campus stalls</p>
+        </div>
+      </div>
+
+      <!-- Toast Message -->
+      <div x-show="message" x-cloak class="mb-4 p-3 bg-white border border-nitkkr-orange/30 text-nitkkr-dark text-sm rounded-xl font-medium shadow-sm" x-text="message"></div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white p-5 rounded-2xl border border-nitkkr-orange/20 shadow-sm">
+          <p class="text-xs text-nitkkr-gray font-medium">Total Reviews</p>
+          <p class="font-display text-3xl font-bold text-nitkkr-dark mt-1" x-text="reviews.length"></p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-nitkkr-orange/20 shadow-sm">
+          <p class="text-xs text-nitkkr-gray font-medium">Campus Average Rating</p>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="font-display text-3xl font-bold text-amber-500" x-text="averageRating"></span>
+            <span class="text-amber-500 text-lg">★</span>
+          </div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-nitkkr-orange/20 shadow-sm">
+          <p class="text-xs text-nitkkr-gray font-medium">Positive Satisfaction (4-5★)</p>
+          <p class="font-display text-3xl font-bold text-green-600 mt-1" x-text="positivePercentage + '%'"></p>
+        </div>
+      </div>
+
+      <!-- Search and Filter Bar -->
+      <div class="bg-white p-4 rounded-2xl border border-nitkkr-orange/20 shadow-sm mb-6 flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div class="w-full sm:w-80 relative">
+          <input
+            type="text"
+            x-model="search"
+            placeholder="Search by student, dish, or stall..."
+            class="w-full pl-9 pr-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange"
+          />
+          <span class="absolute left-3 top-3 text-nitkkr-gray text-xs">🔍</span>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <span class="text-xs font-semibold text-nitkkr-dark whitespace-nowrap">Rating:</span>
+          <select
+            x-model="ratingFilter"
+            class="px-3 py-2 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm font-medium text-nitkkr-dark outline-none focus:border-nitkkr-orange cursor-pointer"
+          >
+            <option value="all">All Ratings</option>
+            <option value="5">5 Stars ★★★★★</option>
+            <option value="4">4 Stars ★★★★☆</option>
+            <option value="3">3 Stars ★★★☆☆</option>
+            <option value="2">2 Stars ★★☆☆☆</option>
+            <option value="1">1 Star ★☆☆☆☆</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div x-show="loading" class="text-center py-12 text-nitkkr-gray text-sm">Loading reviews...</div>
+
+      <!-- Empty State -->
+      <div x-show="!loading && filteredReviews.length === 0" x-cloak class="text-center py-16 bg-white rounded-2xl border border-nitkkr-orange/10">
+        <p class="text-4xl mb-3">💬</p>
+        <p class="text-nitkkr-gray font-medium">No reviews found</p>
+        <p class="text-xs text-nitkkr-gray mt-1">Student reviews will appear here once submitted on menu dishes</p>
+      </div>
+
+      <!-- Reviews Grid -->
+      <div x-show="!loading && filteredReviews.length > 0" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <template x-for="r in filteredReviews" :key="r.id">
+          <div class="bg-white p-5 rounded-2xl border border-nitkkr-orange/20 shadow-sm flex flex-col justify-between hover:border-nitkkr-orange/40 transition-colors">
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-9 h-9 bg-nitkkr-orange/15 text-nitkkr-orange font-bold text-sm rounded-full flex items-center justify-center" x-text="(r.studentName || 'S').charAt(0).toUpperCase()"></span>
+                  <div>
+                    <h3 class="font-bold text-sm text-nitkkr-dark" x-text="r.studentName"></h3>
+                    <p class="text-[11px] text-nitkkr-gray" x-text="r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recent'"></p>
+                  </div>
+                </div>
+                <div class="text-amber-500 font-bold text-sm flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
+                  <span x-text="r.rating + ' ★'"></span>
+                </div>
+              </div>
+
+              <!-- Dish & Stall badge -->
+              <div class="flex flex-wrap gap-1.5 my-2.5">
+                <span class="px-2.5 py-1 bg-nitkkr-cream text-nitkkr-orange text-xs font-semibold rounded-lg" x-text="'🍲 ' + (r.menuItemName || 'Dish #' + r.menuItemId)"></span>
+                <span class="px-2.5 py-1 bg-gray-100 text-nitkkr-gray text-xs font-medium rounded-lg" x-text="'🏪 ' + (r.vendorName || 'Campus Stall')"></span>
+              </div>
+
+              <!-- Comment -->
+              <p class="text-sm text-nitkkr-dark mt-2 font-normal italic" x-text="r.comment ? '“' + r.comment + '”' : 'No comment provided.'"></p>
+            </div>
+
+            <!-- Moderation Action -->
+            <div class="mt-4 pt-3 border-t border-nitkkr-cream flex justify-end">
+              <button
+                @click="deleteReview(r.id)"
+                class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg font-bold text-xs transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <span>🗑️</span> Remove Review
+              </button>
+            </div>
+          </div>
+        </template>
+      </div>
+
+    </div>
+  </section>
+</Layout>

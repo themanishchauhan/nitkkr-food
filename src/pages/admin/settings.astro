@@ -1,0 +1,159 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { getAllSiteSettings } from '../../lib/queries';
+
+const settings = await getAllSiteSettings();
+const settingsObj = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+---
+
+<Layout title="Site Settings - NITKKR Food Admin">
+  <section class="min-h-screen bg-nitkkr-cream">
+    <div x-data="settingsPage()" x-init="loadSettings()" class="min-h-screen bg-nitkkr-cream">
+      <div class="max-w-3xl mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-8">
+          <div>
+            <a href="/admin" class="text-xs text-nitkkr-gray hover:text-nitkkr-orange mb-1 inline-block">← Back to Dashboard</a>
+            <h1 class="font-display text-3xl font-bold text-nitkkr-dark flex items-center gap-2">
+              <span>⚙️</span> Site Settings
+            </h1>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- Homepage Settings -->
+          <div class="card p-6 bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm">
+            <h2 class="font-display font-bold text-lg text-nitkkr-dark mb-4 flex items-center gap-2">
+              <span>🏠</span> Homepage Settings
+            </h2>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Homepage Title</label>
+                <input type="text" x-model="settings.homepage_title" placeholder="Hungry? We got you." class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Homepage Tagline</label>
+                <input type="text" x-model="settings.homepage_tagline" placeholder="Search 20+ food stalls around NITKKR" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Settings -->
+          <div class="card p-6 bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm">
+            <h2 class="font-display font-bold text-lg text-nitkkr-dark mb-4 flex items-center gap-2">
+              <span>📧</span> Contact & SEO
+            </h2>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Contact Email</label>
+                <input type="email" x-model="settings.contact_email" placeholder="admin@nitkkr-food.com" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Meta Description</label>
+                <textarea x-model="settings.meta_description" rows="3" placeholder="Find food around NIT Kurukshetra instantly" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange resize-none"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Meta Keywords</label>
+                <input type="text" x-model="settings.meta_keywords" placeholder="food, NITKKR, campus food, hostel food, delivery" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Social Links -->
+          <div class="card p-6 bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm">
+            <h2 class="font-display font-bold text-lg text-nitkkr-dark mb-4 flex items-center gap-2">
+              <span>🔗</span> Social Links
+            </h2>
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Facebook URL</label>
+                  <input type="url" x-model="settings.facebook_url" placeholder="https://facebook.com/nitkkrfood" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Instagram URL</label>
+                  <input type="url" x-model="settings.instagram_url" placeholder="https://instagram.com/nitkkrfood" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Twitter/X URL</label>
+                  <input type="url" x-model="settings.twitter_url" placeholder="https://x.com/nitkkrfood" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-nitkkr-dark mb-1">WhatsApp Number</label>
+                  <input type="tel" x-model="settings.whatsapp_number" placeholder="+91 98765 43210" class="w-full px-4 py-3 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Save Button -->
+          <div class="flex justify-end pt-4">
+            <button @click="saveSettings()" :disabled="saving" class="px-6 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-sm rounded-xl transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              <span x-show="!saving">Save All Settings</span>
+              <span x-show="saving">Saving...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <script is:inline>
+        function settingsPage() {
+          return {
+            settings: {
+              homepage_title: '',
+              homepage_tagline: '',
+              contact_email: '',
+              meta_description: '',
+              meta_keywords: '',
+              facebook_url: '',
+              instagram_url: '',
+              twitter_url: '',
+              whatsapp_number: '',
+            },
+            saving: false,
+
+            async init() {
+              await this.loadSettings();
+            },
+
+            async loadSettings() {
+              try {
+                const res = await fetch('/api/admin/settings');
+                if (res.ok) {
+                  const data = await res.json();
+                  this.settings = data.settings || {};
+                }
+              } catch (e) {
+                console.error('Failed to load settings:', e);
+              }
+            },
+
+            async saveSettings() {
+              this.saving = true;
+              try {
+                for (const [key, value] of Object.entries(this.settings)) {
+                  const res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key, value })
+                  });
+                  if (!res.ok) {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to save ' + key);
+                    return;
+                  }
+                }
+                alert('✅ All settings saved successfully!');
+              } catch (err) {
+                console.error('Save settings error:', err);
+                alert('Failed to save settings');
+              } finally {
+                this.saving = false;
+              }
+            }
+          };
+        }
+      </script>
+    </div>
+  </section>
+</Layout>

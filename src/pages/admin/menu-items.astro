@@ -1,0 +1,276 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { getActiveVendors, getCategories } from '../../lib/queries';
+const vendors = await getActiveVendors();
+const categories = await getCategories();
+---
+
+<Layout title="Menu Items - NITKKR Food Admin">
+  <section class="min-h-screen bg-nitkkr-cream">
+    <div x-data="{
+      vendors: [],
+      categories: [],
+      selectedVendorId: null,
+      items: [],
+      showModal: false,
+      editingItem: null,
+      loading: false,
+      saving: false,
+      message: '',
+      form: {
+        vendorId: '',
+        categoryId: '',
+        name: '',
+        description: '',
+        price: '',
+        isVeg: true,
+        isAvailable: true,
+        tags: ''
+      },
+      async init() {
+        const vRes = await fetch('/api/admin/vendors');
+        if (vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
+        const cRes = await fetch('/api/admin/categories');
+        if (cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
+      },
+      async loadItems() {
+        if (!this.selectedVendorId) { this.items = []; return; }
+        this.loading = true;
+        const res = await fetch('/api/admin/menu?vendorId=' + this.selectedVendorId);
+        if (res.ok) { const d = await res.json(); this.items = d.items || []; }
+        this.loading = false;
+      },
+      openAdd() {
+        this.editingItem = null;
+        this.form = { vendorId: this.selectedVendorId || '', categoryId: '', name: '', description: '', price: '', isVeg: true, isAvailable: true, tags: '' };
+        this.showModal = true;
+      },
+      openEdit(item) {
+        this.editingItem = item;
+        this.form = {
+          vendorId: item.vendorId,
+          categoryId: item.categoryId || '',
+          name: item.name,
+          description: item.description || '',
+          price: item.price,
+          isVeg: item.isVeg,
+          isAvailable: item.isAvailable,
+          tags: (item.tags || []).join(', ')
+        };
+        this.showModal = true;
+      },
+      async saveItem() {
+        if (!this.form.name.trim() || !this.form.price || !this.form.vendorId) {
+          this.message = '❌ Stall, name and price are required.';
+          return;
+        }
+        this.saving = true;
+        const payload = {
+          vendorId: parseInt(this.form.vendorId),
+          categoryId: this.form.categoryId ? parseInt(this.form.categoryId) : null,
+          name: this.form.name.trim(),
+          description: this.form.description.trim() || null,
+          price: parseFloat(this.form.price),
+          isVeg: this.form.isVeg,
+          isAvailable: this.form.isAvailable,
+          tags: this.form.tags ? this.form.tags.split(',').map(t => t.trim()).filter(Boolean) : []
+        };
+        let res;
+        if (this.editingItem) {
+          res = await fetch('/api/admin/menu/' + this.editingItem.id, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch('/api/admin/menu', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+        const d = await res.json();
+        if (res.ok) {
+          this.message = this.editingItem ? '✅ Item updated!' : '✅ Item added!';
+          this.showModal = false;
+          await this.loadItems();
+        } else {
+          this.message = '❌ ' + (d.error || 'Failed to save');
+        }
+        this.saving = false;
+      },
+      async toggleAvailable(item) {
+        const res = await fetch('/api/admin/menu/' + item.id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isAvailable: !item.isAvailable })
+        });
+        if (res.ok) await this.loadItems();
+      },
+      async deleteItem(item) {
+        if (!confirm('Delete ' + item.name + '?')) return;
+        const res = await fetch('/api/admin/menu/' + item.id, { method: 'DELETE' });
+        if (res.ok) { this.message = '🗑️ Deleted!'; await this.loadItems(); }
+      },
+      vendorName(id) {
+        const v = this.vendors.find(v => v.id === id);
+        return v ? v.name : 'Unknown';
+      }
+    }" x-init="init()" class="max-w-6xl mx-auto px-4 py-8">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <a href="/admin" class="text-xs text-nitkkr-gray hover:text-nitkkr-orange mb-1 inline-block">← Back to Dashboard</a>
+          <h1 class="font-display text-3xl font-bold text-nitkkr-dark flex items-center gap-2">🍽️ Menu Items</h1>
+          <p class="text-sm text-nitkkr-gray mt-1">Manage food items for each stall</p>
+        </div>
+        <button @click="openAdd()" class="px-5 py-2.5 bg-nitkkr-orange text-white font-bold text-sm rounded-xl hover:bg-nitkkr-orange-dark transition-colors flex items-center gap-2">
+          ➕ Add Item
+        </button>
+      </div>
+
+      <!-- Message toast -->
+      <div x-show="message" x-cloak class="mb-4 p-3 bg-nitkkr-cream border border-nitkkr-orange/30 text-nitkkr-dark text-sm rounded-xl font-medium flex items-center justify-between">
+        <span x-text="message"></span>
+        <button @click="message = ''" class="text-nitkkr-gray text-xs ml-4">✕</button>
+      </div>
+
+      <!-- Vendor filter -->
+      <div class="mb-6 flex items-center gap-4 flex-wrap">
+        <label class="text-sm font-semibold text-nitkkr-dark">Filter by Stall:</label>
+        <select x-model="selectedVendorId" @change="loadItems()"
+          class="px-4 py-2.5 bg-white border border-nitkkr-orange/20 rounded-xl text-sm font-medium text-nitkkr-dark outline-none focus:border-nitkkr-orange min-w-48">
+          <option value="">— Select a stall —</option>
+          <template x-for="v in vendors" :key="v.id">
+            <option :value="v.id" x-text="v.name"></option>
+          </template>
+        </select>
+        <span x-show="selectedVendorId && !loading" class="text-xs text-nitkkr-gray" x-text="items.length + ' items'"></span>
+      </div>
+
+      <!-- Loading state -->
+      <div x-show="loading" class="text-center py-12 text-nitkkr-gray text-sm">Loading items...</div>
+
+      <!-- Empty state -->
+      <div x-show="!loading && selectedVendorId && items.length === 0" x-cloak class="text-center py-16 bg-white rounded-2xl border border-nitkkr-orange/10">
+        <p class="text-4xl mb-3">🍱</p>
+        <p class="text-nitkkr-gray font-medium">No menu items yet for this stall</p>
+        <button @click="openAdd()" class="mt-4 px-5 py-2 bg-nitkkr-orange text-white text-sm font-bold rounded-xl hover:bg-nitkkr-orange-dark transition-colors">Add First Item</button>
+      </div>
+
+      <!-- No stall selected -->
+      <div x-show="!selectedVendorId" class="text-center py-16 bg-white rounded-2xl border border-nitkkr-orange/10">
+        <p class="text-4xl mb-3">👆</p>
+        <p class="text-nitkkr-gray font-medium">Select a stall above to manage its menu</p>
+      </div>
+
+      <!-- Items Table -->
+      <div x-show="!loading && items.length > 0" x-cloak class="bg-white rounded-2xl border border-nitkkr-orange/10 overflow-hidden shadow-sm">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nitkkr-orange/10 bg-nitkkr-cream/50">
+              <th class="text-left px-5 py-3 font-semibold text-nitkkr-dark">Item</th>
+              <th class="text-left px-4 py-3 font-semibold text-nitkkr-dark hidden sm:table-cell">Category</th>
+              <th class="text-right px-4 py-3 font-semibold text-nitkkr-dark">Price</th>
+              <th class="text-center px-4 py-3 font-semibold text-nitkkr-dark hidden sm:table-cell">Type</th>
+              <th class="text-center px-4 py-3 font-semibold text-nitkkr-dark">Status</th>
+              <th class="text-right px-5 py-3 font-semibold text-nitkkr-dark">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="item in items" :key="item.id">
+              <tr class="border-b border-nitkkr-orange/5 hover:bg-nitkkr-cream/30 transition-colors">
+                <td class="px-5 py-3">
+                  <div class="font-medium text-nitkkr-dark" x-text="item.name"></div>
+                  <div class="text-xs text-nitkkr-gray truncate max-w-xs" x-text="item.description || '—'"></div>
+                </td>
+                <td class="px-4 py-3 text-nitkkr-gray hidden sm:table-cell" x-text="item.categoryName || '—'"></td>
+                <td class="px-4 py-3 text-right font-bold text-nitkkr-dark" x-text="'₹' + Number(item.price).toFixed(0)"></td>
+                <td class="px-4 py-3 text-center hidden sm:table-cell">
+                  <span :class="item.isVeg ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'" class="px-2 py-0.5 text-xs font-bold rounded-full" x-text="item.isVeg ? '🌱 Veg' : '🍗 Non-Veg'"></span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button @click="toggleAvailable(item)" :class="item.isAvailable ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700' : 'bg-red-100 text-red-700 hover:bg-green-100 hover:text-green-700'" class="px-2 py-0.5 text-xs font-bold rounded-full transition-colors" x-text="item.isAvailable ? 'Available' : 'Unavailable'"></button>
+                </td>
+                <td class="px-5 py-3 text-right">
+                  <div class="flex gap-2 justify-end">
+                    <button @click="openEdit(item)" class="px-3 py-1.5 border border-nitkkr-orange text-nitkkr-orange text-xs font-bold rounded-lg hover:bg-nitkkr-orange hover:text-white transition-colors">Edit</button>
+                    <button @click="deleteItem(item)" class="px-3 py-1.5 border border-red-200 text-red-500 text-xs font-bold rounded-lg hover:bg-red-500 hover:text-white transition-colors">Del</button>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add/Edit Modal -->
+      <div x-show="showModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" @click.outside="showModal = false">
+          <h2 class="font-display font-bold text-lg text-nitkkr-dark mb-4" x-text="editingItem ? 'Edit Menu Item' : 'Add Menu Item'"></h2>
+          <div class="space-y-3">
+
+            <div>
+              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Stall *</label>
+              <select x-model="form.vendorId" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange">
+                <option value="">— Select stall —</option>
+                <template x-for="v in vendors" :key="v.id">
+                  <option :value="v.id" x-text="v.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Category</label>
+              <select x-model="form.categoryId" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange">
+                <option value="">— No category —</option>
+                <template x-for="c in categories" :key="c.id">
+                  <option :value="c.id" x-text="c.icon + ' ' + c.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Item Name *</label>
+              <input type="text" x-model="form.name" placeholder="e.g. Veg Momos" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Description</label>
+              <textarea x-model="form.description" rows="2" placeholder="Short description..." class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange resize-none"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Price (₹) *</label>
+              <input type="number" x-model="form.price" min="0" step="0.5" placeholder="40" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-nitkkr-dark mb-1">Tags (comma-separated)</label>
+              <input type="text" x-model="form.tags" placeholder="spicy, bestseller, new" class="w-full px-4 py-2.5 bg-nitkkr-cream border border-nitkkr-orange/20 rounded-xl text-sm outline-none focus:border-nitkkr-orange" />
+            </div>
+
+            <div class="flex gap-6 pt-1">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="form.isVeg" class="rounded accent-green-500" />
+                <span class="text-sm font-medium text-nitkkr-dark">🌱 Vegetarian</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="form.isAvailable" class="rounded accent-nitkkr-orange" />
+                <span class="text-sm font-medium text-nitkkr-dark">✅ Available Now</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex gap-3 mt-5">
+            <button @click="showModal = false" class="flex-1 py-2.5 border border-nitkkr-orange/30 text-nitkkr-gray font-bold text-sm rounded-xl hover:bg-nitkkr-cream transition-colors">Cancel</button>
+            <button @click="saveItem()" :disabled="saving" class="flex-1 py-2.5 bg-nitkkr-orange text-white font-bold text-sm rounded-xl hover:bg-nitkkr-orange-dark transition-colors disabled:opacity-50" x-text="saving ? 'Saving...' : (editingItem ? 'Update Item' : 'Add Item')"></button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</Layout>

@@ -42,25 +42,18 @@ export const menuItems = sqliteTable('menu_items', {
   createdAt: text('created_at').default('CURRENT_TIMESTAMP').notNull(),
 });
 
-export const stallInvites = sqliteTable('stall_invites', {
+export const reviews = sqliteTable('reviews', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  vendorId: integer('vendor_id').references(() => vendors.id, { onDelete: 'cascade' }).notNull(),
-  token: text('token').notNull().unique(),
-  email: text('email'),
-  phone: text('phone'),
-  expiresAt: text('expires_at'),
-  usedAt: text('used_at'),
+  menuItemId: integer('menu_item_id').references(() => menuItems.id, { onDelete: 'cascade' }).notNull(),
+  studentName: text('student_name').notNull(),
+  rating: integer('rating').notNull(),
+  comment: text('comment'),
   createdAt: text('created_at').default('CURRENT_TIMESTAMP').notNull(),
 });
 
-export const stallMembers = sqliteTable('stall_members', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  vendorId: integer('vendor_id').references(() => vendors.id, { onDelete: 'cascade' }).notNull(),
-  name: text('name').notNull(),
-  phone: text('phone').notNull(),
-  inviteId: integer('invite_id').references(() => stallInvites.id),
-  isActive: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP').notNull(),
+export const siteSettings = sqliteTable('site_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
 });
 
 export type Vendor = typeof vendors.$inferSelect;
@@ -69,7 +62,7 @@ export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type MenuItem = typeof menuItems.$inferSelect;
 export type NewMenuItem = typeof menuItems.$inferInsert;
-export type StallInvite = typeof stallInvites.$inferSelect;
-export type NewStallInvite = typeof stallInvites.$inferInsert;
-export type StallMember = typeof stallMembers.$inferSelect;
-export type NewStallMember = typeof stallMembers.$inferInsert;
+export type Review = typeof reviews.$inferSelect;
+export type NewReview = typeof reviews.$inferInsert;
+export type SiteSetting = typeof siteSettings.$inferSelect;
+export type NewSiteSetting = typeof siteSettings.$inferInsert;

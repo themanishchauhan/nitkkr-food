@@ -1,0 +1,13 @@
+# Wrangler Dev Variables
+# Copy to .dev.vars and fill in your values
+# This file is used by `wrangler dev` for local Cloudflare simulation
+
+# Admin Authentication
+ADMIN_SECRET=your-super-secret-admin-key-change-in-production
+
+# Database (Local Development - libSQL/SQLite)
+# For local development with wrangler, use the local D1 database
+# DATABASE_URL=file:db/local.db
+
+# Optional: Cloudflare KV Namespace ID for sessions (production only)
+# KV_NAMESPACE_ID=your-kv-namespace-id

@@ -16,9 +16,25 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+.env.local
+.env.*.local
+.dev.vars
 
 # macOS-specific files
 .DS_Store
 
 # jetbrains setting folder
 .idea/
+
+# local database files
+db/
+*.db
+*.sqlite
+*.sqlite3
+
+# Cloudflare & Wrangler local state
+.wrangler/
+scratch/
+
+# docker volumes
+docker-compose.override.yml

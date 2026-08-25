@@ -1,0 +1,10 @@
+diff --git a/node_modules/@libsql/client/lib-esm/ws.js b/node_modules/@libsql/client/lib-esm/ws.js
+index 1234567..abcdefg 100644
+--- a/node_modules/@libsql/client/lib-esm/ws.js
++++ b/node_modules/@libsql/client/lib-esm/ws.js
+@@ -1,5 +1,5 @@
+-import promiseLimit from "promise-limit";
++import promiseLimit from "../../promise-limit-shim";
+ import { LibsqlError } from "@libsql/core/api";
+ import { expandConfig } from "@libsql/core/config";
+ import { HranaTransaction, executeHranaBatch, stmtToHrana, resultSetFromHrana, mapHranaError, } from "./hrana.js";

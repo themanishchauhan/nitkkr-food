@@ -1,9 +1,11 @@
-import { getDbFromEnv, schema } from './db';
+import { createDb, schema } from './db';
 import { eq, and, asc, sql, desc } from 'drizzle-orm';
-import { MOCK_CATEGORIES, MOCK_VENDORS, MOCK_MENU_ITEMS } from './mock-data';
+import { MOCK_VENDORS, MOCK_CATEGORIES, MOCK_MENU_ITEMS, MOCK_REVIEWS } from './mock-data';
+
+const isDev = process.env.NODE_ENV !== 'production';
 
 function getDb() {
-  return getDbFromEnv();
+  return createDb();
 }
 
 export async function getActiveVendors() {
@@ -13,9 +15,10 @@ export async function getActiveVendors() {
       .from(schema.vendors)
       .where(eq(schema.vendors.isActive, true))
       .orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
-    return result.length > 0 ? result : MOCK_VENDORS;
+    if (result && result.length > 0) return result;
+    return isDev ? MOCK_VENDORS.filter(v => v.isActive) : [];
   } catch (e) {
-    return MOCK_VENDORS;
+    return isDev ? MOCK_VENDORS.filter(v => v.isActive) : [];
   }
 }
 
@@ -26,9 +29,10 @@ export async function getVendorBySlug(slug: string) {
       .from(schema.vendors)
       .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
-    return result[0] || MOCK_VENDORS.find(v => v.slug === slug) || MOCK_VENDORS[0];
+    if (result && result[0]) return result[0];
+    return isDev ? (MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null) : null;
   } catch (e) {
-    return MOCK_VENDORS.find(v => v.slug === slug) || MOCK_VENDORS[0];
+    return isDev ? (MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null) : null;
   }
 }
 
@@ -40,9 +44,10 @@ export async function getFeaturedVendors(limit = 5) {
       .where(and(eq(schema.vendors.isActive, true), eq(schema.vendors.isFeatured, true)))
       .orderBy(asc(schema.vendors.displayOrder))
       .limit(limit);
-    return result.length > 0 ? result : MOCK_VENDORS.filter(v => v.isFeatured).slice(0, limit);
+    if (result && result.length > 0) return result;
+    return isDev ? MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit) : [];
   } catch (e) {
-    return MOCK_VENDORS.filter(v => v.isFeatured).slice(0, limit);
+    return isDev ? MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit) : [];
   }
 }
 
@@ -52,11 +57,13 @@ export async function getCategories() {
     const result = await db.select()
       .from(schema.categories)
       .orderBy(asc(schema.categories.displayOrder), asc(schema.categories.name));
-    return result.length > 0 ? result : MOCK_CATEGORIES;
+    if (result && result.length > 0) return result;
+    return isDev ? MOCK_CATEGORIES : [];
   } catch (e) {
-    return MOCK_CATEGORIES;
+    return isDev ? MOCK_CATEGORIES : [];
   }
 }
+
 
 export async function getMenuItemsByVendor(vendorId: number) {
   try {
@@ -80,20 +87,46 @@ export async function getMenuItemsByVendor(vendorId: number) {
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
       .where(and(eq(schema.menuItems.vendorId, vendorId), eq(schema.menuItems.isAvailable, true)))
       .orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
-    return result.length > 0 ? result : MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId);
+    if (result && result.length > 0) return result;
+    return isDev ? MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable) : [];
   } catch (e) {
-    return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId);
+    return isDev ? MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable) : [];
   }
 }
+
+export async function getMenuItemsWithReviewStats(vendorId: number) {
+  try {
+    const items = await getMenuItemsByVendor(vendorId);
+    const vendorReviews = await getReviewsByVendor(vendorId);
+
+    return items.map(item => {
+      const itemReviews = vendorReviews.filter(r => r.menuItemId === item.id);
+      const reviewCount = itemReviews.length;
+      const avgRating = reviewCount > 0
+        ? (itemReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewCount).toFixed(1)
+        : null;
+      return {
+        ...item,
+        avgRating,
+        reviewCount,
+        recentReviews: itemReviews.slice(0, 5)
+      };
+    });
+  } catch (e) {
+    return [];
+  }
+}
+
 
 export async function getAllMenuItemsForSearch() {
   try {
     const db = getDb();
-    const result = await db.select({
+    return await db.select({
       id: schema.menuItems.id,
       name: schema.menuItems.name,
       description: schema.menuItems.description,
       price: schema.menuItems.price,
+      image: schema.menuItems.image,
       isVeg: schema.menuItems.isVeg,
       isAvailable: schema.menuItems.isAvailable,
       tags: schema.menuItems.tags,
@@ -101,47 +134,16 @@ export async function getAllMenuItemsForSearch() {
       vendorSlug: schema.vendors.slug,
       vendorPhone: schema.vendors.phone,
       vendorWhatsApp: schema.vendors.whatsapp,
+      categoryId: schema.categories.id,
       categoryName: schema.categories.name,
+      categorySlug: schema.categories.slug,
     })
       .from(schema.menuItems)
       .innerJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id))
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
       .where(and(eq(schema.menuItems.isAvailable, true), eq(schema.vendors.isActive, true)));
-    return result.length > 0 ? result : MOCK_MENU_ITEMS.map((m: any) => {
-      const v = MOCK_VENDORS.find(v => v.id === m.vendorId);
-      return {
-        id: m.id,
-        name: m.name,
-        description: m.description || null,
-        price: typeof m.price === 'number' ? m.price : parseFloat(m.price),
-        isVeg: Boolean(m.isVeg),
-        isAvailable: Boolean(m.isAvailable),
-        tags: m.tags || [],
-        vendorName: v?.name || '',
-        vendorSlug: v?.slug || '',
-        vendorPhone: v?.phone || '',
-        vendorWhatsApp: v?.whatsapp || null,
-        categoryName: MOCK_CATEGORIES.find(c => c.id === m.categoryId)?.name || null,
-      };
-    });
   } catch (e) {
-    return MOCK_MENU_ITEMS.map((m: any) => {
-      const v = MOCK_VENDORS.find(v => v.id === m.vendorId);
-      return {
-        id: m.id,
-        name: m.name,
-        description: m.description || null,
-        price: typeof m.price === 'number' ? m.price : parseFloat(m.price),
-        isVeg: Boolean(m.isVeg),
-        isAvailable: Boolean(m.isAvailable),
-        tags: m.tags || [],
-        vendorName: v?.name || '',
-        vendorSlug: v?.slug || '',
-        vendorPhone: v?.phone || '',
-        vendorWhatsApp: v?.whatsapp || null,
-        categoryName: MOCK_CATEGORIES.find(c => c.id === m.categoryId)?.name || null,
-      };
-    });
+    return [];
   }
 }
 
@@ -167,9 +169,7 @@ export async function getMinPrice(vendorId: number): Promise<number | null> {
       .where(and(eq(schema.menuItems.vendorId, vendorId), eq(schema.menuItems.isAvailable, true)));
     return result[0]?.minPrice ?? null;
   } catch (e) {
-    const items = MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId);
-    if (!items.length) return null;
-    return Math.min(...items.map(i => parseFloat(i.price)));
+    return null;
   }
 }
 
@@ -196,7 +196,7 @@ export async function getAllMenuItemsByVendor(vendorId: number) {
       .where(eq(schema.menuItems.vendorId, vendorId))
       .orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
   } catch (e) {
-    return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId);
+    return [];
   }
 }
 
@@ -213,7 +213,7 @@ export async function createMenuItem(data: {
   displayOrder?: number;
 }) {
   try {
-    const db = getDb();
+    const db = createDb();
     const maxOrderResult = await db.select({ maxOrder: sql<number>`max(${schema.menuItems.displayOrder})` })
       .from(schema.menuItems)
       .where(eq(schema.menuItems.vendorId, data.vendorId));
@@ -224,7 +224,7 @@ export async function createMenuItem(data: {
       categoryId: data.categoryId || null,
       name: data.name.trim(),
       description: data.description?.trim() || null,
-      price: data.price.toString(),
+      price: parseFloat(String(data.price)),
       image: data.image?.trim() || null,
       isVeg: data.isVeg ?? true,
       isAvailable: data.isAvailable ?? true,
@@ -250,15 +250,15 @@ export async function updateMenuItem(id: number, data: Partial<{
   displayOrder: number;
 }>) {
   try {
-    const db = getDb();
+    const db = createDb();
     const updateData: Record<string, any> = {};
     if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
     if (data.name) updateData.name = data.name.trim();
     if (data.description !== undefined) updateData.description = data.description?.trim() || null;
-    if (data.price !== undefined) updateData.price = data.price.toString();
+    if (data.price !== undefined) updateData.price = parseFloat(String(data.price));
     if (data.image !== undefined) updateData.image = data.image?.trim() || null;
-    if (data.isVeg !== undefined) updateData.isVeg = data.isVeg;
-    if (data.isAvailable !== undefined) updateData.isAvailable = data.isAvailable;
+    if (data.isVeg !== undefined) updateData.isVeg = Boolean(data.isVeg);
+    if (data.isAvailable !== undefined) updateData.isAvailable = Boolean(data.isAvailable);
     if (data.tags !== undefined) updateData.tags = data.tags;
     if (data.displayOrder !== undefined) updateData.displayOrder = data.displayOrder;
 
@@ -277,12 +277,164 @@ export async function updateMenuItem(id: number, data: Partial<{
 
 export async function deleteMenuItem(id: number) {
   try {
-    const db = getDb();
+    const db = createDb();
     await db.delete(schema.menuItems)
       .where(eq(schema.menuItems.id, id));
     return true;
   } catch (error) {
     console.error('Delete menu item error:', error);
     throw error;
+  }
+}
+
+export async function createReview(data: {
+  menuItemId: number;
+  studentName: string;
+  rating: number;
+  comment?: string;
+}) {
+  try {
+    const db = createDb();
+    const [review] = await db.insert(schema.reviews).values({
+      menuItemId: data.menuItemId,
+      studentName: data.studentName.trim(),
+      rating: data.rating,
+      comment: data.comment?.trim() || null,
+    } as any).returning();
+    return review;
+  } catch (error) {
+    console.error('Create review error:', error);
+    throw error;
+  }
+}
+
+export async function getReviewsByMenuItem(menuItemId: number) {
+  try {
+    const db = createDb();
+    const result = await db.select()
+      .from(schema.reviews)
+      .where(eq(schema.reviews.menuItemId, menuItemId))
+      .orderBy(desc(schema.reviews.createdAt));
+    if (result && result.length > 0) return result;
+    return isDev ? MOCK_REVIEWS.filter(r => r.menuItemId === menuItemId) : [];
+  } catch (e) {
+    return isDev ? MOCK_REVIEWS.filter(r => r.menuItemId === menuItemId) : [];
+  }
+}
+
+export async function getReviewsByVendor(vendorId: number) {
+  try {
+    const db = createDb();
+    const result = await db.select({
+      id: schema.reviews.id,
+      menuItemId: schema.reviews.menuItemId,
+      studentName: schema.reviews.studentName,
+      rating: schema.reviews.rating,
+      comment: schema.reviews.comment,
+      createdAt: schema.reviews.createdAt,
+      menuItemName: schema.menuItems.name,
+    })
+      .from(schema.reviews)
+      .innerJoin(schema.menuItems, eq(schema.reviews.menuItemId, schema.menuItems.id))
+      .where(eq(schema.menuItems.vendorId, vendorId))
+      .orderBy(desc(schema.reviews.createdAt));
+    if (result && result.length > 0) return result;
+  } catch (e) {
+    // fallback
+  }
+
+  if (!isDev) return [];
+
+  const vendorItemIds = MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId).map(m => m.id);
+  return MOCK_REVIEWS.filter(r => vendorItemIds.includes(r.menuItemId)).map(r => {
+    const item = MOCK_MENU_ITEMS.find(m => m.id === r.menuItemId);
+    return {
+      ...r,
+      menuItemName: item?.name || 'Dish',
+    };
+  });
+}
+
+export async function getAllReviews() {
+  try {
+    const db = createDb();
+    const result = await db.select({
+      id: schema.reviews.id,
+      menuItemId: schema.reviews.menuItemId,
+      studentName: schema.reviews.studentName,
+      rating: schema.reviews.rating,
+      comment: schema.reviews.comment,
+      createdAt: schema.reviews.createdAt,
+      menuItemName: schema.menuItems.name,
+      vendorName: schema.vendors.name,
+    })
+      .from(schema.reviews)
+      .leftJoin(schema.menuItems, eq(schema.reviews.menuItemId, schema.menuItems.id))
+      .leftJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id))
+      .orderBy(desc(schema.reviews.createdAt));
+    if (result && result.length > 0) return result;
+  } catch (e) {
+    // fallback
+  }
+
+  if (!isDev) return [];
+
+  return MOCK_REVIEWS.map(r => {
+    const item = MOCK_MENU_ITEMS.find(m => m.id === r.menuItemId);
+    const vendor = item ? MOCK_VENDORS.find(v => v.id === item.vendorId) : null;
+    return {
+      ...r,
+      menuItemName: item?.name || 'Dish',
+      vendorName: vendor?.name || 'Campus Stall',
+    };
+  });
+}
+
+
+
+export async function deleteReview(id: number) {
+  try {
+    const db = createDb();
+    await db.delete(schema.reviews)
+      .where(eq(schema.reviews.id, id));
+    return true;
+  } catch (error) {
+    console.error('Delete review error:', error);
+    throw error;
+  }
+}
+
+export async function getSiteSetting(key: string): Promise<string | null> {
+  try {
+    const db = createDb();
+    const result = await db.select()
+      .from(schema.siteSettings)
+      .where(eq(schema.siteSettings.key, key))
+      .limit(1);
+    return result[0]?.value || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+export async function setSiteSetting(key: string, value: string) {
+  try {
+    const db = createDb();
+    await db.insert(schema.siteSettings).values({ key, value })
+      .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value } });
+    return true;
+  } catch (error) {
+    console.error('Set site setting error:', error);
+    throw error;
+  }
+}
+
+export async function getAllSiteSettings() {
+  try {
+    const db = createDb();
+    return await db.select()
+      .from(schema.siteSettings);
+  } catch (e) {
+    return [];
   }
 }

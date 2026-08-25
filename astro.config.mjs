@@ -3,8 +3,14 @@ import sitemap from '@astrojs/sitemap';
 import mdx from '@astrojs/mdx';
 import tailwind from '@astrojs/tailwind';
 import cloudflare from '@astrojs/cloudflare';
+import node from '@astrojs/node';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
+import { config } from 'dotenv';
+
+config({ path: '.dev.vars' });
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 export default defineConfig({
   site: 'https://nitkkr-food.pages.dev',
@@ -16,22 +22,25 @@ export default defineConfig({
     sitemap(),
     mdx(),
   ],
-  adapter: cloudflare({
+  adapter: isProduction ? cloudflare({
     imageService: 'passthrough',
     sessionKV: false,
+  }) : node({
+    mode: 'standalone',
   }),
-  output: 'server',
+  output: isProduction ? 'server' : 'static',
   vite: {
     resolve: {
       alias: {
         '@': path.resolve('./src'),
+        '@lib': path.resolve('./src/lib'),
       },
     },
     optimizeDeps: {
-      exclude: ['@astrojs/cloudflare', 'meilisearch', 'drizzle-orm', '@neondatabase/serverless'],
+      exclude: ['@astrojs/cloudflare', '@astrojs/cloudflare/entrypoints/server.js', 'meilisearch', 'drizzle-orm', '@neondatabase/serverless', '@libsql/client'],
     },
     ssr: {
-      noExternal: ['@astrojs/cloudflare', 'meilisearch', 'drizzle-orm', '@neondatabase/serverless'],
+      noExternal: ['@astrojs/cloudflare', 'meilisearch', 'drizzle-orm', '@neondatabase/serverless', '@libsql/client'],
     },
     plugins: [
       VitePWA({
