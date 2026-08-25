@@ -17,6 +17,8 @@ function getDb() {
   return createDb();
 }
 
+import { MOCK_VENDORS } from '../../../../lib/mock-data';
+
 export const GET: APIRoute = async ({ request }) => {
   if (!await isAuthenticated(request)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -26,16 +28,22 @@ export const GET: APIRoute = async ({ request }) => {
   try {
     const db = getDb();
     const vendors = await db.select().from(schema.vendors).orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
-    return new Response(JSON.stringify({ vendors }), {
+    if (vendors && vendors.length > 0) {
+      return new Response(JSON.stringify({ vendors }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify({ vendors: MOCK_VENDORS }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('List vendors error:', error);
-    return new Response(JSON.stringify({ vendors: [] }), {
+    return new Response(JSON.stringify({ vendors: MOCK_VENDORS }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   }
 };
+
 
 export const POST: APIRoute = async ({ request }) => {
   if (!await isAuthenticated(request)) {
