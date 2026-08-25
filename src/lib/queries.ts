@@ -149,19 +149,26 @@ export async function getAllMenuItemsForSearch() {
   }
 }
 
-export function isVendorOpenNow(opensAt: string, closesAt: string): boolean {
-  const istTime = new Date().toLocaleTimeString('en-GB', {
-    timeZone: 'Asia/Kolkata',
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+export function isVendorOpenNow(opensAt?: string, closesAt?: string): boolean {
+  if (!opensAt || !closesAt) return true;
+  try {
+    const now = new Date();
+    // Convert UTC to Indian Standard Time (UTC+5:30) with pure arithmetic
+    const utcMinutesTotal = now.getUTCHours() * 60 + now.getUTCMinutes() + 330;
+    const istMinutesTotal = (utcMinutesTotal % 1440 + 1440) % 1440;
+    const istHours = Math.floor(istMinutesTotal / 60);
+    const istMins = istMinutesTotal % 60;
+    const istTime = `${String(istHours).padStart(2, '0')}:${String(istMins).padStart(2, '0')}`;
 
-  if (opensAt > closesAt) {
-    return istTime >= opensAt || istTime <= closesAt;
+    if (opensAt > closesAt) {
+      return istTime >= opensAt || istTime <= closesAt;
+    }
+    return istTime >= opensAt && istTime <= closesAt;
+  } catch (e) {
+    return true;
   }
-  return istTime >= opensAt && istTime <= closesAt;
 }
+
 
 export async function getMinPrice(vendorId: number): Promise<number | null> {
   try {
