@@ -1,13 +1,31 @@
 ---
+export const prerender = false;
 import Layout from '../layouts/Layout.astro';
 import SearchBar from '../components/SearchBar.astro';
 import FilterChips from '../components/FilterChips.astro';
 import VendorCard from '../components/VendorCard.astro';
 import CategoryCard from '../components/CategoryCard.astro';
-import { getActiveVendors, getCategories, isVendorOpenNow, getMinPrice } from '../lib/queries';
+import AdBanner from '../components/AdBanner.astro';
+import { getActiveVendors, getCategories, isVendorOpenNow, getMinPrice, getAllSiteSettings } from '../lib/queries';
 
 const vendors = await getActiveVendors();
 const categories = await getCategories();
+const settings = await getAllSiteSettings();
+const settingsObj = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+
+const heroTitle = settingsObj.homepage_title || 'Hungry? We got you. 🍜';
+const heroTagline = settingsObj.homepage_tagline || 'Search 20+ food stalls around NITKKR';
+const bannerEnabled = settingsObj.announcement_banner_enabled === 'true';
+const bannerText = settingsObj.announcement_banner_text || '';
+const bannerType = settingsObj.announcement_banner_type || 'info';
+
+const adEnabled = settingsObj.ad_banner_enabled === 'true';
+const adBadge = settingsObj.ad_banner_badge || '⚡ SPONSORED DEAL';
+const adTitle = settingsObj.ad_banner_title || 'Kurukshetra Protein & Shake Hub';
+const adDesc = settingsObj.ad_banner_description || '15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID.';
+const adImage = settingsObj.ad_banner_image || '';
+const adCta = settingsObj.ad_banner_cta || 'Claim Offer 💬';
+const adLink = settingsObj.ad_banner_link || '#';
 
 const vendorsWithStatus = await Promise.all(
   vendors.map(async (v: any) => ({
@@ -20,13 +38,29 @@ const vendorsWithStatus = await Promise.all(
 
 <Layout title="NITKKR Food - Find Food Around Campus Instantly" description="Search 20+ food stalls around NIT Kurukshetra. View menus, prices, and order via WhatsApp or call directly.">
   <section class="min-h-screen bg-gradient-to-b from-nitkkr-cream to-white pb-12">
-    <div class="max-w-2xl mx-auto px-4 py-6 sm:py-12">
+    <div class="max-w-2xl mx-auto px-4 py-6 sm:py-10">
+      
+      <!-- Live Campus Announcement Banner -->
+      {bannerEnabled && bannerText && (
+        <div class={`mb-6 p-3.5 rounded-2xl border text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-sm ${
+          bannerType === 'offer' ? 'bg-amber-50 border-amber-300 text-amber-900' :
+          bannerType === 'warning' ? 'bg-yellow-50 border-yellow-300 text-yellow-900' :
+          bannerType === 'danger' ? 'bg-rose-50 border-rose-300 text-rose-900' :
+          'bg-blue-50 border-blue-300 text-blue-900'
+        }`}>
+          <span class="text-base flex-shrink-0">
+            {bannerType === 'offer' ? '🎉' : bannerType === 'warning' ? '⚠️' : bannerType === 'danger' ? '🚨' : '📢'}
+          </span>
+          <p class="min-w-0 flex-1 leading-snug">{bannerText}</p>
+        </div>
+      )}
+
       <!-- Compact Hero Section -->
       <div class="text-center mb-6">
         <h1 class="font-display text-3xl sm:text-5xl font-bold text-nitkkr-dark mb-1 leading-tight">
-          Hungry? We got you. <span class="text-nitkkr-orange" aria-hidden="true">🍜</span>
+          {heroTitle}
         </h1>
-        <p class="text-nitkkr-gray text-xs sm:text-base font-medium">Search 20+ food stalls around NITKKR</p>
+        <p class="text-nitkkr-gray text-xs sm:text-base font-medium">{heroTagline}</p>
       </div>
 
       <SearchBar placeholder="What are you craving? momos, biryani..." />
@@ -34,7 +68,7 @@ const vendorsWithStatus = await Promise.all(
       <FilterChips />
 
       <!-- Categories Section -->
-      <div class="mb-10">
+      <div class="mb-8">
         <h2 class="font-display text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2 text-nitkkr-dark">
           <span class="text-nitkkr-orange" aria-hidden="true">🍽️</span>
           Browse by Category
@@ -45,6 +79,18 @@ const vendorsWithStatus = await Promise.all(
           ))}
         </div>
       </div>
+
+      <!-- In-Feed Campus Ad / Sponsor Section -->
+      {adEnabled && (
+        <AdBanner
+          badge={adBadge}
+          title={adTitle}
+          description={adDesc}
+          image={adImage}
+          cta={adCta}
+          link={adLink}
+        />
+      )}
 
       <!-- Stall Listings Section -->
       <div>

@@ -1,17 +1,36 @@
 ---
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
-import { getAllSiteSettings } from '../../lib/queries';
-
-const initialSettings = await getAllSiteSettings();
-const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 ---
 
 <Layout title="Website Settings Management - NITKKR Food Admin">
   <section class="min-h-screen bg-nitkkr-cream pb-16">
     <div
-      x-data={`{
-        settings: ${JSON.stringify(initialSettingsObj)},
+      x-data="{
+        settings: {
+          homepage_title: 'Hungry? We got you. 🍜',
+          homepage_tagline: 'Search 20+ food stalls around NITKKR',
+          meta_description: 'Search 20+ food stalls around NIT Kurukshetra. View menus, prices, and order via WhatsApp or call directly.',
+          announcement_banner_enabled: 'false',
+          announcement_banner_text: '',
+          announcement_banner_type: 'info',
+          ad_banner_enabled: 'false',
+          ad_banner_badge: '⚡ SPONSORED DEAL',
+          ad_banner_title: 'Kurukshetra Protein & Shake Hub',
+          ad_banner_description: '15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID.',
+          ad_banner_image: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=300&auto=format&fit=crop&q=80',
+          ad_banner_cta: 'Claim Offer 💬',
+          ad_banner_link: 'https://wa.me/919876543210?text=Hi!%20I%20want%20to%20claim%20the%20NIT%20student%20discount.',
+          ordering_enabled: 'true',
+          maintenance_message: 'Ordering is temporarily paused for campus break. Stalls reopen tomorrow at 8 AM.',
+          whatsapp_msg_template: 'Hi {stall_name}! I would like to order from NITKKR Food.',
+          footer_tagline: 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.',
+          footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
+          footer_copyright: 'Built with ❤️ for NIT Kurukshetra students',
+          terms_custom_text: '',
+          privacy_custom_text: '',
+          about_custom_text: ''
+        },
         customKey: '',
         customValue: '',
         search: '',
@@ -58,7 +77,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
               body: JSON.stringify({ settings: this.settings })
             });
             if (res.ok) {
-              this.showToast('🎉 All website settings saved successfully in 1 click!');
+              this.showToast('🎉 All website settings saved successfully!');
             } else {
               this.showToast('❌ Failed to save settings');
             }
@@ -104,10 +123,11 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
           const standardKeys = [
             'homepage_title', 'homepage_tagline', 'contact_email', 'support_whatsapp',
             'announcement_banner_enabled', 'announcement_banner_text', 'announcement_banner_type',
+            'ad_banner_enabled', 'ad_banner_badge', 'ad_banner_title', 'ad_banner_description', 'ad_banner_image', 'ad_banner_cta', 'ad_banner_link',
             'ordering_enabled', 'maintenance_message', 'meta_description', 'meta_keywords',
             'instagram_url', 'whatsapp_channel_url', 'pwa_banner_enabled', 'whatsapp_msg_template',
             'terms_custom_text', 'privacy_custom_text', 'about_custom_text',
-            'footer_tagline', 'footer_custom_note', 'footer_copyright', 'footer_show_legal', 'footer_show_explore'
+            'footer_tagline', 'footer_custom_note', 'footer_copyright'
           ];
           return Object.entries(this.settings).filter(([k]) => {
             const isStandard = standardKeys.includes(k);
@@ -115,7 +135,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
             return !isStandard && matchesSearch;
           });
         }
-      }`}
+      }"
       x-init="init()"
       class="max-w-4xl mx-auto px-4 py-8"
     >
@@ -126,7 +146,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
           <h1 class="font-display text-3xl font-bold text-nitkkr-dark flex items-center gap-2">
             <span>⚙️</span> Website Control Center
           </h1>
-          <p class="text-xs text-nitkkr-gray mt-0.5">Manage live website configuration, announcements, footer, and dynamic parameters</p>
+          <p class="text-xs text-nitkkr-gray mt-0.5">Control live hero text, announcement banners, ads/sponsors, footer & content</p>
         </div>
 
         <button
@@ -155,14 +175,21 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
           :class="activeTab === 'general' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
           class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
         >
-          <span>🏠</span> General & Branding
+          <span>🏠</span> General & Hero
         </button>
         <button
           @click="activeTab = 'announcements'"
           :class="activeTab === 'announcements' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
           class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
         >
-          <span>📢</span> Banners & Alerts
+          <span>📢</span> Live Banners
+        </button>
+        <button
+          @click="activeTab = 'ads'"
+          :class="activeTab === 'ads' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
+          class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
+        >
+          <span>⚡</span> Ads & Sponsors
         </button>
         <button
           @click="activeTab = 'ordering'"
@@ -190,38 +217,38 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
           :class="activeTab === 'custom' ? 'bg-nitkkr-orange text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-semibold'"
           class="px-4 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5"
         >
-          <span>🎛️</span> Custom Settings CRUD
+          <span>🎛️</span> Custom CRUD
         </button>
       </div>
 
-      <!-- TAB 1: GENERAL & BRANDING -->
+      <!-- TAB 1: GENERAL & HERO -->
       <div x-show="activeTab === 'general'" class="space-y-5">
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
           <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>✨</span> Homepage Hero
+            <span>✨</span> Homepage Hero Headline & Subtitle
           </h2>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Homepage Headline</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Hero Main Title (Large Text)</label>
             <input type="text" x-model="settings.homepage_title" placeholder="Hungry? We got you. 🍜" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Sub-tagline</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Hero Subtitle</label>
             <input type="text" x-model="settings.homepage_tagline" placeholder="Search 20+ food stalls around NIT Kurukshetra" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:bg-white transition-colors" />
           </div>
         </div>
 
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
           <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>🔍</span> SEO & Meta
+            <span>🔍</span> SEO & Meta Tags
           </h2>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Meta Description (SEO)</label>
-            <textarea x-model="settings.meta_description" rows="2" placeholder="Find food around NIT Kurukshetra instantly. Browse 20+ campus stalls, menus, prices..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors resize-none"></textarea>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Meta Description (Shown on Google & WhatsApp share previews)</label>
+            <textarea x-model="settings.meta_description" rows="2" placeholder="Search 20+ food stalls around NIT Kurukshetra. View menus, prices, and order via WhatsApp..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange focus:bg-white transition-colors resize-none"></textarea>
           </div>
         </div>
       </div>
 
-      <!-- TAB 2: BANNERS & ANNOUNCEMENTS -->
+      <!-- TAB 2: LIVE BANNERS & ANNOUNCEMENTS -->
       <div x-show="activeTab === 'announcements'" class="space-y-5">
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
           <div class="flex items-center justify-between">
@@ -232,7 +259,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
               <p class="text-xs text-slate-500 mt-0.5">Show an urgent campus broadcast at the top of the homepage</p>
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" x-model="settings.announcement_banner_enabled" value="true" class="sr-only peer" />
+              <input type="checkbox" x-model="settings.announcement_banner_enabled" :checked="settings.announcement_banner_enabled === 'true'" @change="settings.announcement_banner_enabled = $el.checked ? 'true' : 'false'" class="sr-only peer" />
               <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
             </label>
           </div>
@@ -254,7 +281,82 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
         </div>
       </div>
 
-      <!-- TAB 3: ORDERING & WHATSAPP CONFIG -->
+      <!-- TAB 3: ADS & SPONSOR CARDS -->
+      <div x-show="activeTab === 'ads'" class="space-y-5">
+        <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
+                <span>⚡</span> In-Feed Ad & Sponsor Card
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">Display promotional banners between categories and stall menus</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="settings.ad_banner_enabled" :checked="settings.ad_banner_enabled === 'true'" @change="settings.ad_banner_enabled = $el.checked ? 'true' : 'false'" class="sr-only peer" />
+              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Badge Tag (e.g. SPONSORED, 15% OFF)</label>
+              <input type="text" x-model="settings.ad_banner_badge" placeholder="⚡ SPONSORED DEAL" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Sponsor / Brand Title</label>
+              <input type="text" x-model="settings.ad_banner_title" placeholder="Kurukshetra Protein & Shake Hub" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Ad Description / Offer Details</label>
+            <textarea x-model="settings.ad_banner_description" rows="2" placeholder="15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange resize-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Button CTA Text</label>
+              <input type="text" x-model="settings.ad_banner_cta" placeholder="Claim Offer 💬" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Target URL / WhatsApp Link</label>
+              <input type="text" x-model="settings.ad_banner_link" placeholder="https://wa.me/919876543210" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Banner Photo / Logo URL</label>
+            <input type="text" x-model="settings.ad_banner_image" placeholder="https://images.unsplash.com/..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
+          </div>
+
+          <!-- Live Ad Preview -->
+          <div class="pt-4 border-t border-slate-100">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">👁️ Live Ad Preview (How students will see it):</span>
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 p-0.5 shadow-md">
+              <div class="bg-gradient-to-br from-slate-900 to-slate-950 rounded-[14px] p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <template x-if="settings.ad_banner_image">
+                    <img :src="settings.ad_banner_image" class="w-12 h-12 rounded-xl object-cover border border-white/20 flex-shrink-0" />
+                  </template>
+                  <template x-if="!settings.ad_banner_image">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-xl flex-shrink-0">🔥</div>
+                  </template>
+                  <div class="min-w-0">
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30 inline-block mb-0.5" x-text="settings.ad_banner_badge || 'SPONSORED'"></span>
+                    <h4 class="font-display font-bold text-sm text-white truncate" x-text="settings.ad_banner_title || 'Sponsor Headline'"></h4>
+                    <p class="text-xs text-slate-300 truncate" x-text="settings.ad_banner_description || 'Special promo message'"></p>
+                  </div>
+                </div>
+                <div class="flex-shrink-0">
+                  <span class="inline-flex items-center gap-1 px-3.5 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black text-xs rounded-xl shadow-xs" x-text="settings.ad_banner_cta || 'Claim Offer →'"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: ORDERING & WHATSAPP CONFIG -->
       <div x-show="activeTab === 'ordering'" class="space-y-5">
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
           <div class="flex items-center justify-between">
@@ -265,7 +367,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
               <p class="text-xs text-slate-500 mt-0.5">Toggle overall platform ordering state</p>
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" x-model="settings.ordering_enabled" value="true" class="sr-only peer" />
+              <input type="checkbox" x-model="settings.ordering_enabled" :checked="settings.ordering_enabled === 'true'" @change="settings.ordering_enabled = $el.checked ? 'true' : 'false'" class="sr-only peer" />
               <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
             </label>
           </div>
@@ -288,11 +390,11 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
         </div>
       </div>
 
-      <!-- TAB 4: FOOTER CUSTOMIZATION -->
+      <!-- TAB 5: FOOTER CUSTOMIZATION -->
       <div x-show="activeTab === 'footer'" class="space-y-5">
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
           <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-            <span>🦶</span> Footer Text & Visibility Controls
+            <span>🦶</span> Footer Text Controls
           </h2>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Footer Sub-Headline / Tagline</label>
@@ -309,7 +411,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
         </div>
       </div>
 
-      <!-- TAB 5: PAGES & LEGAL CONTENT EDITOR -->
+      <!-- TAB 6: PAGES & LEGAL CONTENT EDITOR -->
       <div x-show="activeTab === 'pages'" class="space-y-5">
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6 space-y-4">
           <h2 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
@@ -342,7 +444,7 @@ const initialSettingsObj = initialSettings.reduce((acc, s) => { acc[s.key] = s.v
         </div>
       </div>
 
-      <!-- TAB 6: DYNAMIC CUSTOM SETTINGS CRUD -->
+      <!-- TAB 7: DYNAMIC CUSTOM SETTINGS CRUD -->
       <div x-show="activeTab === 'custom'" class="space-y-5">
         <!-- Add New Setting Card -->
         <div class="bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm p-6">

@@ -3,7 +3,8 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import ShareButton from '../../components/ShareButton.astro';
 import CategoryTabs from '../../components/CategoryTabs.astro';
-import { getVendorBySlug, getMenuItemsWithReviewStats, getReviewsByVendor, getCategories, isVendorOpenNow } from '../../lib/queries';
+import AdBanner from '../../components/AdBanner.astro';
+import { getVendorBySlug, getMenuItemsWithReviewStats, getReviewsByVendor, getCategories, isVendorOpenNow, getAllSiteSettings } from '../../lib/queries';
 
 const { slug } = Astro.params;
 const vendor = await getVendorBySlug(slug as string);
@@ -21,10 +22,15 @@ const stallAvgRating = stallReviewCount > 0
   ? (stallReviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / stallReviewCount).toFixed(1)
   : null;
 
+const settings = await getAllSiteSettings();
+const settingsObj = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+const adEnabled = settingsObj.ad_banner_enabled === 'true';
+
 const shareUrl = new URL(`/v/${vendor.slug}`, Astro.site).href;
 const shareTitle = `${vendor.name} - NITKKR Food`;
 const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length} dishes available, opens ${vendor.opensAt}–${vendor.closesAt}`;
 ---
+
 
 <Layout
   title={`${vendor.name} - NITKKR Food`}
@@ -148,10 +154,23 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
         )}
       </div>
 
+      <!-- In-Menu Campus Ad / Sponsor Section -->
+      {adEnabled && (
+        <AdBanner
+          badge={settingsObj.ad_banner_badge || '⚡ SPONSORED DEAL'}
+          title={settingsObj.ad_banner_title || 'Kurukshetra Protein & Shake Hub'}
+          description={settingsObj.ad_banner_description || '15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID.'}
+          image={settingsObj.ad_banner_image || ''}
+          cta={settingsObj.ad_banner_cta || 'Claim Offer 💬'}
+          link={settingsObj.ad_banner_link || '#'}
+        />
+      )}
+
       <!-- Modern Category Tabs and Dishes List -->
       {menuItems.length > 0 ? (
         <CategoryTabs categories={categories} menuItems={menuItems} />
       ) : (
+
         <div class="bg-white rounded-3xl border border-slate-100 p-10 text-center shadow-sm">
           <p class="text-4xl mb-3">🍱</p>
           <h3 class="text-base font-bold text-slate-800">No dishes listed yet</h3>

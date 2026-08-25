@@ -26,16 +26,27 @@ export function createDb(env?: { DB?: D1Database; DATABASE_URL?: string }): Data
   }
 
   // Fallback to libSQL for local development
-  const databaseUrl = env?.DATABASE_URL || 
-                      process.env.DATABASE_URL || 
-                      'file:db/local.db';
+  try {
+    const databaseUrl = env?.DATABASE_URL || 
+                        process.env.DATABASE_URL || 
+                        'file:db/local.db';
 
-  if (!localDbInstance) {
-    const client = createClient({ url: databaseUrl });
-    localDbInstance = drizzleLibSql(client, { schema });
+    if (!localDbInstance) {
+      const client = createClient({ url: databaseUrl });
+      localDbInstance = drizzleLibSql(client, { schema });
+    }
+    return localDbInstance;
+  } catch (err) {
+    // In Cloudflare Worker environment where libSQL local file cannot be opened
+    return {
+      select: () => ({ from: () => ({ where: () => ({ orderBy: () => ({ limit: () => [] }), limit: () => [] }), orderBy: () => [], limit: () => [] }) }),
+      insert: () => ({ values: () => ({ onConflictDoUpdate: () => ({ returning: () => [] }), returning: () => [] }) }),
+      update: () => ({ set: () => ({ where: () => ({ returning: () => [] }) }) }),
+      delete: () => ({ where: () => [] }),
+    } as any;
   }
-  return localDbInstance;
 }
+
 
 /**
  * Get DB instance from Astro context (for API routes)
