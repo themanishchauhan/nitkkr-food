@@ -17,21 +17,16 @@ export default defineConfig({
   devToolbar: {
     enabled: false,
   },
-  session: {
-    driver: 'memory',
-  },
   integrations: [
     tailwind(),
     sitemap(),
     mdx(),
   ],
-  adapter: isProduction ? cloudflare({
+  adapter: cloudflare({
     imageService: 'passthrough',
-    sessionKV: false,
-  }) : node({
-    mode: 'standalone',
   }),
-  output: isProduction ? 'server' : 'static',
+  output: 'server',
+
   vite: {
     resolve: {
       alias: {
