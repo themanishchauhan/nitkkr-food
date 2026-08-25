@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { createSessionToken, verifySessionToken } from '../../../lib/auth';
+import { createSessionToken, verifySessionToken, verifyAdminCredentials } from '../../../lib/auth';
 
 export const prerender = false;
 
@@ -8,58 +8,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const body = await request.json();
     const { username, password, pin } = body;
 
-    if (!username || !password) {
+    if (!username?.trim() || !password?.trim()) {
       return new Response(JSON.stringify({ error: 'Username and password required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const expectedUsername = (process.env.ADMIN_USERNAME || import.meta.env.ADMIN_USERNAME || 'manishchauhan').trim().toLowerCase();
-    const expectedPassword = process.env.ADMIN_PASSWORD || import.meta.env.ADMIN_PASSWORD || '';
-    const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH || import.meta.env.ADMIN_PASSWORD_HASH || '';
-    const expectedPin = process.env.ADMIN_PIN || import.meta.env.ADMIN_PIN || '';
+    const expectedPin = (process.env.ADMIN_PIN || (globalThis as any)?.__CF_ENV__?.ADMIN_PIN || '').trim();
 
-    // 1. Verify Username
-    if (username.trim().toLowerCase() !== expectedUsername) {
-      return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // 2. Verify Security PIN (if configured)
-    if (expectedPin && String(pin || '').trim() !== expectedPin.trim()) {
+    // 1. Verify Security PIN (if configured)
+    if (expectedPin && String(pin || '').trim() !== expectedPin) {
       return new Response(JSON.stringify({ error: 'Invalid Security PIN' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // 3. Verify Password
-    if (expectedPassword) {
-      if (password !== expectedPassword) {
-        return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-    } else if (adminPasswordHash) {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(password + 'nitkkr-salt-2024');
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashedInput = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      if (hashedInput !== adminPasswordHash) {
-        return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
+    // 2. Strict Password Verification (SEC-2 & SEC-3)
+    const isValid = await verifyAdminCredentials(username.trim(), password.trim());
+    if (!isValid) {
+      return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const token = await createSessionToken('1', expectedUsername);
-
+    const token = await createSessionToken('1', username.trim().toLowerCase());
 
     cookies.set('admin_session', token, {
       path: '/',
@@ -107,7 +82,7 @@ export const GET: APIRoute = async ({ cookies }) => {
     });
   }
 
-  return new Response(JSON.stringify({ authenticated: true, username: 'manishchauhan' }), {
+  return new Response(JSON.stringify({ authenticated: true, username: session.username }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

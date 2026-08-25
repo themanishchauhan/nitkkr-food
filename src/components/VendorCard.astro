@@ -35,7 +35,9 @@ const { vendor, isOpen } = Astro.props;
       <span class="truncate">{isOpen ? 'Open Now' : 'Closed'} ({vendor.opensAt} – {vendor.closesAt})</span>
     </p>
   </div>
-  {vendor.minPrice && (
-    <span class="text-nitkkr-orange font-bold text-lg whitespace-nowrap">₹{vendor.minPrice}</span>
+  {typeof vendor.minPrice === 'number' && vendor.minPrice > 0 ? (
+    <span class="text-nitkkr-orange font-bold text-sm sm:text-base whitespace-nowrap">From ₹{vendor.minPrice}</span>
+  ) : (
+    <span class="text-slate-400 font-semibold text-xs whitespace-nowrap">View Menu →</span>
   )}
 </a>

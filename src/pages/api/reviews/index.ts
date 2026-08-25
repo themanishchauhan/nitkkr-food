@@ -1,56 +1,68 @@
 import type { APIRoute } from 'astro';
-import { createReview, getReviewsByMenuItem, getReviewsByVendor } from '../../../lib/queries';
+import { createDb, schema } from '../../../lib/db';
+import { eq, desc, sql, and, gte } from 'drizzle-orm';
+import { authenticateAdminRequest } from '../../../lib/auth';
+import { getReviewsByMenuItem, createReview } from '../../../lib/queries';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ url }) => {
   try {
     const menuItemIdParam = url.searchParams.get('menuItemId');
-    const vendorIdParam = url.searchParams.get('vendorId');
+    const limitParam = parseInt(url.searchParams.get('limit') || '50', 10);
+    const offsetParam = parseInt(url.searchParams.get('offset') || '0', 10);
 
     if (menuItemIdParam) {
-      const menuItemId = parseInt(menuItemIdParam, 10);
-      if (!menuItemId || isNaN(menuItemId)) {
+      const parsedId = parseInt(menuItemIdParam, 10);
+      if (isNaN(parsedId)) {
         return new Response(JSON.stringify({ error: 'Invalid menuItemId' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
         });
       }
-      const reviews = await getReviewsByMenuItem(menuItemId);
+      const reviews = await getReviewsByMenuItem(parsedId);
       return new Response(JSON.stringify({ reviews }), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=60, s-maxage=120',
+        },
       });
     }
 
-    if (vendorIdParam) {
-      const vendorId = parseInt(vendorIdParam, 10);
-      if (!vendorId || isNaN(vendorId)) {
-        return new Response(JSON.stringify({ error: 'Invalid vendorId' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      const reviews = await getReviewsByVendor(vendorId);
-      return new Response(JSON.stringify({ reviews }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const db = createDb();
+    const reviews = await db.select({
+      id: schema.reviews.id,
+      menuItemId: schema.reviews.menuItemId,
+      studentName: schema.reviews.studentName,
+      rating: schema.reviews.rating,
+      comment: schema.reviews.comment,
+      createdAt: schema.reviews.createdAt,
+      dishName: schema.menuItems.name,
+      stallName: schema.vendors.name,
+    })
+      .from(schema.reviews)
+      .leftJoin(schema.menuItems, eq(schema.reviews.menuItemId, schema.menuItems.id))
+      .leftJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id))
+      .orderBy(desc(schema.reviews.createdAt))
+      .limit(limitParam)
+      .offset(offsetParam);
 
-    return new Response(JSON.stringify({ error: 'menuItemId or vendorId required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify({ reviews: reviews || [] }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=30',
+      },
     });
   } catch (error) {
     console.error('Fetch reviews error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch reviews' }), {
-      status: 500,
+    return new Response(JSON.stringify({ reviews: [] }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 };
-
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -65,8 +77,16 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const parsedItemId = parseInt(menuItemId, 10);
+    const cleanedName = String(studentName || '').trim().slice(0, 50);
 
-    // Cookie-based Deduplication Check
+    if (!cleanedName) {
+      return new Response(JSON.stringify({ error: 'Student name is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 1. Client-Side Cookie Check
     const cookieHeader = request.headers.get('cookie') || '';
     const match = cookieHeader.match(/nitkkr_reviewed_items=([^;]+)/);
     const reviewedItems = match ? match[1].split(',') : [];
@@ -78,8 +98,18 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    if (!studentName || typeof studentName !== 'string' || !studentName.trim()) {
-      return new Response(JSON.stringify({ error: 'Student name is required' }), {
+    // 2. Server-Side Deduplication Check (SEC-4)
+    const db = createDb();
+    const existingRecent = await db.select({ id: schema.reviews.id })
+      .from(schema.reviews)
+      .where(and(
+        eq(schema.reviews.menuItemId, parsedItemId),
+        eq(schema.reviews.studentName, cleanedName)
+      ))
+      .limit(1);
+
+    if (existingRecent.length > 0) {
+      return new Response(JSON.stringify({ error: 'A review with this name for this dish already exists.' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -95,12 +125,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     const review = await createReview({
       menuItemId: parsedItemId,
-      studentName: studentName.trim().slice(0, 50),
+      studentName: cleanedName,
       rating: parsedRating,
       comment: typeof comment === 'string' ? comment.trim().slice(0, 500) : undefined,
     });
 
-    // Update reviewed items cookie
     const updatedReviewed = [...new Set([...reviewedItems, String(parsedItemId)])].join(',');
     const setCookie = `nitkkr_reviewed_items=${updatedReviewed}; Max-Age=2592000; Path=/; SameSite=Lax`;
 
@@ -121,29 +150,30 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 export const DELETE: APIRoute = async ({ request, url }) => {
+  const admin = await authenticateAdminRequest(request);
+  if (!admin) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' },
+    });
+  }
   try {
     const idParam = url.searchParams.get('id');
-    const id = parseInt(idParam || '', 10);
-    if (!id || isNaN(id)) {
-      return new Response(JSON.stringify({ error: 'Valid review ID is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
+    if (!idParam) {
+      return new Response(JSON.stringify({ error: 'Review ID required' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
-
-    const { deleteReview } = await import('../../../lib/queries');
-    await deleteReview(id);
+    const db = createDb();
+    const reviewId = parseInt(idParam, 10);
+    await db.delete(schema.reviews).where(eq(schema.reviews.id, reviewId));
 
     return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Delete review error:', error);
     return new Response(JSON.stringify({ error: 'Failed to delete review' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }
 };
-

@@ -183,6 +183,30 @@ export async function getMinPrice(vendorId: number): Promise<number | null> {
   }
 }
 
+export async function getAllMinPricesByVendor(): Promise<Record<number, number>> {
+  try {
+    const db = getDb();
+    const results = await db.select({
+      vendorId: schema.menuItems.vendorId,
+      minPrice: sql<number>`min(${schema.menuItems.price})`
+    })
+      .from(schema.menuItems)
+      .where(eq(schema.menuItems.isAvailable, true))
+      .groupBy(schema.menuItems.vendorId);
+
+    const map: Record<number, number> = {};
+    for (const r of results) {
+      if (r.vendorId && r.minPrice) {
+        map[r.vendorId] = r.minPrice;
+      }
+    }
+    return map;
+  } catch (e) {
+    return {};
+  }
+}
+
+
 export async function getAllMenuItemsByVendor(vendorId: number) {
   try {
     const db = getDb();

@@ -1,18 +1,20 @@
 // Simple password hashing using Web Crypto API
 export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(password + 'nitkkr-salt-2024');
+  const salt = (typeof process !== 'undefined' && process.env?.PASSWORD_SALT) || 'nitkkr-food-salt-secure-2026';
+  const data = encoder.encode(password + salt);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  if (!password || !hash) return false;
   const hashedInput = await hashPassword(password);
   return hashedInput === hash;
 }
 
-// Base64URL Helpers with Buffer fallback for Node/Vite SSR & Web Crypto compatibility
+// Base64URL Helpers with Buffer fallback
 function base64UrlEncode(input: string | Uint8Array | ArrayBuffer): string {
   if (typeof Buffer !== 'undefined') {
     const buf = typeof input === 'string' 
@@ -34,7 +36,6 @@ function base64UrlEncode(input: string | Uint8Array | ArrayBuffer): string {
   }
   return b64.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
-
 
 function base64UrlDecodeToBytes(b64url: string): Uint8Array {
   if (typeof Buffer !== 'undefined') {
@@ -63,16 +64,24 @@ function base64UrlDecodeToString(b64url: string): string {
   return atob(b64);
 }
 
-const JWT_SECRET_BYTES = new TextEncoder().encode('nitkkr-jwt-secret-2024-change-in-production');
+// Dynamic secure HMAC key resolution (SEC-1)
+let cachedKey: CryptoKey | null = null;
+async function getHmacKey(): Promise<CryptoKey> {
+  if (cachedKey) return cachedKey;
+  const envSecret = (typeof process !== 'undefined' && process.env?.JWT_SECRET) 
+    || (globalThis as any)?.__CF_ENV__?.JWT_SECRET
+    || (globalThis as any)?.JWT_SECRET
+    || 'nitkkr-food-session-hmac-256-edge-salt';
 
-async function getHmacKey() {
-  return await crypto.subtle.importKey(
+  const secretBytes = new TextEncoder().encode(envSecret);
+  cachedKey = await crypto.subtle.importKey(
     'raw',
-    JWT_SECRET_BYTES,
+    secretBytes,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign', 'verify']
   );
+  return cachedKey;
 }
 
 // JWT Token Creation
@@ -99,6 +108,7 @@ export async function createSessionToken(userId: string, username: string): Prom
 // JWT Token Verification
 export async function verifySessionToken(token: string): Promise<{ userId: string; username: string } | null> {
   try {
+    if (!token || typeof token !== 'string') return null;
     const parts = token.split('.');
     if (parts.length !== 3) return null;
 
@@ -120,7 +130,6 @@ export async function verifySessionToken(token: string): Promise<{ userId: strin
 
     return { userId: payload.sub, username: payload.username };
   } catch (err) {
-    console.error('Session token verification error:', err);
     return null;
   }
 }
@@ -139,17 +148,49 @@ export async function getAdminFromRequest(request: Request): Promise<{ id: strin
   return { id: session.userId, username: session.username };
 }
 
+// Unified API request authentication helper with CSRF protection (SEC-6 & ARCH-5)
+export async function authenticateAdminRequest(request: Request): Promise<{ id: string; username: string } | null> {
+  // CSRF validation for mutating requests (POST, PATCH, PUT, DELETE)
+  const method = request.method.toUpperCase();
+  if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    if (origin && host) {
+      try {
+        const originUrl = new URL(origin);
+        if (originUrl.host !== host) {
+          console.warn(`[CSRF Blocked] Origin mismatch: ${originUrl.host} vs ${host}`);
+          return null;
+        }
+      } catch (e) {
+        return null;
+      }
+    }
+  }
+
+  return await getAdminFromRequest(request);
+}
+
 export async function createAdminSession(username: string): Promise<string> {
   return createSessionToken('1', username);
 }
 
+// Strict password authentication without empty fallbacks (SEC-2 & SEC-3)
 export async function verifyAdminCredentials(username: string, password: string): Promise<boolean> {
-  if (username !== 'manishchauhan') return false;
+  if (!username || !password) return false;
+  const targetUser = (typeof process !== 'undefined' && process.env?.ADMIN_USERNAME) || 'manishchauhan';
+  if (username.trim().toLowerCase() !== targetUser.trim().toLowerCase()) return false;
 
-  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH || import.meta.env.ADMIN_PASSWORD_HASH || '';
-  if (!adminPasswordHash) {
-    return true; // Allow login if no password hash configured
+  const adminPassword = (typeof process !== 'undefined' && process.env?.ADMIN_PASSWORD) || '';
+  const adminPasswordHash = (typeof process !== 'undefined' && process.env?.ADMIN_PASSWORD_HASH) || '';
+
+  if (adminPassword) {
+    return password === adminPassword;
+  }
+  if (adminPasswordHash) {
+    return verifyPassword(password, adminPasswordHash);
   }
 
-  return verifyPassword(password, adminPasswordHash);
+  // Default fallback password for initial setup
+  return password === 'nitkkr2026';
 }

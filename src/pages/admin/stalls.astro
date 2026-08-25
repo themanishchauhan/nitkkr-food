@@ -4,150 +4,189 @@ import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
 ---
 
+<script is:inline>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('stallsAdmin', () => ({
+      sidebarOpen: false,
+      vendors: [],
+      categories: [],
+      menuItems: [],
+      reviews: [],
+      search: '',
+      showAddModal: false,
+      editingVendor: null,
+      form: { name: '', slug: '', phone: '', whatsapp: '', address: '', description: '', image: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels, Academic Block', isActive: true, isFeatured: false },
+      loading: false,
+      saving: false,
+      toastMsg: '',
+
+      get filteredVendors() {
+        if (!this.search.trim()) return this.vendors;
+        const q = this.search.toLowerCase();
+        return this.vendors.filter(v => 
+          (v.name && v.name.toLowerCase().includes(q)) || 
+          (v.address && v.address.toLowerCase().includes(q)) || 
+          (v.phone && v.phone.includes(q))
+        );
+      },
+
+      exportCSV() {
+        const headers = ['ID', 'Name', 'Phone', 'WhatsApp', 'Address', 'Opens At', 'Closes At', 'Status'];
+        const rows = this.filteredVendors.map(v => [
+          v.id,
+          '"' + (v.name || '').replace(/"/g, '') + '"',
+          v.phone || '',
+          v.whatsapp || '',
+          '"' + (v.address || '').replace(/"/g, '') + '"',
+          v.opensAt || '',
+          v.closesAt || '',
+          v.isActive ? 'Active' : 'Closed'
+        ]);
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'nitkkr_stalls_' + new Date().toISOString().slice(0,10) + '.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      },
+
+      async init() {
+        await this.loadAll();
+      },
+
+      showToast(msg) {
+        this.toastMsg = msg;
+        setTimeout(() => { this.toastMsg = ''; }, 3500);
+      },
+
+      async loadAll() {
+        this.loading = true;
+        try {
+          const [vRes, cRes, mRes, rRes] = await Promise.all([
+            fetch('/api/admin/vendors').catch(() => null),
+            fetch('/api/admin/categories').catch(() => null),
+            fetch('/api/admin/menu').catch(() => null),
+            fetch('/api/admin/reviews').catch(() => null)
+          ]);
+
+          if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
+          if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
+          if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
+          if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
+        } catch (e) {
+          console.error('Load error', e);
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      openAdd() {
+        this.editingVendor = null;
+        this.form = { name: '', slug: '', phone: '', whatsapp: '', address: '', description: '', image: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels, Academic Block', isActive: true, isFeatured: false };
+        this.showAddModal = true;
+      },
+
+      openEdit(v) {
+        this.editingVendor = v;
+        this.form = {
+          name: v.name,
+          slug: v.slug,
+          phone: v.phone || '',
+          whatsapp: v.whatsapp || '',
+          address: v.address || '',
+          description: v.description || '',
+          image: v.image || '',
+          opensAt: v.opensAt || '09:00',
+          closesAt: v.closesAt || '23:00',
+          deliversTo: Array.isArray(v.deliversTo) ? v.deliversTo.join(', ') : (v.deliversTo || 'Hostels'),
+          isActive: v.isActive,
+          isFeatured: v.isFeatured
+        };
+        this.showAddModal = true;
+      },
+
+      async saveVendor() {
+        if (!this.form.name.trim()) { alert('Stall name is required'); return; }
+        this.saving = true;
+        try {
+          const url = '/api/admin/vendors';
+          const method = this.editingVendor ? 'PATCH' : 'POST';
+          const payload = {
+            ...this.form,
+            id: this.editingVendor ? this.editingVendor.id : undefined,
+            deliversTo: typeof this.form.deliversTo === 'string' ? this.form.deliversTo.split(',').map(s => s.trim()).filter(Boolean) : this.form.deliversTo
+          };
+
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            this.showToast(this.editingVendor ? '✅ Stall updated successfully!' : '✅ New stall created!');
+            this.showAddModal = false;
+            await this.loadAll();
+          } else {
+            const d = await res.json();
+            alert(d.error || 'Failed to save stall');
+          }
+        } catch (e) {
+          alert('Server error saving stall');
+        } finally {
+          this.saving = false;
+        }
+      },
+
+      async toggleStatus(v) {
+        try {
+          const res = await fetch('/api/admin/vendors', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: v.id, isActive: !v.isActive })
+          });
+          if (res.ok) {
+            v.isActive = !v.isActive;
+            this.showToast(v.name + ' marked as ' + (v.isActive ? 'Open 🟢' : 'Closed 🔴'));
+          }
+        } catch (e) {
+          alert('Failed to update status');
+        }
+      },
+
+      async deleteStall(v) {
+        if (!confirm('Are you sure you want to delete ' + v.name + '?')) return;
+        try {
+          const res = await fetch('/api/admin/vendors?id=' + v.id, { method: 'DELETE' });
+          if (res.ok) {
+            this.vendors = this.vendors.filter(x => x.id !== v.id);
+            this.showToast('Stall deleted');
+          } else {
+            alert('Failed to delete stall');
+          }
+        } catch (e) {
+          alert('Error deleting stall');
+        }
+      },
+
+      async logout() {
+        if (!confirm('Log out from Founder Panel?')) return;
+        await fetch('/api/admin/auth', { method: 'DELETE' });
+        window.location.href = '/';
+      }
+    }));
+  });
+</script>
+
 <Layout title="Stalls Management - NITKKR Food Admin" description="Full CRUD operations for campus food stalls">
   <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
     <div
-      x-data="{
-        sidebarOpen: false,
-        vendors: [],
-        categories: [],
-        menuItems: [],
-        reviews: [],
-        showAddModal: false,
-        editingVendor: null,
-        form: { name: '', slug: '', phone: '', whatsapp: '', address: '', description: '', image: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels, Academic Block', isActive: true, isFeatured: false },
-        loading: false,
-        saving: false,
-        toastMsg: '',
-
-        async init() {
-          await this.loadAll();
-        },
-
-        showToast(msg) {
-          this.toastMsg = msg;
-          setTimeout(() => { this.toastMsg = ''; }, 3500);
-        },
-
-        async loadAll() {
-          this.loading = true;
-          try {
-            const [vRes, cRes, mRes, rRes] = await Promise.all([
-              fetch('/api/admin/vendors').catch(() => null),
-              fetch('/api/admin/categories').catch(() => null),
-              fetch('/api/admin/menu').catch(() => null),
-              fetch('/api/admin/reviews').catch(() => null)
-            ]);
-
-            if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
-            if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
-            if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
-            if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
-          } catch (e) {
-            console.error('Load error', e);
-          } finally {
-            this.loading = false;
-          }
-        },
-
-        openAdd() {
-          this.editingVendor = null;
-          this.form = { name: '', slug: '', phone: '', whatsapp: '', address: '', description: '', image: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels, Academic Block', isActive: true, isFeatured: false };
-          this.showAddModal = true;
-        },
-
-        openEdit(v) {
-          this.editingVendor = v;
-          this.form = {
-            name: v.name,
-            slug: v.slug,
-            phone: v.phone || '',
-            whatsapp: v.whatsapp || '',
-            address: v.address || '',
-            description: v.description || '',
-            image: v.image || '',
-            opensAt: v.opensAt || '09:00',
-            closesAt: v.closesAt || '23:00',
-            deliversTo: Array.isArray(v.deliversTo) ? v.deliversTo.join(', ') : (v.deliversTo || 'Hostels'),
-            isActive: v.isActive,
-            isFeatured: v.isFeatured
-          };
-          this.showAddModal = true;
-        },
-
-        async saveVendor() {
-          if (!this.form.name.trim()) { alert('Stall name is required'); return; }
-          this.saving = true;
-          try {
-            const url = '/api/admin/vendors';
-            const method = this.editingVendor ? 'PATCH' : 'POST';
-            const payload = {
-              ...this.form,
-              id: this.editingVendor ? this.editingVendor.id : undefined,
-              deliversTo: typeof this.form.deliversTo === 'string' ? this.form.deliversTo.split(',').map(s => s.trim()).filter(Boolean) : this.form.deliversTo
-            };
-
-            const res = await fetch(url, {
-              method,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-              this.showToast(this.editingVendor ? '✅ Stall updated successfully!' : '✅ New stall created!');
-              this.showAddModal = false;
-              await this.loadAll();
-            } else {
-              const d = await res.json();
-              alert(d.error || 'Failed to save stall');
-            }
-          } catch (e) {
-            alert('Server error saving stall');
-          } finally {
-            this.saving = false;
-          }
-        },
-
-        async toggleStatus(v) {
-          try {
-            const res = await fetch('/api/admin/vendors', {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: v.id, isActive: !v.isActive })
-            });
-            if (res.ok) {
-              v.isActive = !v.isActive;
-              this.showToast(v.name + ' marked as ' + (v.isActive ? 'Open 🟢' : 'Closed 🔴'));
-            }
-          } catch (e) {
-            alert('Failed to update status');
-          }
-        },
-
-        async deleteStall(v) {
-          if (!confirm('Are you sure you want to delete ' + v.name + '?')) return;
-          try {
-            const res = await fetch('/api/admin/vendors?id=' + v.id, { method: 'DELETE' });
-            if (res.ok) {
-              this.vendors = this.vendors.filter(x => x.id !== v.id);
-              this.showToast('Stall deleted');
-            } else {
-              alert('Failed to delete stall');
-            }
-          } catch (e) {
-            alert('Error deleting stall');
-          }
-        },
-
-        async logout() {
-          if (!confirm('Log out from Founder Panel?')) return;
-          await fetch('/api/admin/auth', { method: 'DELETE' });
-          window.location.href = '/';
-        }
-      }"
-      x-init="init()"
+      x-data="stallsAdmin"
       class="flex-1 flex flex-col lg:flex-row min-h-screen"
     >
+
 
       <!-- Toast Notification -->
       <div
@@ -180,17 +219,39 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
               </p>
             </div>
 
-            <button
-              @click="openAdd()"
-              class="px-5 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-2xl shadow-md shadow-nitkkr-orange/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-            >
-              <span>➕</span> Add New Stall
-            </button>
+            <div class="flex flex-wrap items-center gap-3">
+              <button
+                @click="exportCSV()"
+                class="px-4 py-3 bg-white border border-nitkkr-orange/30 hover:bg-nitkkr-orange/10 text-nitkkr-dark font-bold text-xs rounded-2xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <span>📥</span> Export CSV
+              </button>
+              <button
+                @click="openAdd()"
+                class="px-5 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-2xl shadow-md shadow-nitkkr-orange/20 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <span>➕</span> Add New Stall
+              </button>
+            </div>
+          </div>
+
+          <!-- Search & Filter Controls -->
+          <div class="flex items-center gap-3">
+            <div class="relative flex-1">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">🔍</span>
+              <input
+                type="text"
+                x-model="search"
+                placeholder="Search stalls by name, phone, or location..."
+                class="w-full pl-11 pr-4 py-3 bg-white border border-nitkkr-orange/20 rounded-2xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden focus:border-nitkkr-orange shadow-xs"
+              />
+            </div>
           </div>
 
           <!-- Stalls Grid -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <template x-for="v in vendors" :key="v.id">
+            <template x-for="v in filteredVendors" :key="v.id">
+
               <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-4 shadow-sm hover:border-nitkkr-orange/50 transition-all flex flex-col justify-between">
                 <div>
                   <div class="flex items-center justify-between gap-2 mb-2">

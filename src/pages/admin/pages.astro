@@ -1,0 +1,285 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import AdminSidebar from '../../components/AdminSidebar.astro';
+---
+
+<Layout title="Footer Pages & Legal Content Manager - NITKKR Food Admin" description="CRUD and customize all website footer pages and campus information">
+  <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
+    
+    <div
+      x-data="{
+        sidebarOpen: false,
+        vendors: [],
+        categories: [],
+        menuItems: [],
+        reviews: [],
+        settings: {
+          terms_custom_text: '',
+          privacy_custom_text: '',
+          about_custom_text: '',
+          how_it_works_custom_text: '',
+          contact_email: 'admin@nitkkr-food.com',
+          support_whatsapp: '+91 98765 43210',
+          instagram_url: 'https://instagram.com/nitkkr_food',
+          footer_tagline: 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.',
+          footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
+          footer_copyright: 'Built with ❤️ for NIT Kurukshetra students'
+        },
+        selectedPage: 'terms',
+        saving: false,
+        toastMsg: '',
+
+        async init() {
+          await this.loadAll();
+        },
+
+        showToast(msg) {
+          this.toastMsg = msg;
+          setTimeout(() => { this.toastMsg = ''; }, 3500);
+        },
+
+        async loadAll() {
+          try {
+            const [sRes, vRes, cRes, mRes, rRes] = await Promise.all([
+              fetch('/api/admin/settings').catch(() => null),
+              fetch('/api/admin/vendors').catch(() => null),
+              fetch('/api/admin/categories').catch(() => null),
+              fetch('/api/admin/menu').catch(() => null),
+              fetch('/api/admin/reviews').catch(() => null)
+            ]);
+
+            if (sRes && sRes.ok) {
+              const d = await sRes.json();
+              this.settings = Object.assign({}, this.settings, d.settings || {});
+            }
+            if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
+            if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
+            if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
+            if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
+          } catch (e) {
+            console.error('Load error', e);
+          }
+        },
+
+        async savePageSettings() {
+          this.saving = true;
+          try {
+            const res = await fetch('/api/admin/settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ settings: this.settings })
+            });
+            if (res.ok) {
+              this.showToast('✅ Page content updated live on the website!');
+            } else {
+              alert('Failed to save page content');
+            }
+          } catch (e) {
+            alert('Error updating page content');
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async logout() {
+          if (!confirm('Log out from Founder Panel?')) return;
+          await fetch('/api/admin/auth', { method: 'DELETE' });
+          window.location.href = '/';
+        }
+      }"
+      x-init="init()"
+      class="flex-1 flex flex-col lg:flex-row min-h-screen"
+    >
+
+      <!-- Toast Notification -->
+      <div
+        x-show="toastMsg"
+        x-transition
+        class="fixed bottom-6 right-6 z-50 bg-nitkkr-dark text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-2 border border-nitkkr-orange/40"
+      >
+        <span class="text-base">🔔</span>
+        <span x-text="toastMsg"></span>
+      </div>
+
+      <!-- Shared Sidebar Component -->
+      <AdminSidebar currentPath="/admin/pages" />
+
+      <!-- Main Content Area -->
+      <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-6xl">
+        <div class="space-y-8">
+
+          <!-- Header -->
+          <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-[11px] font-bold mb-2">
+                <span>📄</span> Website Footer Pages & Policy CRUD
+              </div>
+              <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-nitkkr-dark">
+                Footer Pages & Content Hub
+              </h1>
+              <p class="text-xs sm:text-sm text-nitkkr-gray mt-1">
+                Edit legal policies, campus story, ordering steps, contact details, and footer text in real-time.
+              </p>
+            </div>
+
+            <button
+              @click="savePageSettings()"
+              :disabled="saving"
+              class="px-6 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-2xl shadow-md shadow-nitkkr-orange/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+            >
+              <span x-show="!saving">💾 Save All Pages</span>
+              <span x-show="saving">Saving...</span>
+            </button>
+          </div>
+
+          <!-- Page Selection Tabs -->
+          <div class="flex flex-wrap gap-2 pb-2">
+            <button
+              @click="selectedPage = 'terms'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="selectedPage === 'terms' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>📜</span> Terms of Service (/terms)
+            </button>
+
+            <button
+              @click="selectedPage = 'privacy'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="selectedPage === 'privacy' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>🔒</span> Privacy Policy (/privacy)
+            </button>
+
+            <button
+              @click="selectedPage = 'about'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="selectedPage === 'about' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>ℹ️</span> About Campus Story (/about)
+            </button>
+
+            <button
+              @click="selectedPage = 'contact'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="selectedPage === 'contact' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>📞</span> Contact & Support (/contact)
+            </button>
+
+            <button
+              @click="selectedPage = 'footer'"
+              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
+              :class="selectedPage === 'footer' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+            >
+              <span>🏷️</span> Global Footer Branding
+            </button>
+          </div>
+
+          <!-- Tab 1: Terms of Service -->
+          <div x-show="selectedPage === 'terms'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 class="font-display text-lg font-bold text-nitkkr-dark">📜 Terms of Service Editor</h3>
+                <p class="text-xs text-nitkkr-gray">Live at: <a href="/terms" target="_blank" class="text-nitkkr-orange underline">https://nitkkr-food.manishchouhan770.workers.dev/terms ↗</a></p>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-2">Custom Terms & Conditions (Markdown / Plain Text)</label>
+              <textarea
+                x-model="settings.terms_custom_text"
+                rows="10"
+                class="w-full p-4 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-2xl text-xs font-mono text-nitkkr-dark focus:outline-hidden focus:border-nitkkr-orange leading-relaxed"
+                placeholder="Leave blank to use default campus terms, or write custom student guidelines here..."
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Tab 2: Privacy Policy -->
+          <div x-show="selectedPage === 'privacy'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 class="font-display text-lg font-bold text-nitkkr-dark">🔒 Privacy Policy Editor</h3>
+                <p class="text-xs text-nitkkr-gray">Live at: <a href="/privacy" target="_blank" class="text-nitkkr-orange underline">https://nitkkr-food.manishchouhan770.workers.dev/privacy ↗</a></p>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-2">Custom Privacy Policy Text (Markdown / Plain Text)</label>
+              <textarea
+                x-model="settings.privacy_custom_text"
+                rows="10"
+                class="w-full p-4 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-2xl text-xs font-mono text-nitkkr-dark focus:outline-hidden focus:border-nitkkr-orange leading-relaxed"
+                placeholder="Leave blank to use default campus privacy policy, or write custom privacy clauses here..."
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Tab 3: About Campus Story -->
+          <div x-show="selectedPage === 'about'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 class="font-display text-lg font-bold text-nitkkr-dark">ℹ️ About Us & Campus Story</h3>
+                <p class="text-xs text-nitkkr-gray">Live at: <a href="/about" target="_blank" class="text-nitkkr-orange underline">https://nitkkr-food.manishchouhan770.workers.dev/about ↗</a></p>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-2">Custom About Us Narrative</label>
+              <textarea
+                x-model="settings.about_custom_text"
+                rows="10"
+                class="w-full p-4 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-2xl text-xs font-mono text-nitkkr-dark focus:outline-hidden focus:border-nitkkr-orange leading-relaxed"
+                placeholder="Describe your vision for NITKKR Food, team members, mission, and how it helps students..."
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Tab 4: Contact & Stall Support -->
+          <div x-show="selectedPage === 'contact'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div class="pb-3 border-b border-slate-100">
+              <h3 class="font-display text-lg font-bold text-nitkkr-dark">📞 Contact & Support Information</h3>
+              <p class="text-xs text-nitkkr-gray">Live at: <a href="/contact" target="_blank" class="text-nitkkr-orange underline">https://nitkkr-food.manishchouhan770.workers.dev/contact ↗</a></p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Official Contact Email</label>
+                <input type="email" x-model="settings.contact_email" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Support WhatsApp Number</label>
+                <input type="text" x-model="settings.support_whatsapp" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div class="space-y-1.5 md:col-span-2">
+                <label class="text-xs font-bold text-nitkkr-dark">Instagram Profile Link</label>
+                <input type="text" x-model="settings.instagram_url" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 5: Global Footer Branding -->
+          <div x-show="selectedPage === 'footer'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div class="pb-3 border-b border-slate-100">
+              <h3 class="font-display text-lg font-bold text-nitkkr-dark">🏷️ Global Footer Branding Customizer</h3>
+              <p class="text-xs text-nitkkr-gray">Controls the text shown at the bottom of every page on the site</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="space-y-1.5 md:col-span-2">
+                <label class="text-xs font-bold text-nitkkr-dark">Footer Tagline</label>
+                <input type="text" x-model="settings.footer_tagline" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Footer Custom Highlight Note</label>
+                <input type="text" x-model="settings.footer_custom_note" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Copyright / Signature Line</label>
+                <input type="text" x-model="settings.footer_copyright" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+  </section>
+</Layout>

@@ -4,131 +4,179 @@ import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
 ---
 
+<script is:inline>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('menuAdmin', () => ({
+      sidebarOpen: false,
+      vendors: [],
+      categories: [],
+      menuItems: [],
+      reviews: [],
+      selectedVendorId: '',
+      search: '',
+      filterVeg: 'all',
+      showAddModal: false,
+      editingItem: null,
+      form: { vendorId: '', categoryId: '', name: '', price: '', description: '', image: '', isVeg: true, isAvailable: true },
+      saving: false,
+      toastMsg: '',
+
+      async init() {
+        await this.loadAll();
+      },
+
+      showToast(msg) {
+        this.toastMsg = msg;
+        setTimeout(() => { this.toastMsg = ''; }, 3500);
+      },
+
+      async loadAll() {
+        try {
+          const [vRes, cRes, mRes, rRes] = await Promise.all([
+            fetch('/api/admin/vendors').catch(() => null),
+            fetch('/api/admin/categories').catch(() => null),
+            fetch('/api/admin/menu').catch(() => null),
+            fetch('/api/admin/reviews').catch(() => null)
+          ]);
+
+          if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
+          if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
+          if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
+          if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
+        } catch (e) {
+          console.error('Load error', e);
+        }
+      },
+
+      get filteredItems() {
+        let list = this.menuItems;
+        if (this.selectedVendorId) {
+          list = list.filter(m => String(m.vendorId) === String(this.selectedVendorId));
+        }
+        if (this.filterVeg === 'veg') {
+          list = list.filter(m => m.isVeg);
+        } else if (this.filterVeg === 'nonveg') {
+          list = list.filter(m => !m.isVeg);
+        }
+        if (this.search.trim()) {
+          const q = this.search.toLowerCase();
+          list = list.filter(m => 
+            (m.name && m.name.toLowerCase().includes(q)) || 
+            (m.categoryName && m.categoryName.toLowerCase().includes(q)) ||
+            (m.description && m.description.toLowerCase().includes(q))
+          );
+        }
+        return list;
+      },
+
+      exportCSV() {
+        const headers = ['ID', 'Dish Name', 'Stall', 'Category', 'Price', 'Type', 'In Stock'];
+        const rows = this.filteredItems.map(m => {
+          const vendor = this.vendors.find(v => v.id === m.vendorId);
+          return [
+            m.id,
+            '"' + (m.name || '').replace(/"/g, '') + '"',
+            '"' + (vendor ? vendor.name : m.vendorName || '').replace(/"/g, '') + '"',
+            '"' + (m.categoryName || '').replace(/"/g, '') + '"',
+            m.price,
+            m.isVeg ? 'Veg' : 'Non-Veg',
+            m.isAvailable ? 'Yes' : 'No'
+          ];
+        });
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'nitkkr_menu_' + new Date().toISOString().slice(0,10) + '.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      },
+
+      openAdd() {
+        this.editingItem = null;
+        this.form = { vendorId: this.selectedVendorId || (this.vendors[0]?.id || ''), categoryId: '', name: '', price: '', description: '', image: '', isVeg: true, isAvailable: true };
+        this.showAddModal = true;
+      },
+
+      openEdit(item) {
+        this.editingItem = item;
+        this.form = {
+          vendorId: item.vendorId,
+          categoryId: item.categoryId || '',
+          name: item.name,
+          price: item.price,
+          description: item.description || '',
+          image: item.image || '',
+          isVeg: item.isVeg,
+          isAvailable: item.isAvailable
+        };
+        this.showAddModal = true;
+      },
+
+      async saveItem() {
+        if (!this.form.name.trim() || !this.form.vendorId || !this.form.price) {
+          alert('Stall, name, and price are required');
+          return;
+        }
+        this.saving = true;
+        try {
+          const url = '/api/admin/menu';
+          const method = this.editingItem ? 'PATCH' : 'POST';
+          const payload = this.editingItem ? { ...this.form, id: this.editingItem.id } : this.form;
+
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            this.showToast(this.editingItem ? '✅ Dish updated!' : '✅ Dish added!');
+            this.showAddModal = false;
+            await this.loadAll();
+          } else {
+            const d = await res.json();
+            alert(d.error || 'Failed to save dish');
+          }
+        } catch (e) {
+          alert('Server error saving dish');
+        } finally {
+          this.saving = false;
+        }
+      },
+
+      async deleteItem(item) {
+        if (!confirm('Delete ' + item.name + '?')) return;
+        try {
+          const res = await fetch('/api/admin/menu?id=' + item.id, { method: 'DELETE' });
+          if (res.ok) {
+            this.menuItems = this.menuItems.filter(x => x.id !== item.id);
+            this.showToast('Dish removed');
+          } else {
+            alert('Failed to delete dish');
+          }
+        } catch (e) {
+          alert('Error deleting dish');
+        }
+      },
+
+      async logout() {
+        if (!confirm('Log out from Founder Panel?')) return;
+        await fetch('/api/admin/auth', { method: 'DELETE' });
+        window.location.href = '/';
+      }
+    }));
+  });
+</script>
+
 <Layout title="Menu Items & Prices - NITKKR Food Admin" description="Full CRUD operations for dishes and prices across all campus stalls">
   <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
     <div
-      x-data="{
-        sidebarOpen: false,
-        vendors: [],
-        categories: [],
-        menuItems: [],
-        reviews: [],
-        selectedVendorId: '',
-        showAddModal: false,
-        editingItem: null,
-        form: { vendorId: '', categoryId: '', name: '', price: '', description: '', image: '', isVeg: true, isAvailable: true },
-        saving: false,
-        toastMsg: '',
-
-        async init() {
-          await this.loadAll();
-        },
-
-        showToast(msg) {
-          this.toastMsg = msg;
-          setTimeout(() => { this.toastMsg = ''; }, 3500);
-        },
-
-        async loadAll() {
-          try {
-            const [vRes, cRes, mRes, rRes] = await Promise.all([
-              fetch('/api/admin/vendors').catch(() => null),
-              fetch('/api/admin/categories').catch(() => null),
-              fetch('/api/admin/menu').catch(() => null),
-              fetch('/api/admin/reviews').catch(() => null)
-            ]);
-
-            if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
-            if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
-            if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
-            if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
-          } catch (e) {
-            console.error('Load error', e);
-          }
-        },
-
-        get filteredItems() {
-          if (!this.selectedVendorId) return this.menuItems;
-          return this.menuItems.filter(m => String(m.vendorId) === String(this.selectedVendorId));
-        },
-
-        openAdd() {
-          this.editingItem = null;
-          this.form = { vendorId: this.selectedVendorId || (this.vendors[0]?.id || ''), categoryId: '', name: '', price: '', description: '', image: '', isVeg: true, isAvailable: true };
-          this.showAddModal = true;
-        },
-
-        openEdit(item) {
-          this.editingItem = item;
-          this.form = {
-            vendorId: item.vendorId,
-            categoryId: item.categoryId || '',
-            name: item.name,
-            price: item.price,
-            description: item.description || '',
-            image: item.image || '',
-            isVeg: item.isVeg,
-            isAvailable: item.isAvailable
-          };
-          this.showAddModal = true;
-        },
-
-        async saveItem() {
-          if (!this.form.name.trim() || !this.form.vendorId || !this.form.price) {
-            alert('Stall, name, and price are required');
-            return;
-          }
-          this.saving = true;
-          try {
-            const url = '/api/admin/menu';
-            const method = this.editingItem ? 'PATCH' : 'POST';
-            const payload = this.editingItem ? { ...this.form, id: this.editingItem.id } : this.form;
-
-            const res = await fetch(url, {
-              method,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-              this.showToast(this.editingItem ? '✅ Dish updated!' : '✅ Dish added!');
-              this.showAddModal = false;
-              await this.loadAll();
-            } else {
-              const d = await res.json();
-              alert(d.error || 'Failed to save dish');
-            }
-          } catch (e) {
-            alert('Server error saving dish');
-          } finally {
-            this.saving = false;
-          }
-        },
-
-        async deleteItem(item) {
-          if (!confirm('Delete ' + item.name + '?')) return;
-          try {
-            const res = await fetch('/api/admin/menu?id=' + item.id, { method: 'DELETE' });
-            if (res.ok) {
-              this.menuItems = this.menuItems.filter(x => x.id !== item.id);
-              this.showToast('Dish removed');
-            } else {
-              alert('Failed to delete dish');
-            }
-          } catch (e) {
-            alert('Error deleting dish');
-          }
-        },
-
-        async logout() {
-          if (!confirm('Log out from Founder Panel?')) return;
-          await fetch('/api/admin/auth', { method: 'DELETE' });
-          window.location.href = '/';
-        }
-      }"
-      x-init="init()"
+      x-data="menuAdmin"
       class="flex-1 flex flex-col lg:flex-row min-h-screen"
     >
+
 
       <!-- Toast Notification -->
       <div
@@ -161,24 +209,50 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
               </p>
             </div>
 
-            <button
-              @click="openAdd()"
-              class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-            >
-              <span>➕</span> Add New Dish
-            </button>
+            <div class="flex flex-wrap items-center gap-3">
+              <button
+                @click="exportCSV()"
+                class="px-4 py-3 bg-white border border-nitkkr-orange/30 hover:bg-nitkkr-orange/10 text-nitkkr-dark font-bold text-xs rounded-2xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <span>📥</span> Export CSV
+              </button>
+              <button
+                @click="openAdd()"
+                class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <span>➕</span> Add New Dish
+              </button>
+            </div>
           </div>
 
-          <!-- Stall Filter Selector -->
-          <div class="bg-white border border-nitkkr-orange/20 rounded-2xl p-4 shadow-sm flex items-center gap-3">
-            <span class="text-xs font-bold text-nitkkr-dark">Filter by Stall:</span>
-            <select x-model="selectedVendorId" class="px-4 py-2 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
-              <option value="">All Stalls (Total: <span x-text="menuItems.length"></span>)</option>
-              <template x-for="v in vendors" :key="v.id">
-                <option :value="v.id" x-text="v.name"></option>
-              </template>
-            </select>
+          <!-- Stall & Dish Filter Controls -->
+          <div class="bg-white border border-nitkkr-orange/20 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            <div class="relative flex-1">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">🔍</span>
+              <input
+                type="text"
+                x-model="search"
+                placeholder="Search dishes by name or category..."
+                class="w-full pl-10 pr-4 py-2 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden focus:border-nitkkr-orange"
+              />
+            </div>
+
+            <div class="flex items-center gap-3">
+              <select x-model="selectedVendorId" class="px-4 py-2 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
+                <option value="">All Stalls</option>
+                <template x-for="v in vendors" :key="v.id">
+                  <option :value="v.id" x-text="v.name"></option>
+                </template>
+              </select>
+
+              <select x-model="filterVeg" class="px-4 py-2 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
+                <option value="all">🌱 All Food Types</option>
+                <option value="veg">🌱 Pure Veg Only</option>
+                <option value="nonveg">🍗 Non-Veg Only</option>
+              </select>
+            </div>
           </div>
+
 
           <!-- Dishes Table / Grid -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -4,85 +4,112 @@ import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
 ---
 
+<script is:inline>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('reviewsAdmin', () => ({
+      sidebarOpen: false,
+      vendors: [],
+      categories: [],
+      menuItems: [],
+      reviews: [],
+      selectedRating: '',
+      search: '',
+      toastMsg: '',
+
+      async init() {
+        await this.loadAll();
+      },
+
+      showToast(msg) {
+        this.toastMsg = msg;
+        setTimeout(() => { this.toastMsg = ''; }, 3500);
+      },
+
+      async loadAll() {
+        try {
+          const [rRes, vRes, cRes, mRes] = await Promise.all([
+            fetch('/api/admin/reviews').catch(() => null),
+            fetch('/api/admin/vendors').catch(() => null),
+            fetch('/api/admin/categories').catch(() => null),
+            fetch('/api/admin/menu').catch(() => null)
+          ]);
+
+          if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
+          if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
+          if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
+          if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
+        } catch (e) {
+          console.error('Load error', e);
+        }
+      },
+
+      get filteredReviews() {
+        return this.reviews.filter(r => {
+          if (this.selectedRating && String(r.rating) !== String(this.selectedRating)) return false;
+          if (this.search) {
+            const q = this.search.toLowerCase();
+            const name = (r.studentName || '').toLowerCase();
+            const dish = (r.menuItemName || '').toLowerCase();
+            const vendor = (r.vendorName || '').toLowerCase();
+            const comment = (r.comment || '').toLowerCase();
+            return name.includes(q) || dish.includes(q) || vendor.includes(q) || comment.includes(q);
+          }
+          return true;
+        });
+      },
+
+      exportCSV() {
+        const headers = ['ID', 'Student Name', 'Rating', 'Dish', 'Stall', 'Comment', 'Date'];
+        const rows = this.filteredReviews.map(r => [
+          r.id,
+          '"' + (r.studentName || '').replace(/"/g, '') + '"',
+          r.rating,
+          '"' + (r.dishName || r.menuItemName || '').replace(/"/g, '') + '"',
+          '"' + (r.stallName || r.vendorName || '').replace(/"/g, '') + '"',
+          '"' + (r.comment || '').replace(/"/g, '') + '"',
+          r.createdAt || ''
+        ]);
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'nitkkr_reviews_' + new Date().toISOString().slice(0,10) + '.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      },
+
+      async deleteReview(id) {
+        if (!confirm('Are you sure you want to delete this review?')) return;
+        try {
+          const res = await fetch('/api/reviews?id=' + id, { method: 'DELETE' });
+          if (res.ok) {
+            this.reviews = this.reviews.filter(r => r.id !== id);
+            this.showToast('Review removed');
+          } else {
+            alert('Failed to delete review');
+          }
+        } catch (e) {
+          alert('Error deleting review');
+        }
+      },
+
+      async logout() {
+        if (!confirm('Log out from Founder Panel?')) return;
+        await fetch('/api/admin/auth', { method: 'DELETE' });
+        window.location.href = '/';
+      }
+    }));
+  });
+</script>
+
 <Layout title="Student Reviews & Feedback - NITKKR Food Admin" description="Moderate and manage verified campus student feedback">
   <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
     <div
-      x-data="{
-        sidebarOpen: false,
-        vendors: [],
-        categories: [],
-        menuItems: [],
-        reviews: [],
-        selectedRating: '',
-        search: '',
-        toastMsg: '',
-
-        async init() {
-          await this.loadAll();
-        },
-
-        showToast(msg) {
-          this.toastMsg = msg;
-          setTimeout(() => { this.toastMsg = ''; }, 3500);
-        },
-
-        async loadAll() {
-          try {
-            const [rRes, vRes, cRes, mRes] = await Promise.all([
-              fetch('/api/admin/reviews').catch(() => null),
-              fetch('/api/admin/vendors').catch(() => null),
-              fetch('/api/admin/categories').catch(() => null),
-              fetch('/api/admin/menu').catch(() => null)
-            ]);
-
-            if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
-            if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
-            if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
-            if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
-          } catch (e) {
-            console.error('Load error', e);
-          }
-        },
-
-        get filteredReviews() {
-          return this.reviews.filter(r => {
-            if (this.selectedRating && String(r.rating) !== String(this.selectedRating)) return false;
-            if (this.search) {
-              const q = this.search.toLowerCase();
-              const name = (r.studentName || '').toLowerCase();
-              const dish = (r.menuItemName || '').toLowerCase();
-              const vendor = (r.vendorName || '').toLowerCase();
-              const comment = (r.comment || '').toLowerCase();
-              return name.includes(q) || dish.includes(q) || vendor.includes(q) || comment.includes(q);
-            }
-            return true;
-          });
-        },
-
-        async deleteReview(id) {
-          if (!confirm('Are you sure you want to delete this review?')) return;
-          try {
-            const res = await fetch('/api/reviews?id=' + id, { method: 'DELETE' });
-            if (res.ok) {
-              this.reviews = this.reviews.filter(r => r.id !== id);
-              this.showToast('Review removed');
-            } else {
-              alert('Failed to delete review');
-            }
-          } catch (e) {
-            alert('Error deleting review');
-          }
-        },
-
-        async logout() {
-          if (!confirm('Log out from Founder Panel?')) return;
-          await fetch('/api/admin/auth', { method: 'DELETE' });
-          window.location.href = '/';
-        }
-      }"
-      x-init="init()"
+      x-data="reviewsAdmin"
       class="flex-1 flex flex-col lg:flex-row min-h-screen"
     >
+
 
       <!-- Toast Notification -->
       <div
@@ -115,9 +142,17 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
               </p>
             </div>
 
-            <div class="px-5 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-center self-start sm:self-auto">
-              <span class="text-[10px] font-bold text-amber-800 uppercase block">Total Reviews</span>
-              <span class="font-display text-xl font-bold text-amber-600" x-text="reviews.length"></span>
+            <div class="flex items-center gap-3">
+              <button
+                @click="exportCSV()"
+                class="px-4 py-3 bg-white border border-nitkkr-orange/30 hover:bg-nitkkr-orange/10 text-nitkkr-dark font-bold text-xs rounded-2xl shadow-xs transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+              >
+                <span>📥</span> Export CSV
+              </button>
+              <div class="px-5 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-center self-start sm:self-auto">
+                <span class="text-[10px] font-bold text-amber-800 uppercase block">Total Reviews</span>
+                <span class="font-display text-xl font-bold text-amber-600" x-text="reviews.length"></span>
+              </div>
             </div>
           </div>
 
