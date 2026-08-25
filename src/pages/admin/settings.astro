@@ -152,6 +152,8 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             const isStandard = standardKeys.includes(k);
             const matchesSearch = !this.search || k.toLowerCase().includes(this.search.toLowerCase()) || String(this.settings[k] || '').toLowerCase().includes(this.search.toLowerCase());
             return !isStandard && matchesSearch;
+          });
+        },
         async logout() {
           if (!confirm('Log out from Founder Panel?')) return;
           await fetch('/api/admin/auth', { method: 'DELETE' });
@@ -161,6 +163,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
       x-init="init()"
       class="flex-1 flex flex-col lg:flex-row min-h-screen"
     >
+
       <!-- Shared Sidebar Component -->
       <AdminSidebar currentPath="/admin/settings" />
 
