@@ -22,16 +22,19 @@ function base64UrlEncode(input: string | Uint8Array | ArrayBuffer): string {
   }
   let b64 = '';
   if (typeof input === 'string') {
-    b64 = btoa(input);
-  } else if (input instanceof Uint8Array) {
-    // Properly encode Uint8Array to base64url
-    b64 = Buffer.from(input).toString('base64url');
+    b64 = btoa(unescape(encodeURIComponent(input)));
   } else {
-    const bytes = input instanceof ArrayBuffer ? new Uint8Array(input) : new Uint8Array(input);
-    b64 = btoa(String.fromCharCode(...bytes));
+    const bytes = input instanceof ArrayBuffer ? new Uint8Array(input) : input;
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    b64 = btoa(binary);
   }
   return b64.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
+
 
 function base64UrlDecodeToBytes(b64url: string): Uint8Array {
   if (typeof Buffer !== 'undefined') {

@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createDb, schema } from '../../../../lib/db';
+import { eq } from 'drizzle-orm';
 import { verifySessionToken } from '../../../../lib/auth';
 
 export const prerender = false;
