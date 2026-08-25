@@ -1,15 +1,12 @@
 import type { APIRoute } from 'astro';
-import { createDb, schema } from '../../../../lib/db';
+import { createDb, schema, getRawD1Binding } from '../../../../lib/db';
 import { eq } from 'drizzle-orm';
 import { authenticateAdminRequest } from '../../../../lib/auth';
 
 export const prerender = false;
 
-async function ensureSiteSettingsTable() {
+async function ensureSiteSettingsTable(rawD1: any) {
   try {
-    const rawD1 = (globalThis as any).DB || 
-                  (globalThis as any).__CF_ENV__?.DB || 
-                  (globalThis as any).env?.DB;
     if (rawD1 && typeof rawD1.prepare === 'function') {
       await rawD1.prepare('CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);').run();
     }
@@ -18,7 +15,7 @@ async function ensureSiteSettingsTable() {
   }
 }
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
   const admin = await authenticateAdminRequest(request);
   if (!admin) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -28,16 +25,31 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   try {
-    await ensureSiteSettingsTable();
-    const db = createDb();
-    const settings = await db.select().from(schema.siteSettings);
-    const settingsObj = (settings || []).reduce((acc: any, setting: any) => {
-      if (setting && setting.key) {
-        acc[setting.key] = setting.value;
-      }
-      return acc;
-    }, {} as Record<string, string>);
+    const rawD1 = (locals as any)?.runtime?.env?.DB ||
+                  (locals as any)?.db ||
+                  getRawD1Binding();
+
+    await ensureSiteSettingsTable(rawD1);
     
+    let settingsObj: Record<string, string> = {};
+    if (rawD1 && typeof rawD1.prepare === 'function') {
+      const rows = await rawD1.prepare('SELECT key, value FROM site_settings').all();
+      if (rows && rows.results) {
+        for (const r of rows.results as any[]) {
+          if (r && r.key) {
+            settingsObj[r.key] = r.value;
+          }
+        }
+      }
+    } else {
+      const db = createDb(locals);
+      const settings = await db.select().from(schema.siteSettings);
+      settingsObj = (settings || []).reduce((acc: any, setting: any) => {
+        if (setting && setting.key) acc[setting.key] = setting.value;
+        return acc;
+      }, {} as Record<string, string>);
+    }
+
     return new Response(JSON.stringify({ settings: settingsObj }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -51,7 +63,7 @@ export const GET: APIRoute = async ({ request }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   const admin = await authenticateAdminRequest(request);
   if (!admin) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -61,16 +73,16 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    await ensureSiteSettingsTable();
-    const db = createDb();
+    const rawD1 = (locals as any)?.runtime?.env?.DB ||
+                  (locals as any)?.db ||
+                  getRawD1Binding();
+
+    await ensureSiteSettingsTable(rawD1);
+    const db = createDb(locals);
     const body = await request.json();
 
     // 1. Batch settings update: { settings: { key: value, ... } }
     if (body.settings && typeof body.settings === 'object') {
-      const rawD1 = (globalThis as any).DB || 
-                    (globalThis as any).__CF_ENV__?.DB || 
-                    (globalThis as any).env?.DB;
-
       const entries = Object.entries(body.settings);
       
       if (rawD1 && typeof rawD1.prepare === 'function') {
@@ -106,10 +118,6 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const rawD1 = (globalThis as any).DB || 
-                  (globalThis as any).__CF_ENV__?.DB || 
-                  (globalThis as any).env?.DB;
-
     if (rawD1 && typeof rawD1.prepare === 'function') {
       await rawD1.prepare('INSERT INTO site_settings (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?2;')
         .bind(key, String(value)).run();
@@ -131,7 +139,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ request, url }) => {
+export const DELETE: APIRoute = async ({ request, locals, url }) => {
   const admin = await authenticateAdminRequest(request);
   if (!admin) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -149,9 +157,18 @@ export const DELETE: APIRoute = async ({ request, url }) => {
       });
     }
 
-    await ensureSiteSettingsTable();
-    const db = createDb();
-    await db.delete(schema.siteSettings).where(eq(schema.siteSettings.key, key));
+    const rawD1 = (locals as any)?.runtime?.env?.DB ||
+                  (locals as any)?.db ||
+                  getRawD1Binding();
+
+    await ensureSiteSettingsTable(rawD1);
+
+    if (rawD1 && typeof rawD1.prepare === 'function') {
+      await rawD1.prepare('DELETE FROM site_settings WHERE key = ?1').bind(key).run();
+    } else {
+      const db = createDb(locals);
+      await db.delete(schema.siteSettings).where(eq(schema.siteSettings.key, key));
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

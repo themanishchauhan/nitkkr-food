@@ -1,14 +1,16 @@
 import { defineMiddleware } from 'astro:middleware';
 import { verifySessionToken } from './lib/auth';
-import { createDb } from './lib/db';
+import { createDb, setActiveD1 } from './lib/db';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   try {
     // 1. Capture Cloudflare Workers runtime environment and store DB in request-scoped locals (SEC-5 fix)
     const cfEnv = (context.locals as any)?.runtime?.env;
     if (cfEnv?.DB) {
+      setActiveD1(cfEnv.DB);
       context.locals.db = createDb(cfEnv);
     }
+
 
     const url = new URL(context.request.url);
     const path = url.pathname.replace(/\/$/, '') || '/';

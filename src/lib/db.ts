@@ -4,6 +4,21 @@ import * as schema from './schema';
 
 export { schema };
 
+let activeD1Binding: any = null;
+
+export function setActiveD1(d1: any) {
+  if (d1 && typeof d1.prepare === 'function') {
+    activeD1Binding = d1;
+  }
+}
+
+export function getRawD1Binding(): any {
+  return activeD1Binding || 
+         (globalThis as any).DB || 
+         (globalThis as any).__CF_ENV__?.DB || 
+         (globalThis as any).env?.DB;
+}
+
 /**
  * Creates a chainable Promise-like mock that resolves to an empty array
  * for any Drizzle query chain when D1 is uninitialized.
@@ -33,20 +48,13 @@ function createQueryProxy(result: any = []) {
 export function createDb(env?: { DB?: D1Database; [key: string]: any }): any {
   // Check for Cloudflare D1 binding
   const d1 = env?.DB || 
-             (env as any)?.runtime?.env?.DB ||
-             (env as any)?.locals?.runtime?.env?.DB;
+             (env as any)?.runtime?.env?.DB || 
+             (env as any)?.locals?.runtime?.env?.DB ||
+             getRawD1Binding();
 
   if (d1 && typeof d1.prepare === 'function') {
+    setActiveD1(d1);
     return drizzleD1(d1, { schema });
-  }
-
-  // Check globals safely without writing to them
-  const fallbackD1 = (globalThis as any).DB || 
-                     (globalThis as any).__CF_ENV__?.DB || 
-                     (globalThis as any).env?.DB;
-
-  if (fallbackD1 && typeof fallbackD1.prepare === 'function') {
-    return drizzleD1(fallbackD1, { schema });
   }
 
   // Pure in-memory safe mock database for local build/prerender steps

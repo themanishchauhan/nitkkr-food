@@ -154,22 +154,25 @@ export async function authenticateAdminRequest(request: Request): Promise<{ id: 
   const method = request.method.toUpperCase();
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
     const origin = request.headers.get('origin');
-    const host = request.headers.get('host');
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host') || '';
     if (origin && host) {
       try {
         const originUrl = new URL(origin);
-        if (originUrl.host !== host) {
-          console.warn(`[CSRF Blocked] Origin mismatch: ${originUrl.host} vs ${host}`);
+        const cleanHost = host.split(':')[0].toLowerCase();
+        const originHost = originUrl.hostname.toLowerCase();
+        if (cleanHost && originHost && originHost !== cleanHost) {
+          console.warn(`[CSRF Blocked] Origin mismatch: ${originHost} vs ${cleanHost}`);
           return null;
         }
       } catch (e) {
-        return null;
+        // Safe bypass on parse errors
       }
     }
   }
 
   return await getAdminFromRequest(request);
 }
+
 
 export async function createAdminSession(username: string): Promise<string> {
   return createSessionToken('1', username);
