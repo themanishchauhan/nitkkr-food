@@ -40,11 +40,12 @@ export default defineConfig({
       },
     },
     optimizeDeps: {
-      exclude: ['@astrojs/cloudflare', '@astrojs/cloudflare/entrypoints/server.js', 'meilisearch', 'drizzle-orm', '@neondatabase/serverless', '@libsql/client'],
+      exclude: ['@astrojs/cloudflare', 'drizzle-orm'],
     },
     ssr: {
-      noExternal: ['@astrojs/cloudflare', 'meilisearch', 'drizzle-orm', '@neondatabase/serverless', '@libsql/client'],
+      noExternal: ['@astrojs/cloudflare', 'drizzle-orm'],
     },
+
     plugins: [
       VitePWA({
         registerType: 'autoUpdate',
