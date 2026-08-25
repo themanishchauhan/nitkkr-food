@@ -3,7 +3,6 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import ShareButton from '../../components/ShareButton.astro';
 import CategoryTabs from '../../components/CategoryTabs.astro';
-import QRCodeModal from '../../components/QRCodeModal.astro';
 import { getVendorBySlug, getMenuItemsWithReviewStats, getReviewsByVendor, getCategories, isVendorOpenNow } from '../../lib/queries';
 
 const { slug } = Astro.params;
@@ -55,11 +54,8 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
           </svg>
         </a>
-
-        <div class="flex items-center gap-2">
-          <QRCodeModal vendorName={vendor.name} vendorSlug={vendor.slug} shareUrl={shareUrl} />
-        </div>
       </div>
+
 
       <!-- Hero Stall Info Content -->
       <div class="absolute bottom-4 left-0 right-0 max-w-2xl mx-auto px-4 text-white z-10">

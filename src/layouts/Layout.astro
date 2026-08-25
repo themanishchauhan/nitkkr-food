@@ -40,18 +40,110 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <meta name="twitter:image" content={new URL(ogImage, Astro.site).href} />
 </head>
 <body class="font-body bg-nitkkr-cream text-nitkkr-dark min-h-screen flex flex-col">
+
+  <!-- 📲 Smart PWA Install Top Banner -->
+  <div
+    x-data="{
+      showBanner: false,
+      deferredPrompt: null,
+      isIOS: false,
+      showIOSGuide: false,
+      init() {
+        if (localStorage.getItem('pwa_dismissed') === 'true') return;
+        
+        // Detect iOS
+        const isIosDevice = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+        const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
+        
+        if (isIosDevice && !isInStandaloneMode) {
+          this.isIOS = true;
+          this.showBanner = true;
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          this.deferredPrompt = e;
+          this.showBanner = true;
+        });
+      },
+      async installPWA() {
+        if (this.isIOS) {
+          this.showIOSGuide = true;
+          return;
+        }
+        if (!this.deferredPrompt) return;
+        this.deferredPrompt.prompt();
+        const { outcome } = await this.deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          this.showBanner = false;
+        }
+        this.deferredPrompt = null;
+      },
+      dismiss() {
+        this.showBanner = false;
+        localStorage.setItem('pwa_dismissed', 'true');
+      }
+    }"
+    x-show="showBanner"
+    x-cloak
+    class="bg-gradient-to-r from-amber-600 via-nitkkr-orange to-rose-600 text-white px-4 py-2.5 shadow-md relative z-50 animate-in slide-in-from-top duration-300"
+  >
+    <div class="max-w-4xl mx-auto flex items-center justify-between gap-3 text-xs sm:text-sm">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="text-base sm:text-lg flex-shrink-0 animate-bounce">📲</span>
+        <p class="font-medium truncate">
+          <strong class="font-bold">Install NITKKR Food:</strong> Instant menu access & faster WhatsApp orders!
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <button
+          @click="installPWA()"
+          class="px-3 py-1 bg-white text-nitkkr-orange font-bold text-xs rounded-lg hover:bg-amber-50 active:scale-95 shadow-sm transition-all cursor-pointer"
+        >
+          Install App
+        </button>
+        <button
+          @click="dismiss()"
+          class="text-white/80 hover:text-white font-bold text-base p-1 leading-none cursor-pointer"
+          aria-label="Dismiss banner"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- iOS Add to Home Screen Instructions Modal -->
+    <div
+      x-show="showIOSGuide"
+      x-cloak
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 text-slate-900"
+      @click.self="showIOSGuide = false"
+    >
+      <div class="bg-white rounded-2xl p-5 max-w-xs w-full text-center shadow-2xl space-y-3">
+        <span class="text-3xl">📱</span>
+        <h4 class="font-bold text-sm">Install on iPhone / iPad</h4>
+        <p class="text-xs text-slate-600 leading-relaxed text-left">
+          1. Tap the <strong>Share</strong> button <span class="text-blue-500 font-bold">⎋</span> at the bottom of Safari.<br/>
+          2. Scroll down and tap <strong>"Add to Home Screen"</strong> ⊞.<br/>
+          3. Tap <strong>Add</strong> in the top right.
+        </p>
+        <button @click="showIOSGuide = false" class="w-full py-2 bg-nitkkr-orange text-white font-bold text-xs rounded-xl cursor-pointer">Got it!</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2" aria-live="polite"></div>
   <main class="flex-1">
     <slot />
   </main>
+
   <footer class="border-t border-nitkkr-orange/20 py-6 mt-auto">
-    <div class="max-w-4xl mx-auto px-4 text-center text-sm text-nitkkr-gray flex flex-col sm:flex-row items-center justify-between gap-3">
-      <p>Made with ❤️ for NITKKR students</p>
-      <a href="/admin" class="px-3 py-1.5 bg-nitkkr-orange/10 hover:bg-nitkkr-orange hover:text-white text-nitkkr-orange rounded-xl font-bold text-xs transition-colors flex items-center gap-1">
-        <span>⚙️</span> Stall Owner Dashboard
-      </a>
+    <div class="max-w-4xl mx-auto px-4 text-center text-xs text-nitkkr-gray">
+      <p>Made with ❤️ for NIT Kurukshetra students</p>
     </div>
   </footer>
+
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
