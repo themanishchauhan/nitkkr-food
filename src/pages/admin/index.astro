@@ -206,15 +206,20 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             });
             if (res.ok) {
               this.showToast('⚡ Website settings updated live!');
+            } else if (res.status === 401) {
+              alert('Admin session expired. Please log in again.');
+              window.location.href = '/ops-manish-770';
             } else {
-              alert('Failed to save settings');
+              const err = await res.json().catch(() => ({}));
+              this.showToast('❌ ' + (err.error || 'Failed to save settings'));
             }
           } catch (e) {
-            alert('Error saving settings');
+            this.showToast('❌ Network error saving settings');
           } finally {
             this.savingSettings = false;
           }
         },
+
 
         async deleteReview(id) {
           if (!confirm('Delete this review?')) return;
