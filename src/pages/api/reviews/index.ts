@@ -119,3 +119,31 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 };
+
+export const DELETE: APIRoute = async ({ request, url }) => {
+  try {
+    const idParam = url.searchParams.get('id');
+    const id = parseInt(idParam || '', 10);
+    if (!id || isNaN(id)) {
+      return new Response(JSON.stringify({ error: 'Valid review ID is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { deleteReview } = await import('../../../lib/queries');
+    await deleteReview(id);
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Delete review error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to delete review' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
+

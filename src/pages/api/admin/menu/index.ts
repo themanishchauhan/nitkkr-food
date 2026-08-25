@@ -113,3 +113,75 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 };
+
+export const PATCH: APIRoute = async ({ request }) => {
+  if (!await isAuthenticated(request)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  try {
+    const db = getDb();
+    const body = await request.json();
+    const { id, name, description, price, image, isVeg, isAvailable, categoryId, displayOrder } = body;
+
+    if (!id || isNaN(parseInt(id, 10))) {
+      return new Response(JSON.stringify({ error: 'Valid dish ID is required' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const itemId = parseInt(id, 10);
+    const updateData: Record<string, any> = {};
+    if (name?.trim()) updateData.name = name.trim();
+    if (description !== undefined) updateData.description = description?.trim() || null;
+    if (price !== undefined && price !== '') updateData.price = parseFloat(price);
+    if (image !== undefined) updateData.image = image?.trim() || null;
+    if (isVeg !== undefined) updateData.isVeg = !!isVeg;
+    if (isAvailable !== undefined) updateData.isAvailable = !!isAvailable;
+    if (categoryId !== undefined) updateData.categoryId = categoryId ? parseInt(categoryId, 10) : null;
+    if (displayOrder !== undefined) updateData.displayOrder = parseInt(displayOrder, 10);
+
+    const [item] = await db.update(schema.menuItems)
+      .set(updateData)
+      .where(eq(schema.menuItems.id, itemId))
+      .returning();
+
+    return new Response(JSON.stringify({ success: true, item }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Update menu item error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to update menu item' }), {
+      status: 500, headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
+
+export const DELETE: APIRoute = async ({ request, url }) => {
+  if (!await isAuthenticated(request)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  try {
+    const db = getDb();
+    const idParam = url.searchParams.get('id');
+    const id = parseInt(idParam || '', 10);
+    if (!id || isNaN(id)) {
+      return new Response(JSON.stringify({ error: 'Valid dish ID is required' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    await db.delete(schema.menuItems).where(eq(schema.menuItems.id, id));
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Delete menu item error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to delete menu item' }), {
+      status: 500, headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
