@@ -7,6 +7,7 @@ const initialQuery = Astro.url.searchParams.get('q')?.trim() || '';
 const initialCategory = Astro.url.searchParams.get('category')?.trim() || '';
 const initialMaxPrice = Astro.url.searchParams.get('maxPrice')?.trim() || '';
 const initialIsVeg = Astro.url.searchParams.get('isVeg')?.trim() || '';
+const initialTag = Astro.url.searchParams.get('tag')?.trim() || '';
 const initialTab = Astro.url.searchParams.get('tab')?.trim() || 'dishes';
 
 const allItems = await getAllMenuItemsForSearch();
@@ -18,7 +19,8 @@ const categories = await getCategories();
   title={initialQuery ? `Search: ${initialQuery} - NITKKR Food` : 'Search Food & Stalls - NITKKR Food'}
   description="Search dishes and food stalls across NIT Kurukshetra campus"
 >
-  <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTab, allItems, allVendors }}>
+  <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTag, initialTab, allItems, allVendors }}>
+
     function normalizePhonetics(str) {
       return (str || '').toLowerCase()
         .replace(/aa/g, 'a')
@@ -92,6 +94,7 @@ const categories = await getCategories();
         activeTab: initialTab === 'stalls' ? 'stalls' : 'dishes',
         query: initialQuery || '',
         activeCat: initialCategory || 'all',
+        vibeTag: initialTag || 'all',
         maxPrice: initialMaxPrice || '',
         vegFilter: initialIsVeg === 'true' ? 'veg' : (initialIsVeg === 'false' ? 'nonveg' : 'all'),
         allItems: allItems || [],
@@ -150,7 +153,47 @@ const categories = await getCategories();
             });
           }
 
-          // 2. Price Filter
+          // 2. Gen-Z Lifestyle & Vibe Filter
+          if (this.vibeTag && this.vibeTag !== 'all') {
+            var vibe = this.vibeTag.toLowerCase();
+            list = list.filter(function(i) {
+              var nameLower = (i.name || '').toLowerCase();
+              var descLower = (i.description || '').toLowerCase();
+              var tags = (i.tags || []).map(function(t) { return t.toLowerCase(); });
+              var full = nameLower + ' ' + descLower + ' ' + tags.join(' ');
+
+              if (vibe === 'protein') {
+                return tags.indexOf('protein') !== -1 || tags.indexOf('gym') !== -1 || tags.indexOf('fitness') !== -1 ||
+                       /paneer|egg|chicken|soya|bhurji|protein|whey|chana|tofu|peanut/i.test(full);
+              }
+              if (vibe === 'late-night') {
+                return tags.indexOf('late-night') !== -1 || tags.indexOf('midnight') !== -1 || tags.indexOf('snack') !== -1 ||
+                       /maggi|roll|fries|sandwich|canteen|coffee|tea|burger/i.test(full);
+              }
+              if (vibe === 'spicy') {
+                return tags.indexOf('spicy') !== -1 || tags.indexOf('crispy') !== -1 || tags.indexOf('hot') !== -1 ||
+                       /spicy|peri|schezwan|chilli|momo|kurkure|crispy|tandoori/i.test(full);
+              }
+              if (vibe === 'cheese') {
+                return tags.indexOf('cheese') !== -1 || tags.indexOf('cheesy') !== -1 || tags.indexOf('cheat-meal') !== -1 ||
+                       /cheese|cheesy|mozzarella|pizza|loaded|garlic bread|pasta/i.test(full);
+              }
+              if (vibe === 'shakes') {
+                return (i.categorySlug && i.categorySlug.indexOf('beverage') !== -1) ||
+                       /shake|smoothie|coffee|cold coffee|boba|oreo|kitkat|mojito/i.test(full);
+              }
+              if (vibe === 'healthy') {
+                return tags.indexOf('healthy') !== -1 || tags.indexOf('fresh') !== -1 ||
+                       /juice|fruit|salad|sprouts|green tea|coconut|curd/i.test(full);
+              }
+              if (vibe === 'bestseller') {
+                return tags.indexOf('bestseller') !== -1 || tags.indexOf('popular') !== -1 || tags.indexOf('top-rated') !== -1 || tags.indexOf('chef-special') !== -1;
+              }
+              return tags.indexOf(vibe) !== -1 || full.indexOf(vibe) !== -1;
+            });
+          }
+
+          // 3. Price Filter
           if (this.maxPrice && !isNaN(parseFloat(this.maxPrice))) {
             var maxP = parseFloat(this.maxPrice);
             list = list.filter(function(i) {
@@ -158,12 +201,13 @@ const categories = await getCategories();
             });
           }
 
-          // 3. Diet Filter
+          // 4. Diet Filter
           if (this.vegFilter === 'veg') {
             list = list.filter(function(i) { return i.isVeg === true; });
           } else if (this.vegFilter === 'nonveg') {
             list = list.filter(function(i) { return !i.isVeg; });
           }
+
 
           // 4. Keyword & Typo-Tolerant Search
           if (!this.query.trim()) {
@@ -272,40 +316,111 @@ const categories = await getCategories();
         </div>
 
         <!-- Filter Controls for Dishes tab -->
-        <div x-show="activeTab === 'dishes'" class="mt-3 space-y-2">
+        <div x-show="activeTab === 'dishes'" class="mt-4 space-y-3">
+          <!-- Gen-Z Cravings & Lifestyle Vibe Bar -->
+          <div class="space-y-1.5">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">🔥 Student Cravings & Vibes:</span>
+            <div class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs" role="group" aria-label="Filter by vibe">
+              <button
+                type="button"
+                @click="vibeTag = 'all'"
+                :class="vibeTag === 'all' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-amber-400 font-semibold'"
+                class="px-3 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer"
+              >
+                All Vibes
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'protein' ? 'all' : 'protein')"
+                :class="vibeTag === 'protein' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-amber-200 hover:bg-amber-50 font-semibold'"
+                class="px-3 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>🏋️‍♂️</span> High Protein
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'late-night' ? 'all' : 'late-night')"
+                :class="vibeTag === 'late-night' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-indigo-200 hover:bg-indigo-50 font-semibold'"
+                class="px-3 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>🌙</span> Late Night 2AM
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'spicy' ? 'all' : 'spicy')"
+                :class="vibeTag === 'spicy' ? 'bg-rose-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-rose-200 hover:bg-rose-50 font-semibold'"
+                class="px-3 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>🔥</span> Spicy & Crispy
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'cheese' ? 'all' : 'cheese')"
+                :class="vibeTag === 'cheese' ? 'bg-yellow-500 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-yellow-200 hover:bg-yellow-50 font-semibold'"
+                class="px-3 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>🧀</span> Cheesy Loaded
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'shakes' ? 'all' : 'shakes')"
+                :class="vibeTag === 'shakes' ? 'bg-purple-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-purple-200 hover:bg-purple-50 font-semibold'"
+                class="px-3 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>🧋</span> Thick Shakes
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'bestseller' ? 'all' : 'bestseller')"
+                :class="vibeTag === 'bestseller' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-emerald-200 hover:bg-emerald-50 font-semibold'"
+                class="px-3 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>⭐</span> Top Rated
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'healthy' ? 'all' : 'healthy')"
+                :class="vibeTag === 'healthy' ? 'bg-teal-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-teal-200 hover:bg-teal-50 font-semibold'"
+                class="px-3 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>🥑</span> Healthy & Fresh
+              </button>
+            </div>
+          </div>
+
           <!-- Price & Diet Bar -->
-          <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs pt-1 border-t border-slate-200/60">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="font-semibold text-nitkkr-dark mr-1">💰 Price:</span>
               <button
                 type="button"
                 @click="maxPrice = ''"
-                :class="maxPrice === '' ? 'bg-nitkkr-orange text-white' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange'"
-                class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+                :class="maxPrice === '' ? 'bg-nitkkr-orange text-white font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange font-semibold'"
+                class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
               >
                 Any
               </button>
               <button
                 type="button"
                 @click="maxPrice = '50'"
-                :class="maxPrice === '50' ? 'bg-nitkkr-orange text-white' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange'"
-                class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+                :class="maxPrice === '50' ? 'bg-nitkkr-orange text-white font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange font-semibold'"
+                class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
               >
                 ≤ ₹50
               </button>
               <button
                 type="button"
                 @click="maxPrice = '100'"
-                :class="maxPrice === '100' ? 'bg-nitkkr-orange text-white' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange'"
-                class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+                :class="maxPrice === '100' ? 'bg-nitkkr-orange text-white font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange font-semibold'"
+                class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
               >
                 ≤ ₹100
               </button>
               <button
                 type="button"
                 @click="maxPrice = '150'"
-                :class="maxPrice === '150' ? 'bg-nitkkr-orange text-white' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange'"
-                class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+                :class="maxPrice === '150' ? 'bg-nitkkr-orange text-white font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange font-semibold'"
+                class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
               >
                 ≤ ₹150
               </button>
@@ -338,14 +453,15 @@ const categories = await getCategories();
           <span x-show="activeTab === 'dishes'" x-text="`Found ${filteredItems.length} dish${filteredItems.length !== 1 ? 'es' : ''}`"></span>
           <span x-show="activeTab === 'stalls'" x-text="`Found ${filteredVendors.length} campus stall${filteredVendors.length !== 1 ? 's' : ''}`"></span>
           <button
-            x-show="query || activeCat !== 'all' || maxPrice !== '' || vegFilter !== 'all'"
-            @click="query = ''; activeCat = 'all'; maxPrice = ''; vegFilter = 'all'"
+            x-show="query || activeCat !== 'all' || vibeTag !== 'all' || maxPrice !== '' || vegFilter !== 'all'"
+            @click="query = ''; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'"
             class="text-nitkkr-orange hover:underline font-bold cursor-pointer"
           >
             Reset Filters
           </button>
         </p>
       </div>
+
 
       <!-- Category Filter Pills (for Dishes) -->
       {categories.length > 0 && (
