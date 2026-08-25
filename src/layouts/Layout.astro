@@ -173,7 +173,7 @@ try {
           <span class="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">Explore</span>
           <ul class="space-y-1.5 text-slate-600">
             <li><a href="/search" class="hover:text-nitkkr-orange transition-colors">🔍 Search Food</a></li>
-            <li><a href="/search?tab=stalls" class="hover:text-nitkkr-orange transition-colors">🏪 Campus Stalls</a></li>
+            <li><a href="/search?tab=stalls" class="hover:text-nitkkr-orange transition-colors">🏪 Campus Vendors</a></li>
             <li><a href="/how-it-works" class="hover:text-nitkkr-orange transition-colors">📖 How It Works</a></li>
             <li><a href="/about" class="hover:text-nitkkr-orange transition-colors">ℹ️ About Us</a></li>
             {customFooterPages.filter(p => p.category === 'Explore').map((p: any) => (
@@ -188,12 +188,13 @@ try {
           <ul class="space-y-1.5 text-slate-600">
             <li><a href="/terms" class="hover:text-nitkkr-orange transition-colors">📜 Terms of Service</a></li>
             <li><a href="/privacy" class="hover:text-nitkkr-orange transition-colors">🔒 Privacy Policy</a></li>
-            <li><a href="/contact" class="hover:text-nitkkr-orange transition-colors">🏪 List Your Stall</a></li>
+            <li><a href="/contact" class="hover:text-nitkkr-orange transition-colors">🏪 List Your Vendor</a></li>
             {customFooterPages.filter(p => p.category !== 'Explore').map((p: any) => (
               <li><a href={`/p/${p.slug}`} class="hover:text-nitkkr-orange transition-colors">{p.icon || '📄'} {p.title}</a></li>
             ))}
           </ul>
         </div>
+
       </div>
 
 
