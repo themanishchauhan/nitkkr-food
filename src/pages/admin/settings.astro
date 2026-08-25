@@ -515,8 +515,9 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           <div class="flex items-center justify-between mb-4">
             <div>
               <h3 class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-2">
-                <span>🗄️</span> All Custom Setting Keys ({customSettingsList.length})
+                <span>🗄️</span> All Custom Setting Keys (<span x-text="customSettingsList.length"></span>)
               </h3>
+
               <p class="text-xs text-slate-500">Manage and edit dynamic database parameters</p>
             </div>
             <input
