@@ -2,34 +2,46 @@
 interface Props {
   categories: Array<{ slug: string; name: string; icon?: string | null; [key: string]: any }>;
   menuItems: Array<{ categorySlug?: string | null; categoryName?: string | null; [key: string]: any }>;
-  stallSearchQuery?: string;
+  [key: string]: any;
 }
-const { categories, menuItems, stallSearchQuery = '' } = Astro.props;
+const { categories, menuItems } = Astro.props;
 ---
 
 <div
   x-data={`{
     activeCat: 'all',
-    stallSearchQuery: '${stallSearchQuery}',
+    searchQuery: '',
     categories: ${JSON.stringify(categories)},
     menuItems: ${JSON.stringify(menuItems)},
     selectedItem: null,
     showDetailModal: false,
-    get filteredMenuItems() {
-      let list = this.menuItems;
-      if (this.activeCat !== 'all') {
-        list = list.filter(i => i.categorySlug === this.activeCat);
-      }
-      if (this.stallSearchQuery.trim()) {
-        const q = this.stallSearchQuery.toLowerCase();
-        list = list.filter(item => 
-          (item.name && item.name.toLowerCase().includes(q)) ||
-          (item.description && item.description.toLowerCase().includes(q)) ||
-          (item.tags && item.tags.some(t => t.toLowerCase().includes(q)))
-        );
-      }
-      return list;
+
+    get totalCount() {
+      return this.menuItems.length;
     },
+
+    get searchedItems() {
+      if (!this.searchQuery.trim()) return this.menuItems;
+      const q = this.searchQuery.toLowerCase().trim();
+      return this.menuItems.filter(item =>
+        (item.name && item.name.toLowerCase().includes(q)) ||
+        (item.description && item.description.toLowerCase().includes(q)) ||
+        (item.categoryName && item.categoryName.toLowerCase().includes(q)) ||
+        (item.tags && item.tags.some(t => t.toLowerCase().includes(q)))
+      );
+    },
+
+    get displayedItems() {
+      const list = this.searchedItems;
+      if (this.activeCat === 'all') return list;
+      return list.filter(i => (i.categorySlug === this.activeCat || i.categoryId === this.activeCat));
+    },
+
+    getCatCount(slug) {
+      if (slug === 'all') return this.searchedItems.length;
+      return this.searchedItems.filter(i => (i.categorySlug === slug || i.categoryId === slug)).length;
+    },
+
     openDetail(item) {
       this.selectedItem = item;
       this.showDetailModal = true;
@@ -37,36 +49,80 @@ const { categories, menuItems, stallSearchQuery = '' } = Astro.props;
   }`}
   class="mb-8"
 >
+  <!-- Menu Header & In-Menu Search Bar -->
+  <div class="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div>
+      <h2 class="font-display text-xl font-extrabold text-slate-900 flex items-center gap-2">
+        <span>🍽️</span>
+        <span>Menu</span>
+        <span class="text-sm font-bold text-slate-500 font-body">
+          (<span x-text="searchQuery.trim() ? displayedItems.length + ' of ' + totalCount : totalCount">{menuItems.length}</span>)
+        </span>
+      </h2>
+      <p class="text-xs text-slate-500 mt-0.5">Explore dishes, tap any dish to view ingredients & student reviews</p>
+    </div>
+
+    <!-- Integrated Search Input -->
+    <div class="relative w-full sm:w-64">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+
+      <input
+        type="text"
+        x-model="searchQuery"
+        placeholder="Search in menu..."
+        class="w-full pl-9 pr-8 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20 shadow-2xs transition-all"
+        aria-label="Search dishes in menu"
+      />
+
+      <button
+        type="button"
+        x-show="searchQuery.length > 0"
+        x-cloak
+        @click="searchQuery = ''"
+        class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer"
+        aria-label="Clear search"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
   <!-- Horizontal Category Tabs -->
-  <div class="flex gap-2 overflow-x-auto pb-3 mb-5 px-4 sm:px-0 scrollbar-none" role="tablist" aria-label="Menu categories">
+  <div class="flex gap-2 overflow-x-auto pb-3 mb-4 -mx-4 px-4 scrollbar-none" role="tablist" aria-label="Menu categories">
     <button
       @click="activeCat='all'"
-      :class="activeCat==='all' ? 'bg-bistro-500 text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-bistro-200 font-medium'"
-      class="px-4 py-2.5 rounded-full text-xs whitespace-nowrap transition-all duration-200 cursor-pointer"
+      :class="activeCat==='all' ? 'bg-nitkkr-orange text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 font-medium'"
+      class="px-4 py-2 rounded-full text-xs whitespace-nowrap transition-all duration-200 cursor-pointer"
       role="tab"
       :aria-selected="activeCat==='all'"
     >
-      All (<span x-text="filteredMenuItems.length"></span>)
+      All (<span x-text="getCatCount('all')">{menuItems.length}</span>)
     </button>
     <template x-for="cat in categories" :key="cat.slug">
       <button
         @click="activeCat=cat.slug"
-        :class="activeCat===cat.slug ? 'bg-bistro-500 text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-bistro-200 font-medium'"
-        class="px-4 py-2.5 rounded-full text-xs whitespace-nowrap transition-all duration-200 cursor-pointer flex items-center gap-1"
+        :class="activeCat===cat.slug ? 'bg-nitkkr-orange text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 font-medium'"
+        class="px-4 py-2 rounded-full text-xs whitespace-nowrap transition-all duration-200 cursor-pointer flex items-center gap-1.5"
         role="tab"
         :aria-selected="activeCat===cat.slug"
       >
         <span x-text="cat.icon" aria-hidden="true"></span>
         <span x-text="cat.name"></span>
+        <span class="text-[10px] opacity-80" x-text="'(' + getCatCount(cat.slug) + ')'"></span>
       </button>
     </template>
   </div>
 
   <!-- Minimalist & Clutter-Free Menu Items List -->
   <div class="space-y-2.5">
-    <template x-for="item in menuItems" :key="item.id">
+    <template x-for="item in displayedItems" :key="item.id">
       <div
-        x-show="activeCat==='all' || activeCat===item.categorySlug"
         x-transition:enter="transition ease-out duration-150"
         x-transition:enter-start="opacity-0 transform scale-98"
         x-transition:enter-end="opacity-100 transform scale-100"
@@ -119,15 +175,23 @@ const { categories, menuItems, stallSearchQuery = '' } = Astro.props;
     </template>
   </div>
 
-  <!-- Empty Category State -->
+  <!-- Empty Search / Category State -->
   <div
-    x-show="menuItems.length === 0 || menuItems.filter(i => activeCat==='all' || activeCat===i.categorySlug).length === 0"
+    x-show="displayedItems.length === 0"
     x-cloak
-    class="text-center py-12 text-nitkkr-gray bg-white rounded-2xl border border-nitkkr-orange/20 p-6"
+    class="text-center py-12 text-nitkkr-gray bg-white rounded-2xl border border-nitkkr-orange/20 p-6 mt-3"
   >
-    <p class="text-3xl mb-2">🍱</p>
-    <p class="text-base font-bold text-nitkkr-dark">No dishes in this category</p>
-    <p class="text-xs mt-1">Select another category tab above to see more items</p>
+    <p class="text-3xl mb-2">🔍</p>
+    <p class="text-base font-bold text-nitkkr-dark" x-text="searchQuery.trim() ? 'No dishes match \'' + searchQuery + '\'' : 'No dishes in this category'"></p>
+    <p class="text-xs mt-1 text-slate-400" x-text="searchQuery.trim() ? 'Try typing a different item name like maggi, chai, noodles...' : 'Select another category tab above to see more items'"></p>
+    <button
+      type="button"
+      x-show="searchQuery.trim() || activeCat !== 'all'"
+      @click="searchQuery = ''; activeCat = 'all'"
+      class="mt-3 px-4 py-1.5 bg-nitkkr-orange/10 hover:bg-nitkkr-orange/20 text-nitkkr-orange text-xs font-bold rounded-xl transition-colors cursor-pointer"
+    >
+      Reset Filters
+    </button>
   </div>
 
   <!-- 🌟 Dish Detail Popup Modal (Appears on click) -->

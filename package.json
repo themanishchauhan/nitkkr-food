@@ -21,6 +21,7 @@
     "docker:down": "docker-compose down"
   },
   "dependencies": {
+    "@astrojs/image": "^0.18.0",
     "@astrojs/mdx": "^7.0.7",
     "@astrojs/sitemap": "^3.7.3",
     "@libsql/client": "npm:@libsql/client@0.14.0",

@@ -18,7 +18,7 @@ const {
 } = Astro.props;
 ---
 
-<div class="my-6 relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 p-0.5 shadow-md group">
+<div class="my-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-bistro-500 via-bistro-400 to-bistro-500 p-0.5 shadow-md group">
   <div class="bg-gradient-to-br from-slate-900 to-slate-950 rounded-[14px] p-4 sm:p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div class="flex items-start sm:items-center gap-3.5 min-w-0">
       {image ? (
@@ -28,17 +28,17 @@ const {
           class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border border-white/20 flex-shrink-0 shadow-sm"
         />
       ) : (
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-bistro-400 to-bistro-500 flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">
           🔥
         </div>
       )}
       <div class="min-w-0 space-y-0.5">
         <div class="flex items-center gap-2">
-          <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
+          <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-bistro-400/20 text-bistro-300 border border-bistro-400/30">
             {badge}
           </span>
         </div>
-        <h4 class="font-display font-bold text-sm sm:text-base text-white truncate group-hover:text-amber-300 transition-colors">
+        <h4 class="font-display font-bold text-sm sm:text-base text-white truncate group-hover:text-bistro-300 transition-colors">
           {title}
         </h4>
         <p class="text-xs text-slate-300 leading-snug line-clamp-2">
@@ -52,7 +52,7 @@ const {
         href={link || '#'}
         target={link.startsWith('http') || link.startsWith('https://wa.me') ? '_blank' : '_self'}
         rel="noopener noreferrer"
-        class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap cursor-pointer"
+        class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-bistro-400 to-bistro-500 hover:from-bistro-300 hover:to-bistro-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap cursor-pointer"
       >
         <span>{cta}</span>
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

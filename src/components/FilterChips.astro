@@ -19,12 +19,12 @@ const { chips = defaultChips } = Astro.props;
 const activeChips = (chips && chips.length > 0 ? chips : defaultChips).filter(c => c.isEnabled !== false);
 ---
 
-<div class="flex overflow-x-auto gap-2 pb-2 mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:justify-center scrollbar-none" role="group" aria-label="Quick student filters">
+<div class="flex flex-wrap gap-2.5 mb-8 px-4 sm:px-0" role="group" aria-label="Quick student filters">
   {activeChips.map(chip => (
     <a
       href={chip.href}
-      class="px-3.5 py-2 bg-white border border-amber-200/80 text-slate-800 rounded-full text-xs font-bold
-             hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:text-white hover:border-transparent shadow-2xs transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap active:scale-95"
+      class="px-4 py-2.5 bg-white border border-bistro-200 text-nitkkr-dark rounded-full text-xs font-bold
+             hover:bg-bistro-50 hover:border-bistro-300 hover:text-bistro-600 transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap active:scale-[0.98]"
     >
       <span aria-hidden="true">{chip.icon}</span>
       <span>{chip.label}</span>
