@@ -115,9 +115,12 @@ export const PATCH: APIRoute = async ({ request }) => {
     });
   }
   try {
+    const { ensureRealDatabasePopulated } = await import('../../../../lib/queries');
+    await ensureRealDatabasePopulated();
+
     const db = createDb();
     const body = await request.json();
-    const { id, name, phone, whatsapp, address, opensAt, closesAt, deliversTo, description, isActive, image, bulkIds } = body;
+    const { id, name, phone, whatsapp, address, opensAt, closesAt, deliversTo, description, isActive, isFeatured, image, bulkIds } = body;
 
     // Bulk activate/deactivate support (UX-1)
     if (Array.isArray(bulkIds) && bulkIds.length > 0 && typeof isActive === 'boolean') {
@@ -143,6 +146,7 @@ export const PATCH: APIRoute = async ({ request }) => {
     if (description !== undefined) updates.description = description ? description.trim() : null;
     if (image !== undefined) updates.image = image ? image.trim() : null;
     if (isActive !== undefined) updates.isActive = Boolean(isActive);
+    if (isFeatured !== undefined) updates.isFeatured = Boolean(isFeatured);
     if (deliversTo !== undefined) {
       updates.deliversTo = Array.isArray(deliversTo)
         ? deliversTo
@@ -151,18 +155,42 @@ export const PATCH: APIRoute = async ({ request }) => {
           : [];
     }
 
-    const [vendor] = await db.update(schema.vendors).set(updates).where(eq(schema.vendors.id, Number(id))).returning();
+    const vendorId = Number(id);
+    const existing = await db.select().from(schema.vendors).where(eq(schema.vendors.id, vendorId)).limit(1);
 
-    return new Response(JSON.stringify({ success: true, vendor }), {
+    if (!existing || existing.length === 0) {
+      const { FOOD_CAVE_VENDOR } = await import('../../../../lib/food-cave-data');
+      await db.insert(schema.vendors).values({
+        id: vendorId,
+        name: updates.name || FOOD_CAVE_VENDOR.name,
+        slug: FOOD_CAVE_VENDOR.slug,
+        phone: updates.phone || FOOD_CAVE_VENDOR.phone,
+        whatsapp: updates.whatsapp || FOOD_CAVE_VENDOR.whatsapp,
+        address: updates.address || FOOD_CAVE_VENDOR.address,
+        opensAt: updates.opensAt || FOOD_CAVE_VENDOR.opensAt,
+        closesAt: updates.closesAt || FOOD_CAVE_VENDOR.closesAt,
+        deliversTo: updates.deliversTo || FOOD_CAVE_VENDOR.deliversTo,
+        image: updates.image || FOOD_CAVE_VENDOR.image,
+        isActive: updates.isActive !== undefined ? updates.isActive : true,
+        isFeatured: updates.isFeatured !== undefined ? updates.isFeatured : true,
+      });
+    } else {
+      await db.update(schema.vendors).set(updates).where(eq(schema.vendors.id, vendorId));
+    }
+
+    const [vendor] = await db.select().from(schema.vendors).where(eq(schema.vendors.id, vendorId)).limit(1);
+
+    return new Response(JSON.stringify({ success: true, vendor: vendor || updates }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update vendor error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to update vendor' }), {
+    return new Response(JSON.stringify({ error: error?.message || 'Failed to update vendor' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }
 };
+
 
 export const DELETE: APIRoute = async ({ request, url }) => {
   const admin = await authenticateAdminRequest(request);
