@@ -68,23 +68,25 @@ const {
     },
 
     async shareVendor() {
+      const activeUrl = (typeof window !== 'undefined' && window.location.href) ? window.location.href : '${shareUrl}';
       if (navigator.share) {
         try {
           await navigator.share({
             title: '${shareTitle.replace(/'/g, "\\'")}',
             text: '${shareText.replace(/'/g, "\\'")}',
-            url: '${shareUrl}'
+            url: activeUrl
           });
         } catch (e) {}
       } else {
         try {
-          await navigator.clipboard.writeText('${shareUrl}');
-          alert('Link copied to clipboard!');
+          await navigator.clipboard.writeText(activeUrl);
+          alert('Link copied to clipboard: ' + activeUrl);
         } catch (e) {
-          prompt('Copy link:', '${shareUrl}');
+          prompt('Copy link:', activeUrl);
         }
       }
     }
+
   }`}
   class="mb-8"
 >

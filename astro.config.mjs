@@ -13,7 +13,7 @@ config({ path: '.dev.vars' });
 const isProduction = process.env.NODE_ENV === 'production';
 
 export default defineConfig({
-  site: 'https://nitkkr-food.pages.dev',
+  site: process.env.SITE_URL || 'https://nitkkr-food.manishchouhan770.workers.dev',
   devToolbar: {
     enabled: false,
   },
