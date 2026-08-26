@@ -91,6 +91,9 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
   try {
+    const { ensureRealDatabasePopulated } = await import('../../../../lib/queries');
+    await ensureRealDatabasePopulated();
+
     const db = createDb();
     const body = await request.json();
     const { vendorId, categoryId, name, description, price, image, isVeg, isAvailable, tags } = body;
@@ -107,6 +110,37 @@ export const POST: APIRoute = async ({ request }) => {
         ? tags.split(',').map((t: string) => t.trim()).filter(Boolean)
         : [];
 
+    const rawD1 = (await import('../../../../lib/db')).getRawD1Binding();
+    if (rawD1 && typeof rawD1.prepare === 'function') {
+      try {
+        await rawD1.prepare(`
+          INSERT INTO menu_items (vendor_id, category_id, name, description, price, image, is_veg, is_available, tags, display_order)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          Number(vendorId),
+          categoryId ? Number(categoryId) : null,
+          name.trim(),
+          description ? description.trim() : null,
+          Number(price),
+          image ? image.trim() : null,
+          isVeg !== undefined ? (isVeg ? 1 : 0) : 1,
+          isAvailable !== undefined ? (isAvailable ? 1 : 0) : 1,
+          JSON.stringify(tagsArray),
+          0
+        ).run();
+
+        const inserted = await rawD1.prepare(`
+          SELECT * FROM menu_items WHERE vendor_id = ? AND name = ? ORDER BY id DESC LIMIT 1
+        `).bind(Number(vendorId), name.trim()).first();
+
+        return new Response(JSON.stringify({ success: true, item: inserted }), {
+          status: 201, headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (rawErr) {
+        console.warn('Raw D1 insert menu item error, falling back to Drizzle:', rawErr);
+      }
+    }
+
     const [item] = await db.insert(schema.menuItems).values({
       vendorId: Number(vendorId),
       categoryId: categoryId ? Number(categoryId) : null,
@@ -122,13 +156,14 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ success: true, item }), {
       status: 201, headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create menu item error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to create menu item' }), {
+    return new Response(JSON.stringify({ error: error?.message || 'Failed to create menu item' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }
 };
+
 
 export const PATCH: APIRoute = async ({ request }) => {
   const admin = await authenticateAdminRequest(request);

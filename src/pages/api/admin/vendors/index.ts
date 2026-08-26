@@ -60,9 +60,12 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
   try {
+    const { ensureRealDatabasePopulated } = await import('../../../../lib/queries');
+    await ensureRealDatabasePopulated();
+
     const db = createDb();
     const body = await request.json();
-    const { name, phone, whatsapp, address, opensAt, closesAt, deliversTo, description, image } = body;
+    const { name, phone, whatsapp, address, opensAt, closesAt, deliversTo, description, image, isFeatured } = body;
 
     if (!name?.trim() || !phone?.trim()) {
       return new Response(JSON.stringify({ error: 'Name and phone are required' }), {
@@ -82,6 +85,39 @@ export const POST: APIRoute = async ({ request }) => {
         ? deliversTo.split(',').map((s: string) => s.trim()).filter(Boolean)
         : ['Hostels', 'Campus'];
 
+    const rawD1 = (await import('../../../../lib/db')).getRawD1Binding();
+    if (rawD1 && typeof rawD1.prepare === 'function') {
+      try {
+        await rawD1.prepare(`
+          INSERT INTO vendors (name, slug, phone, whatsapp, address, latitude, longitude, opens_at, closes_at, delivers_to, image, description, is_active, is_featured, display_order)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          name.trim(),
+          slug,
+          phone.trim(),
+          whatsapp?.trim() || phone.trim(),
+          address?.trim() || 'NIT Kurukshetra',
+          null,
+          null,
+          opensAt || '09:00',
+          closesAt || '23:00',
+          JSON.stringify(deliversToArray),
+          image?.trim() || null,
+          description?.trim() || null,
+          1,
+          isFeatured ? 1 : 0,
+          0
+        ).run();
+
+        const inserted = await rawD1.prepare(`SELECT * FROM vendors WHERE slug = ? LIMIT 1`).bind(slug).first();
+        return new Response(JSON.stringify({ success: true, vendor: inserted }), {
+          status: 201, headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (rawErr) {
+        console.warn('Raw D1 insert error, falling back to Drizzle:', rawErr);
+      }
+    }
+
     const [vendor] = await db.insert(schema.vendors).values({
       name: name.trim(),
       slug,
@@ -94,18 +130,20 @@ export const POST: APIRoute = async ({ request }) => {
       closesAt: closesAt || '23:00',
       deliversTo: deliversToArray,
       isActive: true,
+      isFeatured: Boolean(isFeatured),
     }).returning();
 
     return new Response(JSON.stringify({ success: true, vendor }), {
       status: 201, headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create vendor error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to create vendor' }), {
+    return new Response(JSON.stringify({ error: error?.message || 'Failed to create vendor' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }
 };
+
 
 export const PATCH: APIRoute = async ({ request }) => {
   const admin = await authenticateAdminRequest(request);

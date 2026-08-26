@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { createDb, schema } from '../../../../lib/db';
+import { createDb, schema, getRawD1Binding } from '../../../../lib/db';
 import { eq } from 'drizzle-orm';
 import { authenticateAdminRequest } from '../../../../lib/auth';
 
@@ -7,9 +7,10 @@ export const prerender = false;
 
 async function ensureCustomPagesTable() {
   try {
-    const rawD1 = (globalThis as any).DB || 
-                  (globalThis as any).__CF_ENV__?.DB || 
-                  (globalThis as any).env?.DB;
+    const { ensureRealDatabasePopulated } = await import('../../../../lib/queries');
+    await ensureRealDatabasePopulated();
+
+    const rawD1 = getRawD1Binding();
     if (rawD1 && typeof rawD1.prepare === 'function') {
       await rawD1.prepare(`
         CREATE TABLE IF NOT EXISTS custom_pages (
@@ -30,6 +31,7 @@ async function ensureCustomPagesTable() {
     console.error('Error ensuring custom_pages table in D1:', e);
   }
 }
+
 
 // GET /api/admin/custom-pages - List all custom pages
 export const GET: APIRoute = async ({ request }) => {
