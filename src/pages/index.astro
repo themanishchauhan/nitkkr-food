@@ -46,45 +46,107 @@ if (settingsObj.vibe_chips_json) {
 
 <Layout title="NITKKR Food - Find Food Around Campus Instantly" description="Explore food vendors around NIT Kurukshetra. View menus, dishes, prices, and call directly.">
 
-  <section class="min-h-screen bg-gradient-to-b from-nitkkr-cream to-white pb-12">
-    <div class="max-w-2xl mx-auto px-4 py-6 sm:py-10">
-      
-      <!-- Live Campus Announcement Banner -->
-      {bannerEnabled && bannerText && (
-        <div class={`mb-6 p-3.5 rounded-2xl border text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-sm ${
-          bannerType === 'offer' ? 'bg-amber-50 border-amber-300 text-amber-900' :
-          bannerType === 'warning' ? 'bg-yellow-50 border-yellow-300 text-yellow-900' :
-          bannerType === 'danger' ? 'bg-rose-50 border-rose-300 text-rose-900' :
-          'bg-blue-50 border-blue-300 text-blue-900'
-        }`}>
-          <span class="text-base flex-shrink-0">
-            {bannerType === 'offer' ? '🎉' : bannerType === 'warning' ? '⚠️' : bannerType === 'danger' ? '🚨' : '📢'}
-          </span>
-          <p class="min-w-0 flex-1 leading-snug">{bannerText}</p>
-        </div>
-      )}
+  <!-- 🍜 Floating Top-Left NITKKR Food Brand (Appears when scrolled) -->
+  <div
+    x-data="{ scrolled: false }"
+    @scroll.window="scrolled = (window.pageYOffset > 150)"
+    x-show="scrolled"
+    x-cloak
+    x-transition:enter="transition ease-out duration-300 transform"
+    x-transition:enter-start="-translate-y-6 opacity-0 scale-95"
+    x-transition:enter-end="translate-y-0 opacity-100 scale-100"
+    x-transition:leave="transition ease-in duration-200 transform"
+    x-transition:leave-start="translate-y-0 opacity-100 scale-100"
+    x-transition:leave-end="-translate-y-6 opacity-0 scale-95"
+    class="fixed top-4 left-4 z-50"
+  >
+    <a
+      href="/"
+      @click.prevent="window.scrollTo({ top: 0, behavior: 'smooth' })"
+      class="flex items-center gap-2 px-3.5 py-2 bg-white/95 backdrop-blur-md border border-amber-300/80 rounded-full shadow-lg hover:shadow-xl hover:border-nitkkr-orange text-nitkkr-dark font-display font-bold text-xs sm:text-sm transition-all active:scale-95 group cursor-pointer"
+      title="Return to top / Home"
+    >
+      <span class="text-base group-hover:scale-110 transition-transform">🍜</span>
+      <span class="font-extrabold tracking-tight text-nitkkr-dark group-hover:text-nitkkr-orange transition-colors">NITKKR Food</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+    </a>
+  </div>
 
-      <!-- Compact Hero Section -->
-      <div class="text-center mb-6">
-        <h1 class="font-display text-3xl sm:text-5xl font-bold text-nitkkr-dark mb-1 leading-tight">
-          {heroTitle}
-        </h1>
-        <p class="text-nitkkr-gray text-xs sm:text-base font-medium">{heroTagline}</p>
+  <section class="min-h-screen bg-gradient-to-b from-nitkkr-cream via-amber-50/40 to-white pb-16">
+    
+    <!-- 🌟 Landing Above-The-Fold Section (Hero + Vibes) -->
+    <div class="min-h-[82vh] flex flex-col justify-between max-w-2xl mx-auto px-4 pt-8 sm:pt-14 pb-4">
+      
+      <!-- Top Space / Live Announcement Banner -->
+      <div>
+        {bannerEnabled && bannerText && (
+          <div class={`mb-6 p-3.5 rounded-2xl border text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-sm ${
+            bannerType === 'offer' ? 'bg-amber-50 border-amber-300 text-amber-900' :
+            bannerType === 'warning' ? 'bg-yellow-50 border-yellow-300 text-yellow-900' :
+            bannerType === 'danger' ? 'bg-rose-50 border-rose-300 text-rose-900' :
+            'bg-blue-50 border-blue-300 text-blue-900'
+          }`}>
+            <span class="text-base flex-shrink-0">
+              {bannerType === 'offer' ? '🎉' : bannerType === 'warning' ? '⚠️' : bannerType === 'danger' ? '🚨' : '📢'}
+            </span>
+            <p class="min-w-0 flex-1 leading-snug">{bannerText}</p>
+          </div>
+        )}
       </div>
 
-      <SearchBar placeholder="What are you craving? chowmein, paratha, cold coffee, roll..." />
+      <!-- Center Content: Title, Search, Vibes -->
+      <div class="my-auto space-y-6 text-center">
+        <div class="space-y-2">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-xs font-bold shadow-2xs">
+            <span>🎓</span> NIT Kurukshetra Campus Food
+          </div>
+          <h1 class="font-display text-4xl sm:text-6xl font-black text-nitkkr-dark leading-[1.1] tracking-tight">
+            {heroTitle}
+          </h1>
+          <p class="text-nitkkr-gray text-sm sm:text-lg font-medium max-w-lg mx-auto">
+            {heroTagline}
+          </p>
+        </div>
 
+        <div class="max-w-xl mx-auto">
+          <SearchBar placeholder="What are you craving? chowmein, paratha, cold coffee, roll..." />
+        </div>
 
-      <FilterChips chips={vibeChips} />
+        <div class="pt-2">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+            ⚡ Quick Student Vibes & Cravings
+          </p>
+          <FilterChips chips={vibeChips} />
+        </div>
+      </div>
 
+      <!-- Bottom Hint: Smooth Scroll Down -->
+      <div class="text-center pt-2 pb-1">
+        <button
+          onclick="document.getElementById('explore-content')?.scrollIntoView({ behavior: 'smooth' })"
+          class="inline-flex flex-col items-center gap-1 text-slate-400 hover:text-nitkkr-orange transition-colors cursor-pointer group"
+          aria-label="Scroll to explore categories and vendors"
+        >
+          <span class="text-[11px] font-bold tracking-wide group-hover:underline">Scroll to explore categories & vendors</span>
+          <span class="text-base animate-bounce">↓</span>
+        </button>
+      </div>
 
+    </div>
+
+    <!-- 🍽️ Scrolled Content Section (Categories, Ads, Vendors) -->
+    <div id="explore-content" class="max-w-2xl mx-auto px-4 pt-8 space-y-10">
+      
       <!-- Categories Section -->
-      <div class="mb-8">
-        <h2 class="font-display text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2 text-nitkkr-dark">
-          <span class="text-nitkkr-orange" aria-hidden="true">🍽️</span>
-          Browse by Category
-        </h2>
-        <div class="grid grid-cols-4 gap-2 sm:gap-3">
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-display text-lg sm:text-2xl font-bold flex items-center gap-2 text-nitkkr-dark">
+            <span class="text-nitkkr-orange" aria-hidden="true">🍽️</span>
+            Browse by Category
+          </h2>
+          <span class="text-xs font-bold text-slate-400">{categories.length} categories</span>
+        </div>
+        <div class="grid grid-cols-4 gap-2.5 sm:gap-3">
           {categories.map((cat: any) => (
             <CategoryCard category={cat} />
           ))}
@@ -106,20 +168,25 @@ if (settingsObj.vibe_chips_json) {
       <!-- Vendor Listings Section -->
       <div>
         <div class="flex items-center justify-between mb-4">
-          <h2 class="font-display text-lg sm:text-xl font-bold flex items-center gap-2 text-nitkkr-dark">
-            Campus Vendors & Eateries
-            <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" aria-hidden="true"></span>
-          </h2>
-          <span class="text-xs text-nitkkr-gray font-medium">{vendorsWithStatus.length} vendors</span>
+          <div>
+            <h2 class="font-display text-lg sm:text-2xl font-bold flex items-center gap-2 text-nitkkr-dark">
+              Campus Vendors & Eateries
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
+            </h2>
+            <p class="text-xs text-nitkkr-gray mt-0.5">Explore menus and connect directly with campus vendors</p>
+          </div>
+          <span class="text-xs font-bold text-nitkkr-orange bg-nitkkr-orange/10 px-2.5 py-1 rounded-full border border-nitkkr-orange/20">
+            {vendorsWithStatus.length} Active
+          </span>
         </div>
 
-
-        <div class="space-y-2.5 sm:space-y-3">
+        <div class="space-y-3">
           {vendorsWithStatus.map(v => (
             <VendorCard vendor={v} isOpen={v.isOpen} />
           ))}
         </div>
       </div>
+
     </div>
   </section>
 </Layout>
