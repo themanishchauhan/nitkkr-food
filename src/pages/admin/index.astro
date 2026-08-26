@@ -2,278 +2,284 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
+import { getActiveVendors, getCategories, getAllSiteSettings, getMenuItemsByVendor, getAllReviews } from '../../lib/queries';
+
+const initialVendors = await getActiveVendors();
+const initialCategories = await getCategories();
+const initialMenuItems = await getMenuItemsByVendor(21);
+const initialReviews = await getAllReviews();
+const rawSettings = await getAllSiteSettings();
+const initialSettingsList = Array.isArray(rawSettings) ? rawSettings : [];
+const initialSettingsObj = initialSettingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 ---
 
+<script is:inline define:vars={{ initialVendors, initialCategories, initialMenuItems, initialReviews, initialSettingsObj }}>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('dashboardAdmin', () => ({
+      sidebarOpen: false,
+      loading: false,
+      vendors: Array.isArray(initialVendors) ? initialVendors : [],
+      categories: Array.isArray(initialCategories) ? initialCategories : [],
+      menuItems: Array.isArray(initialMenuItems) ? initialMenuItems : [],
+      reviews: Array.isArray(initialReviews) ? initialReviews : [],
+      settings: {
+        homepage_title: initialSettingsObj.homepage_title || 'Hungry? We got you. 🍜',
+        homepage_tagline: initialSettingsObj.homepage_tagline || 'Explore campus eateries & food vendors around NIT Kurukshetra',
+        announcement_banner_enabled: initialSettingsObj.announcement_banner_enabled || 'false',
+        announcement_banner_text: initialSettingsObj.announcement_banner_text || '',
+        announcement_banner_type: initialSettingsObj.announcement_banner_type || 'info',
+        ad_banner_enabled: initialSettingsObj.ad_banner_enabled || 'false',
+        ad_banner_badge: initialSettingsObj.ad_banner_badge || '⚡ SPONSORED DEAL',
+        ad_banner_title: initialSettingsObj.ad_banner_title || '',
+        ad_banner_description: initialSettingsObj.ad_banner_description || '',
+        ad_banner_cta: initialSettingsObj.ad_banner_cta || 'Claim Offer 💬',
+        ad_banner_link: initialSettingsObj.ad_banner_link || '#'
+      },
+      currentTime: '',
+      activeView: 'overview',
+      showAddStallModal: false,
+      showAddDishModal: false,
+      savingStall: false,
+      savingDish: false,
+      savingSettings: false,
+      toastMsg: '',
+      
+      // New Vendor Form Model
+      newStall: {
+        name: '',
+        phone: '',
+        whatsapp: '',
+        address: '',
+        opensAt: '09:00',
+        closesAt: '23:00',
+        deliversTo: 'Hostels, Academic Block',
+        image: '',
+        isActive: true,
+        isFeatured: false
+      },
+
+      // New Dish Form Model
+      newDish: {
+        vendorId: '',
+        categoryId: '',
+        name: '',
+        price: '',
+        description: '',
+        isVeg: true,
+        isAvailable: true
+      },
+
+      async init() {
+        this.updateClock();
+        setInterval(() => this.updateClock(), 1000);
+        await this.loadAllData();
+      },
+
+      updateClock() {
+        const now = new Date();
+        this.currentTime = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      },
+
+      showToast(msg) {
+        this.toastMsg = msg;
+        setTimeout(() => { this.toastMsg = ''; }, 3500);
+      },
+
+      async loadAllData() {
+        this.loading = true;
+        try {
+          const [vRes, cRes, mRes, rRes, sRes] = await Promise.all([
+            fetch('/api/admin/vendors').catch(() => null),
+            fetch('/api/admin/categories').catch(() => null),
+            fetch('/api/admin/menu').catch(() => null),
+            fetch('/api/admin/reviews').catch(() => null),
+            fetch('/api/admin/settings').catch(() => null),
+          ]);
+
+          if (vRes && vRes.ok) {
+            const d = await vRes.json();
+            if (d.vendors && d.vendors.length > 0) this.vendors = d.vendors;
+          }
+          if (cRes && cRes.ok) {
+            const d = await cRes.json();
+            if (d.categories && d.categories.length > 0) this.categories = d.categories;
+          }
+          if (mRes && mRes.ok) {
+            const d = await mRes.json();
+            if (d.items && d.items.length > 0) this.menuItems = d.items;
+          }
+          if (rRes && rRes.ok) {
+            const d = await rRes.json();
+            this.reviews = d.reviews || [];
+          }
+          if (sRes && sRes.ok) {
+            const d = await sRes.json();
+            this.settings = Object.assign({}, this.settings, d.settings || {});
+          }
+        } catch (err) {
+          console.error('Error loading dashboard data:', err);
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async toggleVendorStatus(vendor) {
+        try {
+          const res = await fetch('/api/admin/vendors', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: vendor.id, isActive: !vendor.isActive })
+          });
+          if (res.ok) {
+            vendor.isActive = !vendor.isActive;
+            this.showToast(`Vendor ${vendor.name} is now ${vendor.isActive ? 'Open 🟢' : 'Closed 🔴'}`);
+          }
+        } catch (e) {
+          this.showToast('❌ Failed to update vendor status');
+        }
+      },
+
+      async createStall() {
+        if (!this.newStall.name.trim()) {
+          alert('Vendor name is required');
+          return;
+        }
+        this.savingStall = true;
+        try {
+          const res = await fetch('/api/admin/vendors', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...this.newStall,
+              deliversTo: this.newStall.deliversTo.split(',').map(s => s.trim()).filter(Boolean)
+            })
+          });
+
+          if (res.ok) {
+            const d = await res.json();
+            this.vendors.unshift({
+              ...this.newStall,
+              id: d.id,
+              slug: this.newStall.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+            });
+            this.showAddStallModal = false;
+            this.newStall = { name: '', phone: '', whatsapp: '', address: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels, Academic Block', image: '', isActive: true, isFeatured: false };
+            this.showToast('✅ New vendor created successfully!');
+          } else {
+            const err = await res.json().catch(() => ({}));
+            alert(err.error || 'Failed to create vendor');
+          }
+        } catch (e) {
+          alert('Server error creating vendor');
+        } finally {
+          this.savingStall = false;
+        }
+      },
+
+      async createDish() {
+        if (!this.newDish.vendorId || !this.newDish.name.trim() || !this.newDish.price) {
+          alert('Please select vendor, enter dish name and price');
+          return;
+        }
+        this.savingDish = true;
+        try {
+          const res = await fetch('/api/admin/menu', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.newDish)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.item) this.menuItems.unshift(data.item);
+            this.showAddDishModal = false;
+            this.newDish = { vendorId: '', categoryId: '', name: '', price: '', description: '', isVeg: true, isAvailable: true };
+            this.showToast('🍱 New dish added to menu!');
+          } else {
+            const err = await res.json();
+            alert(err.error || 'Failed to create dish');
+          }
+        } catch (e) {
+          alert('Server error creating dish');
+        } finally {
+          this.savingDish = false;
+        }
+      },
+
+      async saveQuickSettings() {
+        this.savingSettings = true;
+        try {
+          const res = await fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings: this.settings })
+          });
+          if (res.ok) {
+            this.showToast('⚡ Website settings updated live!');
+          } else if (res.status === 401) {
+            alert('Admin session expired. Please log in again.');
+            window.location.href = '/ops-manish-770';
+          } else {
+            const err = await res.json().catch(() => ({}));
+            this.showToast('❌ ' + (err.error || 'Failed to save settings'));
+          }
+        } catch (e) {
+          this.showToast('❌ Network error saving settings');
+        } finally {
+          this.savingSettings = false;
+        }
+      },
+
+      async deleteReview(id) {
+        if (!confirm('Delete this review?')) return;
+        try {
+          const res = await fetch('/api/reviews?id=' + id, { method: 'DELETE' });
+          if (res.ok) {
+            this.reviews = this.reviews.filter(r => r.id !== id);
+            this.showToast('Review removed');
+          }
+        } catch (e) {
+          alert('Failed to delete review');
+        }
+      },
+
+      async logout() {
+        if (!confirm('Log out from Founder Operations Hub?')) return;
+        await fetch('/api/admin/auth', { method: 'DELETE' });
+        window.location.href = '/';
+      },
+
+      get activeVendorsCount() {
+        return this.vendors.filter(v => v.isActive).length;
+      },
+
+      get avgRating() {
+        if (this.reviews.length === 0) return '5.0';
+        const sum = this.reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
+        return (sum / this.reviews.length).toFixed(1);
+      },
+
+      get vegCount() {
+        return this.menuItems.filter(m => m.isVeg).length;
+      }
+    }));
+  });
+</script>
 
 <Layout title="NITKKR Food - Founder Operations & Control Hub" description="Complete Campus Food & Website CRUD Operations Center">
-  <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
-    
-    <!-- Alpine Global State Scope -->
+  <section x-data="dashboardAdmin" class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
+    <!-- Toast Notification -->
     <div
-      x-data="{
-        sidebarOpen: false,
-        loading: true,
-        vendors: [],
-        categories: [],
-        menuItems: [],
-        reviews: [],
-        settings: {
-          homepage_title: 'Hungry? We got you. 🍜',
-          homepage_tagline: 'Search 20+ food stalls around NITKKR',
-          announcement_banner_enabled: 'false',
-          announcement_banner_text: '',
-          announcement_banner_type: 'info',
-          ad_banner_enabled: 'false',
-          ad_banner_badge: '⚡ SPONSORED DEAL',
-          ad_banner_title: '',
-          ad_banner_description: '',
-          ad_banner_cta: 'Claim Offer 💬',
-          ad_banner_link: '#'
-        },
-        currentTime: '',
-        activeView: 'overview',
-        showAddStallModal: false,
-        showAddDishModal: false,
-        savingStall: false,
-        savingDish: false,
-        savingSettings: false,
-        toastMsg: '',
-        
-        // New Vendor Form Model
-        newStall: {
-          name: '',
-          phone: '',
-          whatsapp: '',
-          address: '',
-          opensAt: '09:00',
-          closesAt: '23:00',
-          deliversTo: 'Hostels, Academic Block',
-          image: '',
-          isActive: true,
-          isFeatured: false
-        },
-
-        // New Dish Form Model
-        newDish: {
-          vendorId: '',
-          categoryId: '',
-          name: '',
-          price: '',
-          description: '',
-          isVeg: true,
-          isAvailable: true
-        },
-
-        async init() {
-          this.updateClock();
-          setInterval(() => this.updateClock(), 1000);
-          await this.loadAllData();
-        },
-
-        updateClock() {
-          const now = new Date();
-          this.currentTime = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-        },
-
-        showToast(msg) {
-          this.toastMsg = msg;
-          setTimeout(() => { this.toastMsg = ''; }, 3500);
-        },
-
-        async loadAllData() {
-          this.loading = true;
-          try {
-            const [vRes, cRes, mRes, rRes, sRes] = await Promise.all([
-              fetch('/api/admin/vendors').catch(() => null),
-              fetch('/api/admin/categories').catch(() => null),
-              fetch('/api/admin/menu').catch(() => null),
-              fetch('/api/admin/reviews').catch(() => null),
-              fetch('/api/admin/settings').catch(() => null),
-            ]);
-
-            if (vRes && vRes.ok) {
-              const d = await vRes.json();
-              this.vendors = d.vendors || [];
-            }
-            if (cRes && cRes.ok) {
-              const d = await cRes.json();
-              this.categories = d.categories || [];
-            }
-            if (mRes && mRes.ok) {
-              const d = await mRes.json();
-              this.menuItems = d.items || [];
-            }
-            if (rRes && rRes.ok) {
-              const d = await rRes.json();
-              this.reviews = d.reviews || [];
-            }
-            if (sRes && sRes.ok) {
-              const d = await sRes.json();
-              this.settings = Object.assign({}, this.settings, d.settings || {});
-            }
-          } catch (err) {
-            console.error('Error loading dashboard data:', err);
-          } finally {
-            this.loading = false;
-          }
-        },
-
-        async toggleVendorStatus(vendor) {
-          try {
-            const res = await fetch('/api/admin/vendors', {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: vendor.id, isActive: !vendor.isActive })
-            });
-            if (res.ok) {
-              vendor.isActive = !vendor.isActive;
-              this.showToast(vendor.name + ' marked as ' + (vendor.isActive ? 'Open 🟢' : 'Closed 🔴'));
-            }
-          } catch (e) {
-            alert('Failed to update status');
-          }
-        },
-
-        async createStall() {
-          if (!this.newStall.name.trim()) {
-            alert('Vendor name is required');
-            return;
-          }
-          this.savingStall = true;
-          try {
-            const res = await fetch('/api/admin/vendors', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                ...this.newStall,
-                deliversTo: this.newStall.deliversTo.split(',').map(s => s.trim()).filter(Boolean)
-              })
-            });
-
-            if (res.ok) {
-              const d = await res.json();
-              this.vendors.unshift({
-                ...this.newStall,
-                id: d.id,
-                slug: this.newStall.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-              });
-              this.showAddStallModal = false;
-              this.newStall = { name: '', phone: '', whatsapp: '', address: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels, Academic Block', image: '', isActive: true, isFeatured: false };
-              this.showToast('✅ New food vendor created successfully!');
-            } else {
-              const err = await res.json().catch(() => ({}));
-              alert(err.error || 'Failed to create vendor');
-            }
-          } catch (e) {
-            alert('Server error creating vendor');
-          } finally {
-            this.savingStall = false;
-          }
-        },
-
-        async createDish() {
-          if (!this.newDish.vendorId || !this.newDish.name.trim() || !this.newDish.price) {
-            alert('Please select vendor, enter dish name and price');
-            return;
-          }
-          this.savingDish = true;
-          try {
-            const res = await fetch('/api/admin/menu', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(this.newDish)
-            });
-            if (res.ok) {
-              const data = await res.json();
-              if (data.item) this.menuItems.unshift(data.item);
-              this.showAddDishModal = false;
-              this.newDish = { vendorId: '', categoryId: '', name: '', price: '', description: '', isVeg: true, isAvailable: true };
-              this.showToast('🍱 New dish added to menu!');
-            } else {
-              const err = await res.json();
-              alert(err.error || 'Failed to create dish');
-            }
-          } catch (e) {
-            alert('Server error creating dish');
-          } finally {
-            this.savingDish = false;
-          }
-        },
-
-        async saveQuickSettings() {
-          this.savingSettings = true;
-          try {
-            const res = await fetch('/api/admin/settings', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ settings: this.settings })
-            });
-            if (res.ok) {
-              this.showToast('⚡ Website settings updated live!');
-            } else if (res.status === 401) {
-              alert('Admin session expired. Please log in again.');
-              window.location.href = '/ops-manish-770';
-            } else {
-              const err = await res.json().catch(() => ({}));
-              this.showToast('❌ ' + (err.error || 'Failed to save settings'));
-            }
-          } catch (e) {
-            this.showToast('❌ Network error saving settings');
-          } finally {
-            this.savingSettings = false;
-          }
-        },
-
-
-        async deleteReview(id) {
-          if (!confirm('Delete this review?')) return;
-          try {
-            const res = await fetch('/api/reviews?id=' + id, { method: 'DELETE' });
-            if (res.ok) {
-              this.reviews = this.reviews.filter(r => r.id !== id);
-              this.showToast('Review removed');
-            }
-          } catch (e) {
-            alert('Failed to delete review');
-          }
-        },
-
-        async logout() {
-          if (!confirm('Log out from Founder Operations Hub?')) return;
-          await fetch('/api/admin/auth', { method: 'DELETE' });
-          window.location.href = '/';
-        },
-
-        get activeVendorsCount() {
-          return this.vendors.filter(v => v.isActive).length;
-        },
-
-        get avgRating() {
-          if (this.reviews.length === 0) return '5.0';
-          const sum = this.reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
-          return (sum / this.reviews.length).toFixed(1);
-        },
-
-        get vegCount() {
-          return this.menuItems.filter(m => m.isVeg).length;
-        }
-      }"
-      x-init="init()"
-      class="flex-1 flex flex-col lg:flex-row min-h-screen"
+      x-show="toastMsg"
+      x-transition
+      class="fixed bottom-6 right-6 z-50 bg-nitkkr-dark text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-2 border border-nitkkr-orange/40"
     >
+      <span class="text-base">🔔</span>
+      <span x-text="toastMsg"></span>
+    </div>
 
-      <!-- Toast Notification -->
-      <div
-        x-show="toastMsg"
-        x-transition
-        class="fixed bottom-6 right-6 z-50 bg-nitkkr-dark text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-2 border border-nitkkr-orange/40"
-      >
-        <span class="text-base">🔔</span>
-        <span x-text="toastMsg"></span>
-      </div>
+    <!-- Shared Sidebar Component -->
+    <AdminSidebar currentPath="/admin" />
 
-      <!-- Shared Sidebar Component -->
-      <AdminSidebar currentPath="/admin" />
 
 
       <!-- 🚀 Main Operations Dashboard Area -->
@@ -607,14 +613,15 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
 
           <form @submit.prevent="createDish()" class="space-y-4">
             <div>
-              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Select Stall *</label>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Select Vendor *</label>
               <select x-model="newDish.vendorId" required class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
-                <option value="">-- Choose Food Stall --</option>
+                <option value="">-- Choose Food Vendor --</option>
                 <template x-for="v in vendors" :key="v.id">
                   <option :value="v.id" x-text="v.name"></option>
                 </template>
               </select>
             </div>
+
 
             <div class="grid grid-cols-2 gap-3">
               <div>
@@ -649,6 +656,5 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
         </div>
       </div>
 
-    </div>
   </section>
 </Layout>

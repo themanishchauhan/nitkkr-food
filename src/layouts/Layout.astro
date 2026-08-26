@@ -17,8 +17,15 @@ const siteBase = Astro.site || Astro.url.origin || 'https://nitkkr-food.pages.de
 const canonicalURL = new URL(Astro.url.pathname, siteBase);
 const resolvedOgImage = ogImage.startsWith('http') ? ogImage : new URL(ogImage, siteBase).href;
 
+import { getAllSiteSettings } from '../lib/queries';
+
 let customFooterPages: any[] = [];
+let siteSettingsObj: Record<string, string> = {};
 try {
+  const settings = await getAllSiteSettings();
+  const settingsList = Array.isArray(settings) ? settings : [];
+  siteSettingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+
   const rawD1 = (globalThis as any).DB || 
                 (globalThis as any).__CF_ENV__?.DB || 
                 (globalThis as any).env?.DB;
@@ -28,6 +35,7 @@ try {
   }
 } catch (e) {}
 ---
+
 
 <!doctype html>
 <html lang="en">
@@ -173,7 +181,8 @@ try {
           <span class="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">Explore</span>
           <ul class="space-y-1.5 text-slate-600">
             <li><a href="/search" class="hover:text-nitkkr-orange transition-colors">🔍 Search Food</a></li>
-            <li><a href="/search?tab=stalls" class="hover:text-nitkkr-orange transition-colors">🏪 Campus Vendors</a></li>
+            <li><a href="/search?tab=vendors" class="hover:text-nitkkr-orange transition-colors">🏪 Campus Vendors</a></li>
+
             <li><a href="/how-it-works" class="hover:text-nitkkr-orange transition-colors">📖 How It Works</a></li>
             <li><a href="/about" class="hover:text-nitkkr-orange transition-colors">ℹ️ About Us</a></li>
             {customFooterPages.filter(p => p.category === 'Explore').map((p: any) => (
@@ -199,9 +208,10 @@ try {
 
 
       <div class="pt-6 border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-400 text-center sm:text-left">
-        <p>© {new Date().getFullYear()} NITKKR Food • Built with ❤️ for NIT Kurukshetra students</p>
+        <p>© {new Date().getFullYear()} {siteSettingsObj.company_name || 'NITKKR Food'} • {siteSettingsObj.footer_copyright_text || 'Built with ❤️ for NIT Kurukshetra students'}</p>
         <p class="text-slate-400">Zero Commissions • Direct Vendor Connect</p>
       </div>
+
     </div>
   </footer>
 

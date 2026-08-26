@@ -18,11 +18,12 @@ if (!vendor) {
 const menuItems = await getMenuItemsWithReviewStats(vendor.id);
 const categories = await getCategories();
 const isOpen = isVendorOpenNow(vendor.opensAt, vendor.closesAt);
-const stallReviews = await getReviewsByVendor(vendor.id);
-const stallReviewCount = stallReviews.length;
-const stallAvgRating = stallReviewCount > 0
-  ? (stallReviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / stallReviewCount).toFixed(1)
+const vendorReviews = await getReviewsByVendor(vendor.id);
+const vendorReviewCount = vendorReviews.length;
+const vendorAvgRating = vendorReviewCount > 0
+  ? (vendorReviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / vendorReviewCount).toFixed(1)
   : null;
+
 
 const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
@@ -102,7 +103,7 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
             </span>
 
             <!-- Vendor Overall Rating Badge -->
-            {stallAvgRating ? (
+            {vendorAvgRating ? (
               <button
                 type="button"
                 onclick={`window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: null, name: 'All Dishes', mode: 'read' } }))`}
@@ -110,8 +111,8 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
                 title="View student reviews"
               >
                 <span class="text-amber-500">★</span>
-                <span>{stallAvgRating}</span>
-                <span class="text-slate-400 font-normal text-[11px]">({stallReviewCount})</span>
+                <span>{vendorAvgRating}</span>
+                <span class="text-slate-400 font-normal text-[11px]">({vendorReviewCount})</span>
               </button>
             ) : (
               <button
@@ -148,14 +149,14 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
           <p class="text-xs text-slate-500 mt-0.5">Explore dishes, tap ratings to read student reviews or leave feedback</p>
         </div>
 
-        {stallReviewCount > 0 && (
+        {vendorReviewCount > 0 && (
           <button
             type="button"
             onclick={`window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: null, name: 'All Dishes', mode: 'read' } }))`}
             class="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
           >
             <span>💬</span>
-            <span>{stallReviewCount} Reviews</span>
+            <span>{vendorReviewCount} Reviews</span>
           </button>
         )}
       </div>
@@ -186,7 +187,8 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
     </div>
 
     <!-- Reusable Student Review Modal -->
-    <ReviewModal stallReviews={stallReviews} menuItems={menuItems} />
+    <ReviewModal vendorReviews={vendorReviews} menuItems={menuItems} />
+
 
 
     <!-- 📱 Sleek Floating Glassmorphism Action Bar -->

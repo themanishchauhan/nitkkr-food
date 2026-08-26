@@ -457,7 +457,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
                   <option value="info">🔵 Info / Announcement (Blue)</option>
                   <option value="offer">🎉 Offer / Discount (Orange/Amber)</option>
                   <option value="warning">⚠️ Notice / Weather Alert (Yellow)</option>
-                  <option value="danger">🚨 Urgent / Stall Closed (Red)</option>
+                  <option value="danger">🚨 Urgent / Vendor Closed (Red)</option>
                 </select>
               </div>
             </div>
@@ -468,8 +468,9 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 class="font-display text-lg font-bold text-nitkkr-dark">⚡ In-Feed Ad & Sponsor Card</h3>
-                <p class="text-xs text-nitkkr-gray">Display promotional sponsor cards between food stalls on the homepage</p>
+                <p class="text-xs text-nitkkr-gray">Display promotional sponsor cards between food vendors on the homepage</p>
               </div>
+
               <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" x-model="settings.ad_banner_enabled" :checked="settings.ad_banner_enabled === 'true'" @change="settings.ad_banner_enabled = $el.checked ? 'true' : 'false'" class="rounded text-nitkkr-orange" />
                 <span class="text-xs font-bold text-nitkkr-dark">Active Sponsor</span>

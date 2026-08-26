@@ -2,14 +2,18 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
+import { getActiveVendors, getCategories } from '../../lib/queries';
+
+const initialVendors = await getActiveVendors();
+const initialCategories = await getCategories();
 ---
 
-<script is:inline>
+<script is:inline define:vars={{ initialVendors, initialCategories }}>
   document.addEventListener('alpine:init', () => {
     Alpine.data('stallsAdmin', () => ({
       sidebarOpen: false,
-      vendors: [],
-      categories: [],
+      vendors: Array.isArray(initialVendors) ? initialVendors : [],
+      categories: Array.isArray(initialCategories) ? initialCategories : [],
       menuItems: [],
       reviews: [],
       search: '',
@@ -46,7 +50,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement('a');
         link.setAttribute('href', encodedUri);
-        link.setAttribute('download', 'nitkkr_stalls_' + new Date().toISOString().slice(0,10) + '.csv');
+        link.setAttribute('download', 'nitkkr_vendors_' + new Date().toISOString().slice(0,10) + '.csv');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -71,8 +75,18 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             fetch('/api/admin/reviews').catch(() => null)
           ]);
 
-          if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
-          if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
+          if (vRes && vRes.ok) { 
+            const d = await vRes.json(); 
+            if (d.vendors && d.vendors.length > 0) {
+              this.vendors = d.vendors;
+            }
+          }
+          if (cRes && cRes.ok) { 
+            const d = await cRes.json(); 
+            if (d.categories && d.categories.length > 0) {
+              this.categories = d.categories;
+            }
+          }
           if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
           if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
         } catch (e) {
@@ -108,7 +122,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
       },
 
       async saveVendor() {
-        if (!this.form.name.trim()) { alert('Stall name is required'); return; }
+        if (!this.form.name.trim()) { alert('Vendor name is required'); return; }
         this.saving = true;
         try {
           const url = '/api/admin/vendors';
@@ -126,15 +140,15 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           });
 
           if (res.ok) {
-            this.showToast(this.editingVendor ? '✅ Stall updated successfully!' : '✅ New stall created!');
+            this.showToast(this.editingVendor ? '✅ Vendor updated successfully!' : '✅ New vendor created!');
             this.showAddModal = false;
             await this.loadAll();
           } else {
-            const d = await res.json();
-              alert(d.error || 'Failed to save vendor');
+            const err = await res.json();
+            alert('Failed to save vendor: ' + (err.error || 'Unknown error'));
           }
         } catch (e) {
-          alert('Server error saving vendor');
+          alert('Network error while saving vendor');
         } finally {
           this.saving = false;
         }
@@ -149,25 +163,25 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           });
           if (res.ok) {
             v.isActive = !v.isActive;
-            this.showToast(v.name + ' marked as ' + (v.isActive ? 'Open 🟢' : 'Closed 🔴'));
+            this.showToast(`Vendor ${v.name} is now ${v.isActive ? 'Open' : 'Closed'}`);
           }
         } catch (e) {
-          alert('Failed to update status');
+          alert('Failed to toggle status');
         }
       },
 
       async deleteStall(v) {
-        if (!confirm('Are you sure you want to delete ' + v.name + '?')) return;
+        if (!confirm(`Are you sure you want to delete "${v.name}" and all its menu dishes?`)) return;
         try {
-          const res = await fetch('/api/admin/vendors?id=' + v.id, { method: 'DELETE' });
+          const res = await fetch(`/api/admin/vendors?id=${v.id}`, { method: 'DELETE' });
           if (res.ok) {
-            this.vendors = this.vendors.filter(x => x.id !== v.id);
-            this.showToast('Vendor deleted');
+            this.showToast('✅ Vendor deleted');
+            await this.loadAll();
           } else {
             alert('Failed to delete vendor');
           }
         } catch (e) {
-          alert('Error deleting vendor');
+          alert('Network error');
         }
       },
 

@@ -2,16 +2,22 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
+import { getAllReviews, getActiveVendors, getCategories, getMenuItemsByVendor } from '../../lib/queries';
+
+const initialReviews = await getAllReviews();
+const initialVendors = await getActiveVendors();
+const initialCategories = await getCategories();
+const initialMenuItems = await getMenuItemsByVendor(21);
 ---
 
-<script is:inline>
+<script is:inline define:vars={{ initialReviews, initialVendors, initialCategories, initialMenuItems }}>
   document.addEventListener('alpine:init', () => {
     Alpine.data('reviewsAdmin', () => ({
       sidebarOpen: false,
-      vendors: [],
-      categories: [],
-      menuItems: [],
-      reviews: [],
+      vendors: Array.isArray(initialVendors) ? initialVendors : [],
+      categories: Array.isArray(initialCategories) ? initialCategories : [],
+      menuItems: Array.isArray(initialMenuItems) ? initialMenuItems : [],
+      reviews: Array.isArray(initialReviews) ? initialReviews : [],
       selectedRating: '',
       search: '',
       toastMsg: '',
@@ -35,9 +41,9 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           ]);
 
           if (rRes && rRes.ok) { const d = await rRes.json(); this.reviews = d.reviews || []; }
-          if (vRes && vRes.ok) { const d = await vRes.json(); this.vendors = d.vendors || []; }
-          if (cRes && cRes.ok) { const d = await cRes.json(); this.categories = d.categories || []; }
-          if (mRes && mRes.ok) { const d = await mRes.json(); this.menuItems = d.items || []; }
+          if (vRes && vRes.ok) { const d = await vRes.json(); if (d.vendors && d.vendors.length > 0) this.vendors = d.vendors; }
+          if (cRes && cRes.ok) { const d = await cRes.json(); if (d.categories && d.categories.length > 0) this.categories = d.categories; }
+          if (mRes && mRes.ok) { const d = await mRes.json(); if (d.items && d.items.length > 0) this.menuItems = d.items; }
         } catch (e) {
           console.error('Load error', e);
         }
@@ -45,8 +51,10 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
 
       get filteredReviews() {
         return this.reviews.filter(r => {
-          if (this.selectedRating && String(r.rating) !== String(this.selectedRating)) return false;
-          if (this.search) {
+          if (this.selectedRating && String(r.rating) !== String(this.selectedRating)) {
+            return false;
+          }
+          if (this.search.trim()) {
             const q = this.search.toLowerCase();
             const name = (r.studentName || '').toLowerCase();
             const dish = (r.menuItemName || '').toLowerCase();
@@ -59,13 +67,13 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
       },
 
       exportCSV() {
-        const headers = ['ID', 'Student Name', 'Rating', 'Dish', 'Stall', 'Comment', 'Date'];
+        const headers = ['ID', 'Student Name', 'Rating', 'Dish', 'Vendor', 'Comment', 'Date'];
         const rows = this.filteredReviews.map(r => [
           r.id,
           '"' + (r.studentName || '').replace(/"/g, '') + '"',
           r.rating,
           '"' + (r.dishName || r.menuItemName || '').replace(/"/g, '') + '"',
-          '"' + (r.stallName || r.vendorName || '').replace(/"/g, '') + '"',
+          '"' + (r.vendorName || '').replace(/"/g, '') + '"',
           '"' + (r.comment || '').replace(/"/g, '') + '"',
           r.createdAt || ''
         ]);

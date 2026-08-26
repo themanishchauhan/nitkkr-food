@@ -2,16 +2,22 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
+import { getActiveVendors, getCategories, getMenuItemsByVendor, getAllReviews } from '../../lib/queries';
+
+const initialVendors = await getActiveVendors();
+const initialCategories = await getCategories();
+const initialMenuItems = await getMenuItemsByVendor(21);
+const initialReviews = await getAllReviews();
 ---
 
-<script is:inline>
+<script is:inline define:vars={{ initialVendors, initialCategories, initialMenuItems, initialReviews }}>
   document.addEventListener('alpine:init', () => {
     Alpine.data('menuAdmin', () => ({
       sidebarOpen: false,
-      vendors: [],
-      categories: [],
-      menuItems: [],
-      reviews: [],
+      vendors: Array.isArray(initialVendors) ? initialVendors : [],
+      categories: Array.isArray(initialCategories) ? initialCategories : [],
+      menuItems: Array.isArray(initialMenuItems) ? initialMenuItems : [],
+      reviews: Array.isArray(initialReviews) ? initialReviews : [],
       selectedVendorId: '',
       search: '',
       filterVeg: 'all',
@@ -20,6 +26,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
       form: { vendorId: '', categoryId: '', name: '', price: '', description: '', image: '', isVeg: true, isAvailable: true },
       saving: false,
       toastMsg: '',
+
 
       async init() {
         await this.loadAll();
@@ -70,7 +77,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
       },
 
       exportCSV() {
-        const headers = ['ID', 'Dish Name', 'Stall', 'Category', 'Price', 'Type', 'In Stock'];
+        const headers = ['ID', 'Dish Name', 'Vendor', 'Category', 'Price', 'Type', 'In Stock'];
         const rows = this.filteredItems.map(m => {
           const vendor = this.vendors.find(v => v.id === m.vendorId);
           return [
@@ -116,7 +123,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
 
       async saveItem() {
         if (!this.form.name.trim() || !this.form.vendorId || !this.form.price) {
-          alert('Stall, name, and price are required');
+          alert('Vendor, name, and price are required');
           return;
         }
         this.saving = true;
@@ -132,32 +139,48 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           });
 
           if (res.ok) {
-            this.showToast(this.editingItem ? '✅ Dish updated!' : '✅ Dish added!');
+            this.showToast(this.editingItem ? '✅ Dish updated successfully!' : '✅ New dish added to menu!');
             this.showAddModal = false;
             await this.loadAll();
           } else {
-            const d = await res.json();
-            alert(d.error || 'Failed to save dish');
+            const err = await res.json();
+            alert('Failed to save dish: ' + (err.error || 'Unknown error'));
           }
         } catch (e) {
-          alert('Server error saving dish');
+          alert('Network error while saving dish');
         } finally {
           this.saving = false;
         }
       },
 
-      async deleteItem(item) {
-        if (!confirm('Delete ' + item.name + '?')) return;
+      async toggleAvailability(item) {
         try {
-          const res = await fetch('/api/admin/menu?id=' + item.id, { method: 'DELETE' });
+          const res = await fetch('/api/admin/menu', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: item.id, isAvailable: !item.isAvailable })
+          });
           if (res.ok) {
-            this.menuItems = this.menuItems.filter(x => x.id !== item.id);
-            this.showToast('Dish removed');
+            item.isAvailable = !item.isAvailable;
+            this.showToast(`${item.name} is now ${item.isAvailable ? 'In Stock' : 'Out of Stock'}`);
+          }
+        } catch (e) {
+          alert('Failed to toggle availability');
+        }
+      },
+
+      async deleteItem(item) {
+        if (!confirm(`Are you sure you want to delete "${item.name}"?`)) return;
+        try {
+          const res = await fetch(`/api/admin/menu?id=${item.id}`, { method: 'DELETE' });
+          if (res.ok) {
+            this.showToast('✅ Dish removed from menu');
+            await this.loadAll();
           } else {
             alert('Failed to delete dish');
           }
         } catch (e) {
-          alert('Error deleting dish');
+          alert('Network error');
         }
       },
 
@@ -170,7 +193,8 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
   });
 </script>
 
-<Layout title="Menu Items & Prices - NITKKR Food Admin" description="Full CRUD operations for dishes and prices across all campus stalls">
+<Layout title="Menu Items & Prices - NITKKR Food Admin" description="Full CRUD operations for dishes and prices across all campus vendors">
+
   <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
     <div
       x-data="menuAdmin"

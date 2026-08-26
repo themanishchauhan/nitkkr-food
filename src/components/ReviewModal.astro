@@ -1,9 +1,11 @@
 ---
 interface Props {
-  stallReviews: any[];
+  vendorReviews?: any[];
+  stallReviews?: any[];
   menuItems: any[];
 }
-const { stallReviews, menuItems } = Astro.props;
+const { vendorReviews, stallReviews, menuItems } = Astro.props;
+const reviewsData = vendorReviews || stallReviews || [];
 ---
 
 <div
@@ -19,8 +21,9 @@ const { stallReviews, menuItems } = Astro.props;
     submitted: false,
     error: '',
     dishDropdownOpen: false,
-    reviewsList: ${JSON.stringify(stallReviews)},
+    reviewsList: ${JSON.stringify(reviewsData)},
     menuItemsList: ${JSON.stringify(menuItems)},
+
     init() {
       window.addEventListener('open-review-modal', (e) => {
         this.itemId = e.detail?.id || null;
