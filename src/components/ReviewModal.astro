@@ -15,7 +15,7 @@ const reviewsData = vendorReviews || stallReviews || [];
     itemId: null,
     itemName: '',
     studentName: '',
-    rating: 5,
+    rating: 0,
     comment: '',
     loading: false,
     submitted: false,
@@ -30,7 +30,7 @@ const reviewsData = vendorReviews || stallReviews || [];
         this.itemName = e.detail?.name || (this.itemId ? (this.menuItemsList.find(m => m.id === this.itemId)?.name || '') : 'General Feedback');
         this.activeTab = e.detail?.mode || (this.filteredReviews.length > 0 ? 'read' : 'write');
         this.dishDropdownOpen = false;
-        this.rating = 5;
+        this.rating = 0;
         this.comment = '';
         this.studentName = localStorage.getItem('student_name') || '';
         this.submitted = false;
@@ -58,11 +58,16 @@ const reviewsData = vendorReviews || stallReviews || [];
         this.error = 'Please enter your name / hostel';
         return;
       }
+      if (this.rating <= 0) {
+        this.error = 'Please select a star rating (1 to 5 stars)';
+        return;
+      }
       if (!this.itemId && this.menuItemsList.length > 0) {
         this.itemId = this.menuItemsList[0].id;
       }
       this.loading = true;
       this.error = '';
+
       try {
         localStorage.setItem('student_name', this.studentName.trim());
         const res = await fetch('/api/reviews', {
@@ -193,21 +198,27 @@ const reviewsData = vendorReviews || stallReviews || [];
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-nitkkr-dark mb-1">Star Rating</label>
+          <label class="block text-xs font-bold text-nitkkr-dark mb-1">Star Rating *</label>
           <div class="flex items-center gap-2">
             <template x-for="star in [1, 2, 3, 4, 5]" :key="star">
               <button
                 type="button"
                 @click="rating = star"
-                class="text-2xl transition-transform active:scale-125 cursor-pointer focus:outline-hidden"
-                :class="rating >= star ? 'text-amber-500' : 'text-slate-300'"
+                class="text-2xl transition-transform active:scale-125 hover:scale-110 cursor-pointer focus:outline-hidden"
+                :class="rating >= star ? 'text-amber-500' : 'text-slate-300 hover:text-amber-300'"
+                :aria-label="star + ' stars'"
               >
                 ★
               </button>
             </template>
-            <span class="text-xs font-bold text-amber-700 ml-2" x-text="rating + ' / 5 stars'"></span>
+            <span
+              class="text-xs font-bold ml-2 transition-colors"
+              :class="rating > 0 ? 'text-amber-700' : 'text-slate-400 font-normal'"
+              x-text="rating > 0 ? rating + ' / 5 stars' : 'Tap to rate (1 to 5 stars)'"
+            ></span>
           </div>
         </div>
+
 
         <div>
           <label class="block text-xs font-bold text-nitkkr-dark mb-1">Your Review (Optional)</label>

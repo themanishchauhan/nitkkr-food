@@ -292,7 +292,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
   <section
     x-data="searchPage()"
     x-init="init()"
-    class="min-h-screen bg-nitkkr-cream pb-20"
+    class="min-h-screen bg-bistro-50 pb-20"
   >
 
     <div class="max-w-2xl mx-auto px-4 py-8">
@@ -312,15 +312,15 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             @keydown.enter="$el.blur()"
             @search="$el.blur()"
             placeholder="Search food vendors (Food Cave) or dishes (paratha, noodles, maggi)..."
-            class="w-full px-6 py-4 pr-14 text-lg bg-white border-2 border-nitkkr-orange/30 rounded-2xl
-                   hover:border-nitkkr-orange focus:border-nitkkr-orange focus:outline-none focus:ring-4 focus:ring-nitkkr-orange/10
+            class="w-full px-5 py-4 pr-12 text-lg bg-white border-2 border-bistro-200 rounded-2xl
+                   hover:border-bistro-400 focus:border-bistro-500 focus:outline-none focus:ring-4 focus:ring-bistro-500/10
                    shadow-sm transition-all duration-200"
             enterkeyhint="search"
           />
           <button
             type="button"
             @click="document.querySelector('input[type=search]')?.blur()"
-            class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-nitkkr-orange hover:scale-110 transition-transform cursor-pointer"
+            class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-bistro-500 hover:scale-110 transition-transform cursor-pointer"
             aria-label="Search"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -331,26 +331,26 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
 
         <!-- Tab Switcher: Dishes vs Vendors -->
-        <div class="flex gap-2 mt-4 bg-white p-1.5 rounded-2xl border border-nitkkr-orange/20 shadow-xs">
+        <div class="flex gap-2 mt-4 bg-white p-1.5 rounded-2xl border border-bistro-200 shadow-xs">
           <button
             type="button"
             @click="activeTab = 'dishes'"
-            :class="activeTab === 'dishes' ? 'bg-nitkkr-orange text-white shadow-sm' : 'text-nitkkr-dark hover:bg-nitkkr-cream'"
+            :class="activeTab === 'dishes' ? 'bg-bistro-500 text-white shadow-sm' : 'text-nitkkr-dark hover:bg-bistro-50'"
             class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <span>🍱</span>
             <span>Dishes</span>
-            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'dishes' ? 'bg-white/20 text-white' : 'bg-nitkkr-orange/10 text-nitkkr-orange'" x-text="filteredItems.length"></span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'dishes' ? 'bg-white/20 text-white' : 'bg-bistro-100 text-bistro-600'" x-text="filteredItems.length"></span>
           </button>
           <button
             type="button"
             @click="activeTab = 'vendors'"
-            :class="activeTab === 'vendors' ? 'bg-nitkkr-orange text-white shadow-sm' : 'text-nitkkr-dark hover:bg-nitkkr-cream'"
+            :class="activeTab === 'vendors' ? 'bg-bistro-500 text-white shadow-sm' : 'text-nitkkr-dark hover:bg-bistro-50'"
             class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <span>🏪</span>
             <span>Campus Vendors</span>
-            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'vendors' ? 'bg-white/20 text-white' : 'bg-nitkkr-orange/10 text-nitkkr-orange'" x-text="filteredVendors.length"></span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'vendors' ? 'bg-white/20 text-white' : 'bg-bistro-100 text-bistro-600'" x-text="filteredVendors.length"></span>
           </button>
         </div>
 
@@ -435,7 +435,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               <button
                 type="button"
                 @click="maxPrice = ''"
-                :class="maxPrice === '' ? 'bg-nitkkr-orange text-white font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange font-semibold'"
+                :class="maxPrice === '' ? 'bg-bistro-500 text-white font-bold' : 'bg-white text-nitkkr-dark border border-bistro-200 hover:border-bistro-400 font-semibold'"
                 class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
               >
                 Any
@@ -443,7 +443,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               <button
                 type="button"
                 @click="maxPrice = '50'"
-                :class="maxPrice === '50' ? 'bg-nitkkr-orange text-white font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange font-semibold'"
+                :class="maxPrice === '50' ? 'bg-bistro-500 text-white font-bold' : 'bg-white text-nitkkr-dark border border-bistro-200 hover:border-bistro-400 font-semibold'"
                 class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
               >
                 ≤ ₹50
@@ -451,7 +451,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               <button
                 type="button"
                 @click="maxPrice = '100'"
-                :class="maxPrice === '100' ? 'bg-nitkkr-orange text-white font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange font-semibold'"
+                :class="maxPrice === '100' ? 'bg-bistro-500 text-white font-bold' : 'bg-white text-nitkkr-dark border border-bistro-200 hover:border-bistro-400 font-semibold'"
                 class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
               >
                 ≤ ₹100
@@ -459,7 +459,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               <button
                 type="button"
                 @click="maxPrice = '150'"
-                :class="maxPrice === '150' ? 'bg-nitkkr-orange text-white font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 hover:border-nitkkr-orange font-semibold'"
+                :class="maxPrice === '150' ? 'bg-bistro-500 text-white font-bold' : 'bg-white text-nitkkr-dark border border-bistro-200 hover:border-bistro-400 font-semibold'"
                 class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
               >
                 ≤ ₹150
@@ -495,7 +495,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           <button
             x-show="query || activeCat !== 'all' || vibeTag !== 'all' || maxPrice !== '' || vegFilter !== 'all'"
             @click="query = ''; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'"
-            class="text-nitkkr-orange hover:underline font-bold cursor-pointer"
+            class="text-bistro-600 hover:underline font-bold cursor-pointer"
           >
             Reset Filters
           </button>
@@ -506,7 +506,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
       <!-- Category Filter Pills (for Dishes) -->
       {categories.length > 0 && (
         <div x-show="activeTab === 'dishes'" class="mb-6">
-          <div class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none" role="group" aria-label="Filter by category">
+          <div class="flex gap-2 overflow-x-auto pb-2 px-4 sm:px-0 scrollbar-none" role="group" aria-label="Filter by category">
             <button
               type="button"
               @click="activeCat = 'all'"
