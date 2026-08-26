@@ -12,6 +12,89 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
   if (!d1 || typeof d1.prepare !== 'function' || hasCheckedD1Seed) return;
 
   try {
+    // 0. Ensure all production tables exist with proper schema
+    await d1.prepare(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        icon TEXT NOT NULL,
+        display_order INTEGER DEFAULT 0 NOT NULL
+      )
+    `).run();
+
+    await d1.prepare(`
+      CREATE TABLE IF NOT EXISTS vendors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        phone TEXT NOT NULL,
+        whatsapp TEXT,
+        address TEXT NOT NULL,
+        latitude REAL,
+        longitude REAL,
+        opens_at TEXT NOT NULL,
+        closes_at TEXT NOT NULL,
+        delivers_to TEXT DEFAULT '[]' NOT NULL,
+        image TEXT,
+        is_active INTEGER DEFAULT 1 NOT NULL,
+        is_featured INTEGER DEFAULT 0 NOT NULL,
+        display_order INTEGER DEFAULT 0 NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `).run();
+
+    await d1.prepare(`
+      CREATE TABLE IF NOT EXISTS menu_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vendor_id INTEGER NOT NULL,
+        category_id INTEGER,
+        name TEXT NOT NULL,
+        description TEXT,
+        price REAL NOT NULL,
+        image TEXT,
+        is_veg INTEGER DEFAULT 1 NOT NULL,
+        is_available INTEGER DEFAULT 1 NOT NULL,
+        tags TEXT DEFAULT '[]' NOT NULL,
+        display_order INTEGER DEFAULT 0 NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `).run();
+
+    await d1.prepare(`
+      CREATE TABLE IF NOT EXISTS reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        menu_item_id INTEGER NOT NULL,
+        student_name TEXT NOT NULL,
+        rating INTEGER NOT NULL,
+        comment TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `).run();
+
+    await d1.prepare(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `).run();
+
+    await d1.prepare(`
+      CREATE TABLE IF NOT EXISTS custom_pages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        category TEXT DEFAULT 'Explore' NOT NULL,
+        icon TEXT DEFAULT '📄',
+        content TEXT NOT NULL,
+        show_in_footer INTEGER DEFAULT 1 NOT NULL,
+        is_published INTEGER DEFAULT 1 NOT NULL,
+        display_order INTEGER DEFAULT 0 NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `).run();
+
     // 1. Ensure Categories exist in D1
     for (const cat of MOCK_CATEGORIES) {
       await d1.prepare(`
@@ -88,6 +171,7 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
     console.error('Database populate error:', err);
   }
 }
+
 
 function getDb(customDb?: any) {
   return customDb || createDb();

@@ -156,6 +156,73 @@ export const PATCH: APIRoute = async ({ request }) => {
     }
 
     const vendorId = Number(id);
+    const rawD1 = (await import('../../../../lib/db')).getRawD1Binding();
+
+    if (rawD1 && typeof rawD1.prepare === 'function') {
+      try {
+        const check = await rawD1.prepare(`SELECT id FROM vendors WHERE id = ? LIMIT 1`).bind(vendorId).first();
+        if (!check) {
+          const { FOOD_CAVE_VENDOR } = await import('../../../../lib/food-cave-data');
+          await rawD1.prepare(`
+            INSERT OR REPLACE INTO vendors (id, name, slug, phone, whatsapp, address, latitude, longitude, opens_at, closes_at, delivers_to, image, is_active, is_featured, display_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            vendorId,
+            updates.name || FOOD_CAVE_VENDOR.name,
+            FOOD_CAVE_VENDOR.slug,
+            updates.phone || FOOD_CAVE_VENDOR.phone,
+            updates.whatsapp || FOOD_CAVE_VENDOR.whatsapp,
+            updates.address || FOOD_CAVE_VENDOR.address,
+            FOOD_CAVE_VENDOR.latitude,
+            FOOD_CAVE_VENDOR.longitude,
+            updates.opensAt || FOOD_CAVE_VENDOR.opensAt,
+            updates.closesAt || FOOD_CAVE_VENDOR.closesAt,
+            JSON.stringify(updates.deliversTo || FOOD_CAVE_VENDOR.deliversTo),
+            updates.image || FOOD_CAVE_VENDOR.image,
+            updates.isActive !== undefined ? (updates.isActive ? 1 : 0) : 1,
+            updates.isFeatured !== undefined ? (updates.isFeatured ? 1 : 0) : 1,
+            FOOD_CAVE_VENDOR.displayOrder
+          ).run();
+        } else {
+          await rawD1.prepare(`
+            UPDATE vendors SET 
+              name = COALESCE(?, name),
+              phone = COALESCE(?, phone),
+              whatsapp = COALESCE(?, whatsapp),
+              address = COALESCE(?, address),
+              opens_at = COALESCE(?, opens_at),
+              closes_at = COALESCE(?, closes_at),
+              delivers_to = COALESCE(?, delivers_to),
+              image = COALESCE(?, image),
+              description = COALESCE(?, description),
+              is_active = COALESCE(?, is_active),
+              is_featured = COALESCE(?, is_featured)
+            WHERE id = ?
+          `).bind(
+            updates.name !== undefined ? updates.name : null,
+            updates.phone !== undefined ? updates.phone : null,
+            updates.whatsapp !== undefined ? updates.whatsapp : null,
+            updates.address !== undefined ? updates.address : null,
+            updates.opensAt !== undefined ? updates.opensAt : null,
+            updates.closesAt !== undefined ? updates.closesAt : null,
+            updates.deliversTo !== undefined ? JSON.stringify(updates.deliversTo) : null,
+            updates.image !== undefined ? updates.image : null,
+            updates.description !== undefined ? updates.description : null,
+            updates.isActive !== undefined ? (updates.isActive ? 1 : 0) : null,
+            updates.isFeatured !== undefined ? (updates.isFeatured ? 1 : 0) : null,
+            vendorId
+          ).run();
+        }
+
+        const saved = await rawD1.prepare(`SELECT * FROM vendors WHERE id = ? LIMIT 1`).bind(vendorId).first();
+        return new Response(JSON.stringify({ success: true, vendor: saved || updates }), {
+          status: 200, headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (rawErr) {
+        console.warn('Raw D1 fallback error, trying Drizzle:', rawErr);
+      }
+    }
+
     const existing = await db.select().from(schema.vendors).where(eq(schema.vendors.id, vendorId)).limit(1);
 
     if (!existing || existing.length === 0) {
@@ -190,6 +257,7 @@ export const PATCH: APIRoute = async ({ request }) => {
     });
   }
 };
+
 
 
 export const DELETE: APIRoute = async ({ request, url }) => {
