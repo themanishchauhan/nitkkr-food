@@ -128,16 +128,18 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
       <div class="absolute bottom-4 left-0 right-0 max-w-2xl mx-auto px-4 text-white z-10">
         <div class="flex items-center gap-2 flex-wrap mb-1">
           <h1 class="font-display text-2xl sm:text-3xl font-extrabold tracking-tight drop-shadow-sm">{vendor.name}</h1>
-          <button
-            type="button"
-            onclick={`window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: null, name: 'All Dishes', mode: 'read' } }))`}
-            class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-400 text-slate-950 shadow-md hover:bg-amber-300 transition-all cursor-pointer"
-            title="View student reviews"
-          >
-            <span>★</span>
-            <span>{vendorAvgRating || '4.8'}</span>
-            <span class="text-slate-800 font-semibold text-[11px]">({vendorReviewCount > 0 ? vendorReviewCount : '120+'} reviews)</span>
-          </button>
+          {vendorReviewCount > 0 && vendorAvgRating && (
+            <button
+              type="button"
+              onclick={`window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: null, name: 'All Dishes', mode: 'read' } }))`}
+              class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-400 text-slate-950 shadow-md hover:bg-amber-300 transition-all cursor-pointer"
+              title="View student reviews"
+            >
+              <span>★</span>
+              <span>{vendorAvgRating}</span>
+              <span class="text-slate-800 font-semibold text-[11px]">({vendorReviewCount} reviews)</span>
+            </button>
+          )}
         </div>
         <p class="text-xs sm:text-sm text-white/90 flex items-center gap-1.5 drop-shadow">
           <span>📍</span>
@@ -151,7 +153,7 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
       <!-- Info & Badges Pill Card -->
       <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <!-- Status & Hours & Rating -->
+          <!-- Status & Hours -->
           <div class="flex items-center gap-2 flex-wrap">
             <span class={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${isOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
               <span class={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
@@ -162,31 +164,9 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
               <span>🕒</span>
               <span>{formattedHours}</span>
             </span>
-
-            <!-- Vendor Overall Rating Badge Button -->
-            {vendorAvgRating ? (
-              <button
-                type="button"
-                onclick={`window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: null, name: 'All Dishes', mode: 'read' } }))`}
-                class="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs"
-                title="View student reviews"
-              >
-                <span class="text-amber-500">★</span>
-                <span>{vendorAvgRating}</span>
-                <span class="text-slate-400 font-normal text-[11px]">({vendorReviewCount})</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onclick={`window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: null, name: 'General Feedback', mode: 'write' } }))`}
-                class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-50 hover:bg-amber-50 text-slate-600 hover:text-amber-800 border border-slate-200 hover:border-amber-200 rounded-full text-xs font-semibold transition-all cursor-pointer"
-              >
-                <span>⭐</span>
-                <span>Rate Vendor</span>
-              </button>
-            )}
           </div>
         </div>
+
 
         {vendor.deliversTo && vendor.deliversTo.length > 0 && (
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
