@@ -30,6 +30,7 @@ const {
   x-data={`{
     activeCat: 'all',
     searchQuery: '',
+    searchExpanded: false,
     categories: ${JSON.stringify(categories)},
     menuItems: ${JSON.stringify(menuItems)},
     selectedItem: null,
@@ -126,7 +127,7 @@ const {
   </div>
 
   <!-- Minimalist & Clutter-Free Menu Items List -->
-  <div class="space-y-2.5 pb-28">
+  <div class="space-y-2.5 pb-24">
     <template x-for="item in displayedItems" :key="item.id">
       <div
         x-transition:enter="transition ease-out duration-150"
@@ -193,7 +194,7 @@ const {
     <button
       type="button"
       x-show="searchQuery.trim() || activeCat !== 'all'"
-      @click="searchQuery = ''; activeCat = 'all'"
+      @click="searchQuery = ''; searchExpanded = false; activeCat = 'all'"
       class="mt-3 px-4 py-1.5 bg-nitkkr-orange/10 hover:bg-nitkkr-orange/20 text-nitkkr-orange text-xs font-bold rounded-xl transition-colors cursor-pointer"
     >
       Reset Filters
@@ -300,44 +301,35 @@ const {
     </template>
   </div>
 
-  <!-- 📱 Sleek Floating Glassmorphic Bottom Dock (Search + Share + Call) -->
-  <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 px-4 py-3 shadow-[0_-10px_30px_rgba(0,0,0,0.08)]">
-    <div class="max-w-2xl mx-auto space-y-2.5">
+  <!-- 📱 Sleek Single-Row Floating Glassmorphic Bottom Dock with Expandable Search -->
+  <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+    <div class="max-w-2xl mx-auto">
       
-      <!-- In-Menu Real-Time Search Bar -->
-      <div class="relative w-full">
-        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <input
-          type="text"
-          x-model="searchQuery"
-          placeholder="Search dishes (e.g. chai, maggi, noodles, paratha)..."
-          class="w-full pl-9.5 pr-8 py-2 text-xs bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20 shadow-2xs transition-all"
-          aria-label="Search dishes in menu"
-        />
+      <!-- STATE 1: Default 1-Row Action Buttons (Search Pill + Share + Call / WhatsApp) -->
+      <div
+        x-show="!searchExpanded && !searchQuery.trim()"
+        x-transition:enter="transition ease-out duration-150"
+        x-transition:enter-start="opacity-0 scale-98"
+        x-transition:enter-end="opacity-100 scale-100"
+        class="flex items-center gap-2"
+      >
+        <!-- 🔍 Expand Search Button -->
         <button
           type="button"
-          x-show="searchQuery.length > 0"
-          x-cloak
-          @click="searchQuery = ''"
-          class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer"
-          aria-label="Clear search"
+          @click="searchExpanded = true; $nextTick(() => { const el = $refs.menuSearchInput; if (el) { el.focus(); } })"
+          class="py-3 px-3.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-slate-200/60 shadow-2xs flex-shrink-0"
+          aria-label="Search menu"
+          title="Search in menu"
         >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <span class="text-sm">🔍</span>
+          <span>Search</span>
         </button>
-      </div>
 
-      <!-- Action Buttons Row: Share + Call / WhatsApp -->
-      <div class="flex items-center gap-2">
+        <!-- 🔗 Share Button -->
         <button
           type="button"
           @click="shareVendor()"
-          class="py-3 px-4 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-slate-200/60 shadow-2xs flex-shrink-0"
+          class="py-3 px-3.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-slate-200/60 shadow-2xs flex-shrink-0"
           aria-label="Share vendor"
           title="Share vendor menu"
         >
@@ -345,6 +337,7 @@ const {
           <span>Share</span>
         </button>
 
+        <!-- 📞 Primary Call / WhatsApp Buttons -->
         {showWhatsApp ? (
           <>
             <a
@@ -360,7 +353,7 @@ const {
               href={vendorWhatsAppLink}
               target="_blank"
               rel="noopener noreferrer"
-              class="flex-[2] py-3 px-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-98 text-white rounded-2xl font-extrabold text-xs text-center transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20"
+              class="flex-[1.5] py-3 px-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-98 text-white rounded-2xl font-extrabold text-xs text-center transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20"
               aria-label={whatsAppLabel}
             >
               <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -376,9 +369,56 @@ const {
             aria-label="Call vendor"
           >
             <span class="text-base">📞</span>
-            <span>Call Vendor ({vendorDisplayPhone})</span>
+            <span>Call</span>
           </a>
         )}
+      </div>
+
+      <!-- STATE 2: Expanded Full-Row Search Bar -->
+      <div
+        x-show="searchExpanded || searchQuery.trim().length > 0"
+        x-cloak
+        x-transition:enter="transition ease-out duration-200 transform"
+        x-transition:enter-start="opacity-0 translate-y-2 scale-98"
+        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+        class="flex items-center gap-2"
+      >
+        <div class="relative flex-1">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            x-ref="menuSearchInput"
+            x-model="searchQuery"
+            placeholder="Search dishes (e.g. chai, maggi, noodles)..."
+            class="w-full pl-9.5 pr-8 py-2.5 text-xs bg-slate-100 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-2xl font-medium text-slate-900 focus:outline-hidden focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20 shadow-2xs transition-all"
+            aria-label="Search dishes in menu"
+            @keydown.escape="searchQuery = ''; searchExpanded = false"
+          />
+          <button
+            type="button"
+            x-show="searchQuery.length > 0"
+            x-cloak
+            @click="searchQuery = ''; $refs.menuSearchInput?.focus()"
+            class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer"
+            aria-label="Clear search"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          @click="searchQuery = ''; searchExpanded = false"
+          class="py-2.5 px-3.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs rounded-2xl border border-slate-200/60 shadow-2xs cursor-pointer transition-all flex-shrink-0"
+        >
+          Done
+        </button>
       </div>
 
     </div>
