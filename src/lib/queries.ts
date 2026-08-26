@@ -165,12 +165,18 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
         }
       }
       console.log(`✅ Successfully seeded Food Cave and ${FOOD_CAVE_MENU_ITEMS.length} dishes into Real D1 Database.`);
+    } else {
+      // Sync phone and whatsapp numbers to clean formatted values
+      await d1.prepare(`UPDATE vendors SET phone = ?, whatsapp = ? WHERE slug = ?`)
+        .bind(FOOD_CAVE_VENDOR.phone, FOOD_CAVE_VENDOR.whatsapp, FOOD_CAVE_VENDOR.slug)
+        .run();
     }
     hasCheckedD1Seed = true;
   } catch (err) {
     console.error('Database populate error:', err);
   }
 }
+
 
 
 function getDb(customDb?: any) {

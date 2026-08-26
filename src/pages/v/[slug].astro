@@ -38,7 +38,36 @@ function formatTime12h(timeStr?: string): string {
   return `${h}:${m} ${ampm}`;
 }
 
+function cleanTelHref(phone?: string): string {
+  if (!phone) return '#';
+  const digits = phone.replace(/[^0-9]/g, '');
+  if (digits.length === 10) return `tel:+91${digits}`;
+  if (digits.length > 10 && digits.startsWith('91')) return `tel:+${digits}`;
+  return `tel:+91${digits.slice(-10)}`;
+}
+
+function cleanDisplayPhone(phone?: string): string {
+  if (!phone) return '';
+  const digits = phone.replace(/[^0-9]/g, '');
+  const last10 = digits.slice(-10);
+  if (last10.length === 10) {
+    return `+91 ${last10.slice(0, 5)} ${last10.slice(5)}`;
+  }
+  return phone;
+}
+
+function cleanWhatsAppHref(phone?: string, text?: string): string {
+  if (!phone) return '#';
+  const digits = phone.replace(/[^0-9]/g, '');
+  const fullPhone = digits.length === 10 ? `91${digits}` : (digits.startsWith('91') ? digits : `91${digits.slice(-10)}`);
+  const query = text ? `?text=${encodeURIComponent(text)}` : '';
+  return `https://wa.me/${fullPhone}${query}`;
+}
+
 const formattedHours = `${formatTime12h(vendor.opensAt)} – ${formatTime12h(vendor.closesAt)}`;
+const vendorTelLink = cleanTelHref(vendor.phone);
+const vendorDisplayPhone = cleanDisplayPhone(vendor.phone);
+const vendorWhatsAppLink = cleanWhatsAppHref(vendor.whatsapp || vendor.phone, msgTemplate);
 
 const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
@@ -46,12 +75,12 @@ const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) 
 const adEnabled = settingsObj.ad_banner_enabled === 'true';
 const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && settingsObj.show_whatsapp_button !== 'false';
 const whatsAppLabel = settingsObj.whatsapp_button_label || 'Order on WhatsApp';
-const msgTemplate = (settingsObj.whatsapp_msg_template || `Hi ${vendor.name}! I'd like to check menu availability from NITKKR Food.`).replace('{vendor_name}', vendor.name);
 
 const shareUrl = new URL(`/v/${vendor.slug}`, Astro.site).href;
 const shareTitle = `${vendor.name} - NITKKR Food`;
 const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length} dishes available, opens ${formattedHours}`;
 ---
+
 
 <Layout
   title={`${vendor.name} - NITKKR Food`}
@@ -218,7 +247,7 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
         {showWhatsApp ? (
           <>
             <a
-              href={`tel:+91${vendor.phone}`}
+              href={vendorTelLink}
               class="flex-1 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl font-bold text-sm text-center transition-all flex items-center justify-center gap-2 active:scale-98"
               aria-label="Call vendor"
             >
@@ -227,7 +256,7 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
             </a>
 
             <a
-              href={`https://wa.me/91${vendor.whatsapp || vendor.phone}?text=${encodeURIComponent(msgTemplate)}`}
+              href={vendorWhatsAppLink}
               target="_blank"
               rel="noopener noreferrer"
               class="flex-[2.5] py-3.5 px-5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 active:scale-98"
@@ -242,16 +271,17 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
         ) : (
           <div class="w-full flex items-center gap-3">
             <a
-              href={`tel:+91${vendor.phone}`}
+              href={vendorTelLink}
               class="flex-1 py-3.5 px-6 bg-gradient-to-r from-nitkkr-orange to-amber-600 hover:from-nitkkr-orange-dark hover:to-amber-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-nitkkr-orange/25 active:scale-98 cursor-pointer"
               aria-label="Call vendor"
             >
               <span class="text-base">📞</span>
-              <span>Call Vendor ({vendor.phone})</span>
+              <span>Call Vendor ({vendorDisplayPhone})</span>
             </a>
           </div>
         )}
       </div>
     </div>
+
   </section>
 </Layout>

@@ -2,9 +2,10 @@ export const FOOD_CAVE_VENDOR = {
   id: 21,
   name: 'Food Cave Fast Food',
   slug: 'food-cave',
-  phone: '+91 98964 75885',
-  whatsapp: '919896475885',
+  phone: '9896475885',
+  whatsapp: '9896475885',
   address: 'NIT Gate-2, Kirmach Road, Kurukshetra',
+
   latitude: '29.9662',
   longitude: '76.8808',
   opensAt: '09:00',

@@ -104,13 +104,26 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         vegFilter: initialIsVeg === 'true' ? 'veg' : (initialIsVeg === 'false' ? 'non-veg' : 'all'),
         allVendors: Array.isArray(initialVendors) ? initialVendors : [],
         allItems: Array.isArray(initialItems) ? initialItems : [],
-        loading: false,
         selectedItem: null,
         showDetailModal: false,
         openDetail(item) {
           this.selectedItem = item;
           this.showDetailModal = true;
         },
+        getTelHref(phone) {
+          if (!phone) return '#';
+          var digits = String(phone).replace(/[^0-9]/g, '');
+          if (digits.length === 10) return 'tel:+91' + digits;
+          if (digits.length > 10 && digits.startsWith('91')) return 'tel:+' + digits;
+          return 'tel:+91' + digits.slice(-10);
+        },
+        getWhatsAppHref(phone) {
+          if (!phone) return '#';
+          var digits = String(phone).replace(/[^0-9]/g, '');
+          var full = digits.length === 10 ? '91' + digits : (digits.startsWith('91') ? digits : '91' + digits.slice(-10));
+          return 'https://wa.me/' + full;
+        },
+
 
 
         async init() {
@@ -304,7 +317,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
     <div class="max-w-2xl mx-auto px-4 py-8">
       <div class="mb-5">
-        <a href="/" class="inline-flex items-center gap-2 text-nitkkr-gray hover:text-nitkkr-orange transition-colors mb-4 text-sm font-medium">
+        <a href="/" class="inline-flex items-center gap-2 text-nitkkr-gray hover:text-bistro-600 transition-colors mb-4 text-sm font-medium">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
@@ -570,7 +583,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-nitkkr-cream">
               <a
-                :href="`tel:+91${vendor.phone}`"
+                :href="getTelHref(vendor.phone)"
                 class="px-3 py-2 bg-bistro-100 hover:bg-bistro-200 text-bistro-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
                 aria-label="Call vendor"
               >
@@ -578,7 +591,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               </a>
               <template x-if="showWhatsApp">
                 <a
-                  :href="`https://wa.me/91${vendor.whatsapp || vendor.phone}`"
+                  :href="getWhatsAppHref(vendor.whatsapp || vendor.phone)"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
@@ -587,6 +600,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                   <span>💬</span> WhatsApp
                 </a>
               </template>
+
               <a
                 :href="`/v/${vendor.slug}`"
                 class="px-4 py-2 bg-bistro-500 hover:bg-bistro-600 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
@@ -634,7 +648,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             <div
               @click="openDetail(item)"
               class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 flex items-center justify-between gap-3
-                     hover:border-nitkkr-orange hover:shadow-md transition-all duration-200 cursor-pointer group select-none active:scale-[0.99]"
+                     hover:border-bistro-400 hover:shadow-md transition-all duration-200 cursor-pointer group select-none active:scale-[0.99]"
             >
               <!-- Left: Dish Thumbnail Image -->
               <div class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100">
@@ -658,7 +672,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                     <span class="w-1.5 h-1.5 rounded-full" :class="item.isVeg ? 'bg-emerald-600' : 'bg-rose-600'"></span>
                   </span>
 
-                  <h3 class="font-bold text-sm sm:text-base text-slate-900 truncate group-hover:text-nitkkr-orange transition-colors" x-text="item.name"></h3>
+                  <h3 class="font-bold text-sm sm:text-base text-slate-900 truncate group-hover:text-bistro-600 transition-colors" x-text="item.name"></h3>
                 </div>
 
                 <div class="flex items-center gap-1.5 mt-0.5 text-xs text-slate-400 truncate">
@@ -670,14 +684,14 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
               <!-- Right: Bold Price + Arrow Hint -->
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="text-nitkkr-orange font-extrabold text-base sm:text-lg whitespace-nowrap" x-text="'₹' + Number(item.price).toFixed(0)"></span>
-                <span class="text-slate-300 group-hover:text-nitkkr-orange group-hover:translate-x-0.5 transition-all text-base font-bold">›</span>
+                <span class="text-bistro-600 font-extrabold text-base sm:text-lg whitespace-nowrap" x-text="'₹' + Number(item.price).toFixed(0)"></span>
+                <span class="text-slate-300 group-hover:text-bistro-600 group-hover:translate-x-0.5 transition-all text-base font-bold">›</span>
               </div>
             </div>
           </template>
         </div>
 
-        <div x-show="filteredItems.length === 0" class="text-center py-16 text-nitkkr-gray bg-white rounded-2xl border border-nitkkr-orange/20 p-8">
+        <div x-show="filteredItems.length === 0" class="text-center py-16 text-nitkkr-gray bg-white rounded-2xl border border-bistro-200 p-8">
           <p class="text-3xl mb-2">🔍</p>
           <p class="text-lg font-bold text-nitkkr-dark">No dishes found matching your filters</p>
           <p class="text-xs text-nitkkr-gray mt-1">Try switching to the "Campus Vendors" tab above or changing your search terms.</p>
@@ -764,19 +778,20 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             <div class="pt-3 border-t border-slate-100 flex items-center gap-3">
               <a
                 :href="`/v/${selectedItem.vendorSlug || 'food-cave'}`"
-                class="flex-1 py-2.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-xl shadow-sm text-center transition-all cursor-pointer"
+                class="flex-1 py-2.5 bg-bistro-500 hover:bg-bistro-600 text-white font-bold text-xs rounded-xl shadow-sm text-center transition-all cursor-pointer"
               >
                 <span>View Full Menu ➔</span>
               </a>
 
               <template x-if="selectedItem.vendorPhone">
                 <a
-                  :href="`tel:+91${selectedItem.vendorPhone}`"
+                  :href="getTelHref(selectedItem.vendorPhone)"
                   class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl text-center transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   <span>📞</span> Call
                 </a>
               </template>
+
             </div>
           </div>
 
