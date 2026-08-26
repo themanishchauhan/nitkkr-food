@@ -40,16 +40,51 @@ const {
       return this.menuItems.length;
     },
 
+    normalize(str) {
+      return (str || '').toLowerCase()
+        .replace(/aa/g, 'a')
+        .replace(/ee/g, 'i')
+        .replace(/oo/g, 'u')
+        .replace(/nn/g, 'n')
+        .replace(/tt/g, 't')
+        .replace(/pp/g, 'p')
+        .replace(/rr/g, 'r')
+        .replace(/ll/g, 'l')
+        .replace(/mm/g, 'm')
+        .replace(/kk/g, 'k')
+        .replace(/ss/g, 's')
+        .replace(/zz/g, 'z')
+        .replace(/ph/g, 'f')
+        .replace(/bh/g, 'b')
+        .replace(/dh/g, 'd')
+        .replace(/th/g, 't')
+        .replace(/sh/g, 's')
+        .replace(/[^a-z0-9]/g, '');
+    },
+
+    matchToken(token, full, normFull) {
+      if (full.includes(token)) return true;
+      const normToken = this.normalize(token);
+      if (normToken && normFull.includes(normToken)) return true;
+      if (token.endsWith('s') && full.includes(token.slice(0, -1))) return true;
+      if (token.endsWith('es') && full.includes(token.slice(0, -2))) return true;
+      return false;
+    },
+
     get searchedItems() {
       if (!this.searchQuery.trim()) return this.menuItems;
-      const q = this.searchQuery.toLowerCase().trim();
-      return this.menuItems.filter(item =>
-        (item.name && item.name.toLowerCase().includes(q)) ||
-        (item.description && item.description.toLowerCase().includes(q)) ||
-        (item.categoryName && item.categoryName.toLowerCase().includes(q)) ||
-        (item.tags && item.tags.some(t => t.toLowerCase().includes(q)))
-      );
+      const rawTokens = this.searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+      return this.menuItems.filter(item => {
+        const name = (item.name || '').toLowerCase();
+        const desc = (item.description || '').toLowerCase();
+        const cat = (item.categoryName || '').toLowerCase();
+        const tags = (item.tags || []).join(' ').toLowerCase();
+        const full = [name, desc, cat, tags].join(' ');
+        const normFull = this.normalize(full);
+        return rawTokens.every(token => this.matchToken(token, full, normFull));
+      });
     },
+
 
     get displayedItems() {
       const list = this.searchedItems;
