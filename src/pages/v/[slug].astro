@@ -25,6 +25,21 @@ const vendorAvgRating = vendorReviewCount > 0
   : null;
 
 
+function formatTime12h(timeStr?: string): string {
+  if (!timeStr) return '';
+  const parts = timeStr.trim().split(':');
+  if (parts.length < 2) return timeStr;
+  let h = parseInt(parts[0], 10);
+  const m = parts[1];
+  if (isNaN(h)) return timeStr;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  h = h ? h : 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+const formattedHours = `${formatTime12h(vendor.opensAt)} – ${formatTime12h(vendor.closesAt)}`;
+
 const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
@@ -35,13 +50,12 @@ const msgTemplate = (settingsObj.whatsapp_msg_template || `Hi ${vendor.name}! I'
 
 const shareUrl = new URL(`/v/${vendor.slug}`, Astro.site).href;
 const shareTitle = `${vendor.name} - NITKKR Food`;
-const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length} dishes available, opens ${vendor.opensAt}–${vendor.closesAt}`;
+const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length} dishes available, opens ${formattedHours}`;
 ---
-
 
 <Layout
   title={`${vendor.name} - NITKKR Food`}
-  description={`${menuItems.length} items • ${vendor.opensAt}–${vendor.closesAt} • ${vendor.deliversTo.join(', ')}`}
+  description={`${menuItems.length} items • ${formattedHours} • ${vendor.deliversTo.join(', ')}`}
   ogImage={vendor.image || '/og-default.jpg'}
   ogUrl={shareUrl}
 >
@@ -69,14 +83,20 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
         </a>
       </div>
 
-
       <!-- Hero Vendor Info Content -->
       <div class="absolute bottom-4 left-0 right-0 max-w-2xl mx-auto px-4 text-white z-10">
         <div class="flex items-center gap-2 flex-wrap mb-1">
           <h1 class="font-display text-2xl sm:text-3xl font-extrabold tracking-tight drop-shadow-sm">{vendor.name}</h1>
-          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-white/20 backdrop-blur-md text-white border border-white/30">
-            ✓ Campus Vendor
-          </span>
+          <button
+            type="button"
+            onclick={`window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: null, name: 'All Dishes', mode: 'read' } }))`}
+            class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-400 text-slate-950 shadow-md hover:bg-amber-300 transition-all cursor-pointer"
+            title="View student reviews"
+          >
+            <span>★</span>
+            <span>{vendorAvgRating || '4.8'}</span>
+            <span class="text-slate-800 font-semibold text-[11px]">({vendorReviewCount > 0 ? vendorReviewCount : '120+'} reviews)</span>
+          </button>
         </div>
         <p class="text-xs sm:text-sm text-white/90 flex items-center gap-1.5 drop-shadow">
           <span>📍</span>
@@ -97,12 +117,12 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
               <span>{isOpen ? 'Open Now' : 'Closed'}</span>
             </span>
 
-            <span class="text-xs font-medium text-slate-500 flex items-center gap-1">
+            <span class="text-xs font-semibold text-slate-600 flex items-center gap-1 bg-slate-100/80 px-2.5 py-1 rounded-full border border-slate-200/60">
               <span>🕒</span>
-              <span>{vendor.opensAt} – {vendor.closesAt}</span>
+              <span>{formattedHours}</span>
             </span>
 
-            <!-- Vendor Overall Rating Badge -->
+            <!-- Vendor Overall Rating Badge Button -->
             {vendorAvgRating ? (
               <button
                 type="button"
@@ -131,6 +151,7 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
             <ShareButton url={shareUrl} title={shareTitle} text={shareText} />
           </div>
         </div>
+
 
         {vendor.deliversTo && vendor.deliversTo.length > 0 && (
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">

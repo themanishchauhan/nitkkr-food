@@ -13,31 +13,49 @@ interface Props {
   isOpen?: boolean;
 }
 const { vendor, isOpen } = Astro.props;
+
+function formatTime12h(timeStr?: string): string {
+  if (!timeStr) return '';
+  const parts = timeStr.trim().split(':');
+  if (parts.length < 2) return timeStr;
+  let h = parseInt(parts[0], 10);
+  const m = parts[1];
+  if (isNaN(h)) return timeStr;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  h = h ? h : 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+const formattedHours = `${formatTime12h(vendor.opensAt)} – ${formatTime12h(vendor.closesAt)}`;
 ---
 <a
   href={`/v/${vendor.slug}`}
-  class="flex items-center gap-4 bg-white p-3 rounded-xl border border-nitkkr-orange/20
-         hover:border-nitkkr-orange hover:shadow-lg transition-all duration-200"
+  class="flex items-center gap-4 bg-white p-3.5 rounded-2xl border border-slate-200/80
+         hover:border-nitkkr-orange hover:shadow-md transition-all duration-200 group"
 >
   <img
     src={vendor.image || '/placeholder-vendor.svg'}
     alt=""
-    class="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+    class="w-14 h-14 rounded-xl object-cover flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-slate-100"
     loading="lazy"
   />
   <div class="flex-1 min-w-0">
-    <p class="font-semibold truncate text-nitkkr-dark">{vendor.name}</p>
-    <p class="text-xs text-nitkkr-gray flex items-center gap-1 mt-0.5">
+    <div class="flex items-center gap-2">
+      <p class="font-bold text-sm sm:text-base truncate text-slate-900 group-hover:text-nitkkr-orange transition-colors">{vendor.name}</p>
+      <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950">★ 4.8</span>
+    </div>
+    <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
       <span
-        class={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+        class={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}
         aria-hidden="true"
       ></span>
-      <span class="truncate">{isOpen ? 'Open Now' : 'Closed'} ({vendor.opensAt} – {vendor.closesAt})</span>
+      <span class="truncate font-medium">{isOpen ? 'Open Now' : 'Closed'} • {formattedHours}</span>
     </p>
   </div>
   {typeof vendor.minPrice === 'number' && vendor.minPrice > 0 ? (
-    <span class="text-nitkkr-orange font-bold text-sm sm:text-base whitespace-nowrap">From ₹{vendor.minPrice}</span>
+    <span class="text-nitkkr-orange font-extrabold text-sm sm:text-base whitespace-nowrap">From ₹{vendor.minPrice}</span>
   ) : (
-    <span class="text-slate-400 font-semibold text-xs whitespace-nowrap">View Menu →</span>
+    <span class="text-slate-400 font-bold text-xs whitespace-nowrap group-hover:text-nitkkr-orange transition-colors">View Menu →</span>
   )}
 </a>

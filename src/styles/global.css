@@ -9,50 +9,64 @@
   }
 
   body {
-    @apply antialiased;
+    @apply antialiased bg-bistro-50 text-nitkkr-dark;
   }
 
   * {
-    @apply border-nitkkr-orange/20;
+    @apply border-bistro-200;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-3 bg-nitkkr-orange text-white font-semibold rounded-xl
-           hover:bg-nitkkr-orange-dark transition-colors duration-200
-           focus:outline-none focus:ring-2 focus:ring-nitkkr-orange focus:ring-offset-2;
+    @apply px-6 py-3 bg-bistro-500 text-white font-semibold rounded-xl
+           hover:bg-bistro-600 transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-bistro-500 focus:ring-offset-2;
   }
 
   .btn-secondary {
-    @apply px-6 py-3 bg-white text-nitkkr-orange font-semibold rounded-xl border-2 border-nitkkr-orange
-           hover:bg-nitkkr-orange/10 transition-colors duration-200
-           focus:outline-none focus:ring-2 focus:ring-nitkkr-orange focus:ring-offset-2;
+    @apply px-6 py-3 bg-white text-bistro-500 font-semibold rounded-xl border-2 border-bistro-500
+           hover:bg-bistro-50 hover:border-bistro-600 transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-bistro-500 focus:ring-offset-2;
   }
 
   .input-search {
-    @apply w-full px-6 py-4 pr-14 text-lg bg-white border-2 border-nitkkr-orange/30 rounded-2xl
-           focus:outline-none focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20
+    @apply w-full px-5 py-4 pr-12 text-lg bg-white border-2 border-bistro-200 rounded-2xl
+           focus:outline-none focus:border-bistro-500 focus:ring-2 focus:ring-bistro-500/20
            placeholder:text-nitkkr-gray;
   }
 
   .card {
-    @apply bg-white rounded-2xl border border-nitkkr-orange/20 shadow-sm
-           hover:border-nitkkr-orange/50 hover:shadow-md transition-all duration-200;
+    @apply bg-white rounded-2xl border border-bistro-200 shadow-sm
+           hover:border-bistro-300 hover:shadow-md transition-all duration-200;
   }
 
   .badge-veg {
-    @apply px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full;
+    @apply px-2 py-0.5 bg-veg-500 text-white text-xs rounded-full;
+  }
+
+  .badge-nonveg {
+    @apply px-2 py-0.5 bg-spice-500 text-white text-xs rounded-full;
   }
 
   .badge-tag {
-    @apply px-2 py-0.5 bg-nitkkr-cream text-nitkkr-orange text-xs rounded-full;
+    @apply px-2 py-0.5 bg-bistro-100 text-bistro-700 text-xs rounded-full;
   }
 
   .chip {
-    @apply px-4 py-2 bg-white border border-nitkkr-orange/30 text-nitkkr-orange rounded-full text-sm font-medium
-           hover:bg-nitkkr-orange hover:text-white hover:border-nitkkr-orange transition-all duration-200;
+    @apply px-4 py-2.5 bg-white border border-bistro-200 text-nitkkr-dark rounded-full text-xs font-bold
+           hover:bg-bistro-50 hover:border-bistro-300 hover:text-bistro-600 transition-all duration-200;
   }
+
+  .chip-active {
+    @apply bg-gradient-to-r from-bistro-500 to-bistro-600 text-white border-transparent;
+  }
+
+  /* Spacing utilities */
+  .space-section { @apply py-12 sm:py-16 lg:py-20; }
+  .space-section-sm { @apply py-8 sm:py-12; }
+  .container-main { @apply max-w-2xl mx-auto px-4 sm:px-6 lg:px-8; }
+  .container-wide { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8; }
 }
 
 @layer utilities {
@@ -126,10 +140,18 @@
 }
 
 ::selection {
-  background-color: #FF6B35;
+  background-color: #E87D2E;
   color: white;
 }
 
 :focus-visible {
-  @apply outline-none ring-2 ring-nitkkr-orange ring-offset-2 ring-offset-white;
+  @apply outline-none ring-2 ring-bistro-500 ring-offset-2 ring-offset-white;
+}
+
+/* Safe area insets for mobile */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0);
 }

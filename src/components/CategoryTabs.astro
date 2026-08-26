@@ -5,9 +5,22 @@ interface Props {
   [key: string]: any;
 }
 const { categories, menuItems } = Astro.props;
-
 ---
-<div x-data={`{ activeCat: 'all', categories: ${JSON.stringify(categories)}, menuItems: ${JSON.stringify(menuItems)} }`} class="mb-6">
+
+<div
+  x-data={`{
+    activeCat: 'all',
+    categories: ${JSON.stringify(categories)},
+    menuItems: ${JSON.stringify(menuItems)},
+    selectedItem: null,
+    showDetailModal: false,
+    openDetail(item) {
+      this.selectedItem = item;
+      this.showDetailModal = true;
+    }
+  }`}
+  class="mb-6"
+>
   <!-- Horizontal Category Tabs -->
   <div class="flex gap-2 overflow-x-auto pb-3 mb-4 -mx-4 px-4 scrollbar-none" role="tablist" aria-label="Menu categories">
     <button
@@ -33,78 +46,64 @@ const { categories, menuItems } = Astro.props;
     </template>
   </div>
 
-  <!-- Menu Items List -->
-  <div class="space-y-3">
+  <!-- Minimalist & Clutter-Free Menu Items List -->
+  <div class="space-y-2.5">
     <template x-for="item in menuItems" :key="item.id">
       <div
         x-show="activeCat==='all' || activeCat===item.categorySlug"
         x-transition:enter="transition ease-out duration-150"
         x-transition:enter-start="opacity-0 transform scale-98"
         x-transition:enter-end="opacity-100 transform scale-100"
-        class="bg-white rounded-2xl border border-nitkkr-orange/20 p-3.5 sm:p-4 flex gap-3 sm:gap-4
-               hover:border-nitkkr-orange hover:shadow-sm transition-all duration-200 overflow-hidden"
+        @click="openDetail(item)"
+        class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 flex items-center justify-between gap-3
+               hover:border-nitkkr-orange hover:shadow-md transition-all duration-200 cursor-pointer group select-none active:scale-[0.99]"
       >
-        <img
-          :src="item.image || '/placeholder-food.svg'"
-          alt=""
-          class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover flex-shrink-0"
-          loading="lazy"
-        />
+        <!-- Left: Dish Thumbnail Image -->
+        <div class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100">
+          <img
+            :src="item.image || '/placeholder-food.svg'"
+            :alt="item.name"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+          />
+        </div>
+
+        <!-- Middle: Veg/Non-Veg icon + Dish Name + Subtitle -->
         <div class="flex-1 min-w-0">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <h3 class="font-bold text-sm sm:text-base text-nitkkr-dark truncate" x-text="item.name"></h3>
-                <template x-if="item.avgRating">
-                  <span
-                    @click.stop="window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: item.id, name: item.name, mode: 'read' } }))"
-                    class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-md text-[11px] font-bold text-amber-800 cursor-pointer transition-colors shadow-2xs"
-                    title="Read student reviews"
-                  >
-                    <span class="text-amber-500">★</span>
-                    <span x-text="item.avgRating"></span>
-                    <span class="text-slate-400 text-[10px] font-normal" x-text="'(' + item.reviewCount + ')'"></span>
-                  </span>
-                </template>
-              </div>
-              <p class="text-[11px] text-nitkkr-gray truncate" x-text="item.categoryName || ''"></p>
-            </div>
-            <span class="text-nitkkr-orange font-bold text-base sm:text-lg whitespace-nowrap flex-shrink-0" x-text="'₹' + Number(item.price).toFixed(0)"></span>
-          </div>
-
-          <template x-if="item.description">
-            <p class="text-xs text-nitkkr-gray mt-1 line-clamp-2" x-text="item.description"></p>
-          </template>
-
-          <div class="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-nitkkr-cream">
-            <div class="flex flex-wrap gap-1 items-center">
-              <template x-if="item.isVeg">
-                <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">🌱 Veg</span>
-              </template>
-              <template x-if="!item.isVeg">
-                <span class="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full">🍗 Non-Veg</span>
-              </template>
-              <template x-for="tag in (item.tags || [])" :key="tag">
-                <span class="px-2 py-0.5 bg-nitkkr-cream text-nitkkr-orange text-[10px] font-medium rounded-full" x-text="tag"></span>
-              </template>
-            </div>
-
-            <!-- Action: Rate / Review Dish -->
-            <button
-              type="button"
-              @click="window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: item.id, name: item.name, mode: item.reviewCount > 0 ? 'read' : 'write' } }))"
-              class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-700 border border-amber-200 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer flex-shrink-0 ml-auto shadow-2xs"
-              :aria-label="item.reviewCount > 0 ? 'Read or write reviews for ' + item.name : 'Rate ' + item.name"
+          <div class="flex items-center gap-1.5 min-w-0">
+            <!-- Veg / Non-Veg Indicator -->
+            <span
+              class="w-3.5 h-3.5 rounded-xs border flex items-center justify-center flex-shrink-0"
+              :class="item.isVeg ? 'border-emerald-600 bg-emerald-50' : 'border-rose-600 bg-rose-50'"
+              :title="item.isVeg ? 'Pure Veg' : 'Non-Veg'"
             >
-              <span>⭐</span>
-              <span x-text="item.reviewCount > 0 ? item.avgRating + ' (' + item.reviewCount + ')' : 'Rate'"></span>
-            </button>
+              <span class="w-1.5 h-1.5 rounded-full" :class="item.isVeg ? 'bg-emerald-600' : 'bg-rose-600'"></span>
+            </span>
+
+            <h3 class="font-bold text-sm sm:text-base text-slate-900 truncate group-hover:text-nitkkr-orange transition-colors" x-text="item.name"></h3>
           </div>
+
+          <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+            <span class="truncate" x-text="item.categoryName || 'Campus Fast Food'"></span>
+            <template x-if="item.avgRating">
+              <span class="inline-flex items-center gap-0.5 text-amber-600 font-bold text-[11px]">
+                <span>★</span>
+                <span x-text="item.avgRating"></span>
+              </span>
+            </template>
+          </div>
+        </div>
+
+        <!-- Right: Bold Price + Arrow Hint -->
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="text-nitkkr-orange font-extrabold text-base sm:text-lg whitespace-nowrap" x-text="'₹' + Number(item.price).toFixed(0)"></span>
+          <span class="text-slate-300 group-hover:text-nitkkr-orange group-hover:translate-x-0.5 transition-all text-base font-bold">›</span>
         </div>
       </div>
     </template>
   </div>
 
+  <!-- Empty Category State -->
   <div
     x-show="menuItems.length === 0 || menuItems.filter(i => activeCat==='all' || activeCat===i.categorySlug).length === 0"
     x-cloak
@@ -113,5 +112,105 @@ const { categories, menuItems } = Astro.props;
     <p class="text-3xl mb-2">🍱</p>
     <p class="text-base font-bold text-nitkkr-dark">No dishes in this category</p>
     <p class="text-xs mt-1">Select another category tab above to see more items</p>
+  </div>
+
+  <!-- 🌟 Dish Detail Popup Modal (Appears on click) -->
+  <div
+    x-show="showDetailModal && selectedItem"
+    x-cloak
+    x-transition:enter="transition ease-out duration-300"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+    @click.self="showDetailModal = false"
+    @keydown.escape.window="showDetailModal = false"
+  >
+    <template x-if="selectedItem">
+      <div
+        x-transition:enter="transition ease-out duration-300 transform"
+        x-transition:enter-start="scale-95 translate-y-4 opacity-0"
+        x-transition:enter-end="scale-100 translate-y-0 opacity-100"
+        class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-amber-200/50 space-y-0 relative text-slate-900"
+      >
+        <!-- Modal Close Button -->
+        <button
+          @click="showDetailModal = false"
+          class="absolute top-3.5 right-3.5 z-20 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors backdrop-blur-xs cursor-pointer font-bold"
+          aria-label="Close details"
+        >
+          ✕
+        </button>
+
+        <!-- Large Dish Image Cover -->
+        <div class="relative w-full h-48 sm:h-56 bg-slate-100 overflow-hidden">
+          <img
+            :src="selectedItem.image || '/placeholder-food.svg'"
+            :alt="selectedItem.name"
+            class="w-full h-full object-cover"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
+
+          <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
+            <span
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-md"
+              :class="selectedItem.isVeg ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
+            >
+              <span x-text="selectedItem.isVeg ? '🌱 Pure Veg' : '🍗 Non-Veg'"></span>
+            </span>
+
+            <span class="text-2xl font-black text-white drop-shadow-md" x-text="'₹' + Number(selectedItem.price).toFixed(0)"></span>
+          </div>
+        </div>
+
+        <!-- Modal Body Content -->
+        <div class="p-5 sm:p-6 space-y-4">
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="font-display text-xl sm:text-2xl font-extrabold text-slate-900" x-text="selectedItem.name"></h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5" x-text="selectedItem.categoryName || 'Fast Food'"></p>
+          </div>
+
+          <!-- Description -->
+          <div class="bg-amber-50/50 rounded-2xl p-3.5 border border-amber-200/50">
+            <p class="text-xs sm:text-sm text-slate-700 leading-relaxed" x-text="selectedItem.description || 'Freshly prepared campus specialty made with authentic ingredients.'"></p>
+          </div>
+
+          <!-- Tags -->
+          <template x-if="selectedItem.tags && selectedItem.tags.length > 0">
+            <div class="flex flex-wrap gap-1.5 items-center">
+              <span class="text-[11px] font-bold text-slate-400 mr-1">Tags:</span>
+              <template x-for="tag in selectedItem.tags" :key="tag">
+                <span class="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg" x-text="'#' + tag"></span>
+              </template>
+            </div>
+          </template>
+
+          <!-- Reviews / Ratings & Action -->
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-amber-500 text-lg">★</span>
+              <div>
+                <p class="text-xs font-extrabold text-slate-900" x-text="selectedItem.avgRating ? selectedItem.avgRating + ' / 5.0' : 'No ratings yet'"></p>
+                <p class="text-[10px] text-slate-400" x-text="selectedItem.reviewCount > 0 ? selectedItem.reviewCount + ' student reviews' : 'Be the first to rate'"></p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              @click="showDetailModal = false; window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: selectedItem.id, name: selectedItem.name, mode: selectedItem.reviewCount > 0 ? 'read' : 'write' } }))"
+              class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+            >
+              <span>⭐</span>
+              <span x-text="selectedItem.reviewCount > 0 ? 'Read Reviews' : 'Rate Dish'"></span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </template>
   </div>
 </div>
