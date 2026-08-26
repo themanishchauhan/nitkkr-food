@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 import Layout from '../layouts/Layout.astro';
-import { getCategories, getAllSiteSettings } from '../lib/queries';
+import { getCategories, getAllSiteSettings, getActiveVendors, getAllMenuItemsForSearch } from '../lib/queries';
 
 const initialQuery = Astro.url.searchParams.get('q')?.trim() || '';
 const initialCategory = Astro.url.searchParams.get('category')?.trim() || '';
@@ -11,6 +11,8 @@ const initialTag = Astro.url.searchParams.get('tag')?.trim() || '';
 const initialTab = Astro.url.searchParams.get('tab')?.trim() || 'dishes';
 
 const categories = await getCategories();
+const initialVendors = await getActiveVendors();
+const initialItems = await getAllMenuItemsForSearch();
 const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
@@ -22,9 +24,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
   description="Search dishes and food vendors across NIT Kurukshetra campus"
 >
 
-  <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTag, initialTab, showWhatsApp }}>
-
-
+  <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTag, initialTab, showWhatsApp, initialVendors, initialItems }}>
 
     function normalizePhonetics(str) {
       return (str || '').toLowerCase()
@@ -102,31 +102,24 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         vibeTag: initialTag || 'all',
         maxPrice: initialMaxPrice,
         vegFilter: initialIsVeg === 'true' ? 'veg' : (initialIsVeg === 'false' ? 'non-veg' : 'all'),
-        allVendors: [],
-        allItems: [],
-        loading: true,
+        allVendors: Array.isArray(initialVendors) ? initialVendors : [],
+        allItems: Array.isArray(initialItems) ? initialItems : [],
+        loading: false,
 
         async init() {
-          try {
-            const [itemsRes, vendorsRes] = await Promise.all([
-              fetch('/api/search/items').catch(() => null),
-              fetch('/api/admin/vendors').catch(() => null)
-            ]);
-
-            if (itemsRes && itemsRes.ok) {
-              const data = await itemsRes.json();
-              this.allItems = data.items || [];
-            }
-            if (vendorsRes && vendorsRes.ok) {
-              const data = await vendorsRes.json();
-              this.allVendors = data.vendors || [];
-            }
-          } catch (e) {
-            console.error('Search data fetch error:', e);
-          } finally {
-            this.loading = false;
+          if (this.allItems.length === 0 || this.allVendors.length === 0) {
+            try {
+              const res = await fetch('/api/search.json?limit=250');
+              if (res.ok) {
+                const data = await res.json();
+                if (data.results && data.results.length > 0) {
+                  this.allItems = data.results;
+                }
+              }
+            } catch (e) {}
           }
         },
+
 
         get matchingVendor() {
           if (!this.query.trim()) return null;

@@ -261,7 +261,7 @@ export async function getMenuItemsWithReviewStats(vendorId: number) {
 export async function getAllMenuItemsForSearch() {
   try {
     const db = getDb();
-    return await db.select({
+    let items = await db.select({
       id: schema.menuItems.id,
       name: schema.menuItems.name,
       description: schema.menuItems.description,
@@ -282,10 +282,61 @@ export async function getAllMenuItemsForSearch() {
       .innerJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id))
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
       .where(and(eq(schema.menuItems.isAvailable, true), eq(schema.vendors.isActive, true)));
+
+    if (items && items.length > 0) return items;
+
+    await ensureRealDatabasePopulated();
+    items = await db.select({
+      id: schema.menuItems.id,
+      name: schema.menuItems.name,
+      description: schema.menuItems.description,
+      price: schema.menuItems.price,
+      image: schema.menuItems.image,
+      isVeg: schema.menuItems.isVeg,
+      isAvailable: schema.menuItems.isAvailable,
+      tags: schema.menuItems.tags,
+      vendorName: schema.vendors.name,
+      vendorSlug: schema.vendors.slug,
+      vendorPhone: schema.vendors.phone,
+      vendorWhatsApp: schema.vendors.whatsapp,
+      categoryId: schema.categories.id,
+      categoryName: schema.categories.name,
+      categorySlug: schema.categories.slug,
+    })
+      .from(schema.menuItems)
+      .innerJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id))
+      .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
+      .where(and(eq(schema.menuItems.isAvailable, true), eq(schema.vendors.isActive, true)));
+
+    if (items && items.length > 0) return items;
   } catch (e) {
-    return [];
+    console.error('getAllMenuItemsForSearch error:', e);
   }
+
+  const { FOOD_CAVE_MENU_ITEMS, FOOD_CAVE_VENDOR } = await import('./food-cave-data');
+  const { MOCK_CATEGORIES } = await import('./mock-data');
+  return FOOD_CAVE_MENU_ITEMS.map((item: any) => {
+    const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: item.image,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable,
+      tags: item.tags || [],
+      vendorName: FOOD_CAVE_VENDOR.name,
+      vendorSlug: FOOD_CAVE_VENDOR.slug,
+      vendorPhone: FOOD_CAVE_VENDOR.phone,
+      vendorWhatsApp: FOOD_CAVE_VENDOR.whatsapp,
+      categoryId: item.categoryId,
+      categoryName: cat?.name || 'General',
+      categorySlug: cat?.slug || 'general',
+    };
+  });
 }
+
 
 export function isVendorOpenNow(opensAt?: string, closesAt?: string): boolean {
   if (!opensAt || !closesAt) return true;
