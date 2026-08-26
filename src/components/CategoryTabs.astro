@@ -305,7 +305,7 @@ const {
   <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
     <div class="max-w-2xl mx-auto">
       
-      <!-- STATE 1: Default 1-Row Action Buttons (Search Pill + Share + Call / WhatsApp) -->
+      <!-- STATE 1: Default 1-Row Action Buttons (Call [flex-1] + Share [flex-1] + Search [icon-only]) -->
       <div
         x-show="!searchExpanded && !searchQuery.trim()"
         x-transition:enter="transition ease-out duration-150"
@@ -313,66 +313,57 @@ const {
         x-transition:enter-end="opacity-100 scale-100"
         class="flex items-center gap-2"
       >
-        <!-- 🔍 Expand Search Button -->
-        <button
-          type="button"
-          @click="searchExpanded = true; $nextTick(() => { const el = $refs.menuSearchInput; if (el) { el.focus(); } })"
-          class="py-3 px-3.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-slate-200/60 shadow-2xs flex-shrink-0"
-          aria-label="Search menu"
-          title="Search in menu"
+        <!-- 1. 📞 Call Button (Equal Size) -->
+        <a
+          href={vendorTelLink}
+          class="flex-1 py-3 px-4 bg-gradient-to-r from-nitkkr-orange to-amber-600 hover:from-nitkkr-orange-dark hover:to-amber-700 active:scale-98 text-white rounded-2xl font-extrabold text-xs sm:text-sm text-center transition-all flex items-center justify-center gap-2 shadow-md shadow-nitkkr-orange/20 cursor-pointer"
+          aria-label="Call vendor"
         >
-          <span class="text-sm">🔍</span>
-          <span>Search</span>
-        </button>
+          <span class="text-base">📞</span>
+          <span>Call</span>
+        </a>
 
-        <!-- 🔗 Share Button -->
+        <!-- 2. 🔗 Share Button (Equal Size) -->
         <button
           type="button"
           @click="shareVendor()"
-          class="py-3 px-3.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-slate-200/60 shadow-2xs flex-shrink-0"
+          class="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer border border-slate-200/60 shadow-2xs"
           aria-label="Share vendor"
           title="Share vendor menu"
         >
-          <span class="text-sm">🔗</span>
+          <span class="text-base">🔗</span>
           <span>Share</span>
         </button>
 
-        <!-- 📞 Primary Call / WhatsApp Buttons -->
-        {showWhatsApp ? (
-          <>
-            <a
-              href={vendorTelLink}
-              class="flex-1 py-3 px-3 bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-800 rounded-2xl font-bold text-xs text-center transition-all flex items-center justify-center gap-1.5 border border-slate-200/60 shadow-2xs"
-              aria-label="Call vendor"
-            >
-              <span class="text-sm">📞</span>
-              <span>Call</span>
-            </a>
-
-            <a
-              href={vendorWhatsAppLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex-[1.5] py-3 px-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-98 text-white rounded-2xl font-extrabold text-xs text-center transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20"
-              aria-label={whatsAppLabel}
-            >
-              <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.194 1.871.18.51-.013 1.745-.87 2.014-1.762.27-.9.07-1.653-.599-2.185C18.918 15.288 17.787 14.532 17.472 14.382z"/>
-              </svg>
-              <span>{whatsAppLabel}</span>
-            </a>
-          </>
-        ) : (
+        {showWhatsApp && (
           <a
-            href={vendorTelLink}
-            class="flex-1 py-3 px-4 bg-gradient-to-r from-nitkkr-orange to-amber-600 hover:from-nitkkr-orange-dark hover:to-amber-700 active:scale-98 text-white rounded-2xl font-extrabold text-xs sm:text-sm text-center transition-all flex items-center justify-center gap-2 shadow-md shadow-nitkkr-orange/20 cursor-pointer"
-            aria-label="Call vendor"
+            href={vendorWhatsAppLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-11 h-11 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-95 text-white rounded-2xl flex items-center justify-center transition-all shadow-md shadow-emerald-500/20 flex-shrink-0"
+            aria-label={whatsAppLabel}
+            title={whatsAppLabel}
           >
-            <span class="text-base">📞</span>
-            <span>Call</span>
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.194 1.871.18.51-.013 1.745-.87 2.014-1.762.27-.9.07-1.653-.599-2.185C18.918 15.288 17.787 14.532 17.472 14.382z"/>
+            </svg>
           </a>
         )}
+
+        <!-- 3. 🔍 Expand Search Button (Icon Only in the last) -->
+        <button
+          type="button"
+          @click="searchExpanded = true; $nextTick(() => { const el = $refs.menuSearchInput; if (el) { el.focus(); } })"
+          class="w-11 h-11 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-2xl flex items-center justify-center transition-all cursor-pointer border border-slate-200/60 shadow-2xs flex-shrink-0"
+          aria-label="Search menu"
+          title="Search in menu"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
       </div>
+
 
       <!-- STATE 2: Expanded Full-Row Search Bar -->
       <div
