@@ -186,21 +186,7 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
               </button>
             )}
           </div>
-
-          <!-- Action Buttons: Call & Share -->
-          <div class="flex items-center gap-2 flex-shrink-0">
-            <a
-              href={vendorTelLink}
-              class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
-              aria-label="Call vendor"
-            >
-              <span>📞</span>
-              <span>Call</span>
-            </a>
-            <ShareButton url={shareUrl} title={shareTitle} text={shareText} />
-          </div>
         </div>
-
 
         {vendor.deliversTo && vendor.deliversTo.length > 0 && (
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
@@ -222,9 +208,20 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
         />
       )}
 
-      <!-- Modern Category Tabs and Dishes List -->
+      <!-- Modern Category Tabs and Dishes List with Unified Floating Dock -->
       {menuItems.length > 0 ? (
-        <CategoryTabs categories={categories} menuItems={menuItems} />
+        <CategoryTabs
+          categories={categories}
+          menuItems={menuItems}
+          vendorTelLink={vendorTelLink}
+          vendorDisplayPhone={vendorDisplayPhone}
+          vendorWhatsAppLink={vendorWhatsAppLink}
+          showWhatsApp={showWhatsApp}
+          whatsAppLabel={whatsAppLabel}
+          shareUrl={shareUrl}
+          shareTitle={shareTitle}
+          shareText={shareText}
+        />
       ) : (
         <div class="bg-white rounded-3xl border border-slate-100 p-10 text-center shadow-sm">
           <p class="text-4xl mb-3">🍱</p>
@@ -236,62 +233,6 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
 
     <!-- Reusable Student Review Modal -->
     <ReviewModal vendorReviews={vendorReviews} menuItems={menuItems} />
-
-
-
-
-    <!-- 📱 Sleek Floating Glassmorphism Action Bar -->
-    <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-bistro-200/80 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] pb-safe">
-      <div class="max-w-2xl mx-auto flex items-center gap-2">
-        {showWhatsApp ? (
-          <>
-            <a
-              href={vendorTelLink}
-              class="flex-1 py-3.5 px-4 bg-bistro-100 hover:bg-bistro-200 text-bistro-700 rounded-2xl font-bold text-sm text-center transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
-              aria-label="Call vendor"
-            >
-              <span class="text-base">📞</span>
-              <span>Call</span>
-            </a>
-
-            <!-- Share Button -->
-            <button
-              type="button"
-              @click="shareVendor()"
-              class="flex-1 py-3.5 px-4 bg-bistro-100 hover:bg-bistro-200 text-bistro-700 rounded-2xl font-bold text-sm text-center transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
-              aria-label="Share vendor"
-            >
-              <span class="text-base">🔗</span>
-              <span>Share</span>
-            </button>
-
-            <a
-              href={vendorWhatsAppLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex-[2.5] py-3.5 px-5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
-              aria-label={whatsAppLabel}
-            >
-              <svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.194 1.871.18.51-.013 1.745-.87 2.014-1.762.27-.9.07-1.653-.599-2.185C18.918 15.288 17.787 14.532 17.472 14.382z"/>
-              </svg>
-              <span>{whatsAppLabel}</span>
-            </a>
-          </>
-        ) : (
-          <div class="w-full flex items-center gap-2">
-            <a
-              href={vendorTelLink}
-              class="flex-1 py-3.5 px-6 bg-gradient-to-r from-bistro-500 to-bistro-600 hover:from-bistro-600 hover:to-bistro-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-bistro-500/25 active:scale-[0.98] cursor-pointer"
-              aria-label="Call vendor"
-            >
-              <span class="text-base">📞</span>
-              <span>Call Vendor ({vendorDisplayPhone})</span>
-            </a>
-          </div>
-        )}
-      </div>
-    </div>
 
   </section>
 </Layout>

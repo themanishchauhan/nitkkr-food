@@ -2,9 +2,28 @@
 interface Props {
   categories: Array<{ slug: string; name: string; icon?: string | null; [key: string]: any }>;
   menuItems: Array<{ categorySlug?: string | null; categoryName?: string | null; [key: string]: any }>;
+  vendorTelLink?: string;
+  vendorDisplayPhone?: string;
+  vendorWhatsAppLink?: string;
+  showWhatsApp?: boolean;
+  whatsAppLabel?: string;
+  shareUrl?: string;
+  shareTitle?: string;
+  shareText?: string;
   [key: string]: any;
 }
-const { categories, menuItems } = Astro.props;
+const {
+  categories,
+  menuItems,
+  vendorTelLink = '#',
+  vendorDisplayPhone = '',
+  vendorWhatsAppLink = '#',
+  showWhatsApp = false,
+  whatsAppLabel = 'Order on WhatsApp',
+  shareUrl = '',
+  shareTitle = 'NITKKR Food',
+  shareText = 'Check out this menu on NITKKR Food'
+} = Astro.props;
 ---
 
 <div
@@ -45,52 +64,39 @@ const { categories, menuItems } = Astro.props;
     openDetail(item) {
       this.selectedItem = item;
       this.showDetailModal = true;
+    },
+
+    async shareVendor() {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: '${shareTitle.replace(/'/g, "\\'")}',
+            text: '${shareText.replace(/'/g, "\\'")}',
+            url: '${shareUrl}'
+          });
+        } catch (e) {}
+      } else {
+        try {
+          await navigator.clipboard.writeText('${shareUrl}');
+          alert('Link copied to clipboard!');
+        } catch (e) {
+          prompt('Copy link:', '${shareUrl}');
+        }
+      }
     }
   }`}
   class="mb-8"
 >
-  <!-- Menu Header & In-Menu Search Bar -->
-  <div class="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-    <div>
-      <h2 class="font-display text-xl font-extrabold text-slate-900 flex items-center gap-2">
-        <span>🍽️</span>
-        <span>Menu</span>
-        <span class="text-sm font-bold text-slate-500 font-body">
-          (<span x-text="searchQuery.trim() ? displayedItems.length + ' of ' + totalCount : totalCount">{menuItems.length}</span>)
-        </span>
-      </h2>
-      <p class="text-xs text-slate-500 mt-0.5">Explore dishes, tap any dish to view ingredients & student reviews</p>
-    </div>
-
-    <!-- Integrated Search Input -->
-    <div class="relative w-full sm:w-64">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      </div>
-
-      <input
-        type="text"
-        x-model="searchQuery"
-        placeholder="Search in menu..."
-        class="w-full pl-9 pr-8 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20 shadow-2xs transition-all"
-        aria-label="Search dishes in menu"
-      />
-
-      <button
-        type="button"
-        x-show="searchQuery.length > 0"
-        x-cloak
-        @click="searchQuery = ''"
-        class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer"
-        aria-label="Clear search"
-      >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
+  <!-- Menu Header -->
+  <div class="mb-4">
+    <h2 class="font-display text-xl font-extrabold text-slate-900 flex items-center gap-2">
+      <span>🍽️</span>
+      <span>Menu</span>
+      <span class="text-sm font-bold text-slate-500 font-body">
+        (<span x-text="searchQuery.trim() ? displayedItems.length + ' of ' + totalCount : totalCount">{menuItems.length}</span>)
+      </span>
+    </h2>
+    <p class="text-xs text-slate-500 mt-0.5">Explore dishes, tap any dish to view ingredients & student reviews</p>
   </div>
 
   <!-- Horizontal Category Tabs -->
@@ -120,7 +126,7 @@ const { categories, menuItems } = Astro.props;
   </div>
 
   <!-- Minimalist & Clutter-Free Menu Items List -->
-  <div class="space-y-2.5">
+  <div class="space-y-2.5 pb-28">
     <template x-for="item in displayedItems" :key="item.id">
       <div
         x-transition:enter="transition ease-out duration-150"
@@ -292,5 +298,89 @@ const { categories, menuItems } = Astro.props;
 
       </div>
     </template>
+  </div>
+
+  <!-- 📱 Sleek Floating Glassmorphic Bottom Dock (Search + Share + Call) -->
+  <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 px-4 py-3 shadow-[0_-10px_30px_rgba(0,0,0,0.08)]">
+    <div class="max-w-2xl mx-auto space-y-2.5">
+      
+      <!-- In-Menu Real-Time Search Bar -->
+      <div class="relative w-full">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input
+          type="text"
+          x-model="searchQuery"
+          placeholder="Search dishes (e.g. chai, maggi, noodles, paratha)..."
+          class="w-full pl-9.5 pr-8 py-2 text-xs bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20 shadow-2xs transition-all"
+          aria-label="Search dishes in menu"
+        />
+        <button
+          type="button"
+          x-show="searchQuery.length > 0"
+          x-cloak
+          @click="searchQuery = ''"
+          class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer"
+          aria-label="Clear search"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Action Buttons Row: Share + Call / WhatsApp -->
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          @click="shareVendor()"
+          class="py-3 px-4 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-slate-200/60 shadow-2xs flex-shrink-0"
+          aria-label="Share vendor"
+          title="Share vendor menu"
+        >
+          <span class="text-sm">🔗</span>
+          <span>Share</span>
+        </button>
+
+        {showWhatsApp ? (
+          <>
+            <a
+              href={vendorTelLink}
+              class="flex-1 py-3 px-3 bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-800 rounded-2xl font-bold text-xs text-center transition-all flex items-center justify-center gap-1.5 border border-slate-200/60 shadow-2xs"
+              aria-label="Call vendor"
+            >
+              <span class="text-sm">📞</span>
+              <span>Call</span>
+            </a>
+
+            <a
+              href={vendorWhatsAppLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex-[2] py-3 px-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-98 text-white rounded-2xl font-extrabold text-xs text-center transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20"
+              aria-label={whatsAppLabel}
+            >
+              <svg class="w-4 h-4 fill-current flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.194 1.871.18.51-.013 1.745-.87 2.014-1.762.27-.9.07-1.653-.599-2.185C18.918 15.288 17.787 14.532 17.472 14.382z"/>
+              </svg>
+              <span>{whatsAppLabel}</span>
+            </a>
+          </>
+        ) : (
+          <a
+            href={vendorTelLink}
+            class="flex-1 py-3 px-4 bg-gradient-to-r from-nitkkr-orange to-amber-600 hover:from-nitkkr-orange-dark hover:to-amber-700 active:scale-98 text-white rounded-2xl font-extrabold text-xs sm:text-sm text-center transition-all flex items-center justify-center gap-2 shadow-md shadow-nitkkr-orange/20 cursor-pointer"
+            aria-label="Call vendor"
+          >
+            <span class="text-base">📞</span>
+            <span>Call Vendor ({vendorDisplayPhone})</span>
+          </a>
+        )}
+      </div>
+
+    </div>
   </div>
 </div>
