@@ -2,41 +2,57 @@
 interface Props {
   categories: Array<{ slug: string; name: string; icon?: string | null; [key: string]: any }>;
   menuItems: Array<{ categorySlug?: string | null; categoryName?: string | null; [key: string]: any }>;
-  [key: string]: any;
+  stallSearchQuery?: string;
 }
-const { categories, menuItems } = Astro.props;
+const { categories, menuItems, stallSearchQuery = '' } = Astro.props;
 ---
 
 <div
   x-data={`{
     activeCat: 'all',
+    stallSearchQuery: '${stallSearchQuery}',
     categories: ${JSON.stringify(categories)},
     menuItems: ${JSON.stringify(menuItems)},
     selectedItem: null,
     showDetailModal: false,
+    get filteredMenuItems() {
+      let list = this.menuItems;
+      if (this.activeCat !== 'all') {
+        list = list.filter(i => i.categorySlug === this.activeCat);
+      }
+      if (this.stallSearchQuery.trim()) {
+        const q = this.stallSearchQuery.toLowerCase();
+        list = list.filter(item => 
+          (item.name && item.name.toLowerCase().includes(q)) ||
+          (item.description && item.description.toLowerCase().includes(q)) ||
+          (item.tags && item.tags.some(t => t.toLowerCase().includes(q)))
+        );
+      }
+      return list;
+    },
     openDetail(item) {
       this.selectedItem = item;
       this.showDetailModal = true;
     }
   }`}
-  class="mb-6"
+  class="mb-8"
 >
   <!-- Horizontal Category Tabs -->
-  <div class="flex gap-2 overflow-x-auto pb-3 mb-4 -mx-4 px-4 scrollbar-none" role="tablist" aria-label="Menu categories">
+  <div class="flex gap-2 overflow-x-auto pb-3 mb-5 px-4 sm:px-0 scrollbar-none" role="tablist" aria-label="Menu categories">
     <button
       @click="activeCat='all'"
-      :class="activeCat==='all' ? 'bg-nitkkr-orange text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 font-medium'"
-      class="px-4 py-2 rounded-full text-xs whitespace-nowrap transition-all duration-200 cursor-pointer"
+      :class="activeCat==='all' ? 'bg-bistro-500 text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-bistro-200 font-medium'"
+      class="px-4 py-2.5 rounded-full text-xs whitespace-nowrap transition-all duration-200 cursor-pointer"
       role="tab"
       :aria-selected="activeCat==='all'"
     >
-      All ({menuItems.length})
+      All (<span x-text="filteredMenuItems.length"></span>)
     </button>
     <template x-for="cat in categories" :key="cat.slug">
       <button
         @click="activeCat=cat.slug"
-        :class="activeCat===cat.slug ? 'bg-nitkkr-orange text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 font-medium'"
-        class="px-4 py-2 rounded-full text-xs whitespace-nowrap transition-all duration-200 cursor-pointer flex items-center gap-1"
+        :class="activeCat===cat.slug ? 'bg-bistro-500 text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-bistro-200 font-medium'"
+        class="px-4 py-2.5 rounded-full text-xs whitespace-nowrap transition-all duration-200 cursor-pointer flex items-center gap-1"
         role="tab"
         :aria-selected="activeCat===cat.slug"
       >

@@ -64,33 +64,45 @@ function cleanWhatsAppHref(phone?: string, text?: string): string {
   return `https://wa.me/${fullPhone}${query}`;
 }
 
-const formattedHours = `${formatTime12h(vendor.opensAt)} – ${formatTime12h(vendor.closesAt)}`;
-const vendorTelLink = cleanTelHref(vendor.phone);
-const vendorDisplayPhone = cleanDisplayPhone(vendor.phone);
-const vendorWhatsAppLink = cleanWhatsAppHref(vendor.whatsapp || vendor.phone, msgTemplate);
-
 const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 const adEnabled = settingsObj.ad_banner_enabled === 'true';
 const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && settingsObj.show_whatsapp_button !== 'false';
 const whatsAppLabel = settingsObj.whatsapp_button_label || 'Order on WhatsApp';
+const msgTemplate = (settingsObj.whatsapp_msg_template || `Hi ${vendor.name}! I'd like to check menu availability from NITKKR Food.`).replace('{vendor_name}', vendor.name);
+
+const formattedHours = `${formatTime12h(vendor.opensAt)} – ${formatTime12h(vendor.closesAt)}`;
+const vendorTelLink = cleanTelHref(vendor.phone);
+const vendorDisplayPhone = cleanDisplayPhone(vendor.phone);
+const vendorWhatsAppLink = cleanWhatsAppHref(vendor.whatsapp || vendor.phone, msgTemplate);
+
+let deliversToList: string[] = [];
+if (Array.isArray(vendor.deliversTo)) {
+  deliversToList = vendor.deliversTo;
+} else if (typeof vendor.deliversTo === 'string') {
+  try {
+    deliversToList = JSON.parse(vendor.deliversTo);
+  } catch (e) {
+    deliversToList = vendor.deliversTo.split(',').map((s: string) => s.trim()).filter(Boolean);
+  }
+}
 
 const shareUrl = new URL(`/v/${vendor.slug}`, Astro.site).href;
 const shareTitle = `${vendor.name} - NITKKR Food`;
 const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length} dishes available, opens ${formattedHours}`;
 ---
 
-
 <Layout
   title={`${vendor.name} - NITKKR Food`}
-  description={`${menuItems.length} items • ${formattedHours} • ${vendor.deliversTo.join(', ')}`}
+  description={`${menuItems.length} items • ${formattedHours}${deliversToList.length > 0 ? ' • ' + deliversToList.join(', ') : ''}`}
   ogImage={vendor.image || '/og-default.jpg'}
   ogUrl={shareUrl}
 >
   <section class="min-h-screen bg-slate-50 pb-32">
     <!-- Immersive Cover Photo Hero -->
     <div class="relative w-full h-56 sm:h-72 bg-neutral-900 overflow-hidden">
+
       <img
         src={vendor.image || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&auto=format&fit=crop&q=80'}
         alt={vendor.name}
@@ -190,25 +202,40 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
         )}
       </div>
 
-      <!-- Menu Section Header -->
-      <div class="mb-4 flex items-center justify-between">
+      <!-- Menu Section Header with Within-Stall Search -->
+      <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 class="font-display text-xl font-extrabold text-slate-900 flex items-center gap-2">
-            <span>🍽️</span> Menu ({menuItems.length})
+            <span>🍽️</span> Menu (<span x-text="filteredMenuItems.length"></span>)
           </h2>
           <p class="text-xs text-slate-500 mt-0.5">Explore dishes, tap ratings to read student reviews or leave feedback</p>
         </div>
 
-        {vendorReviewCount > 0 && (
-          <button
+        <!-- Within-Stall Search -->
+        <div class="relative w-full sm:w-64">
+          <input 
+            type="search" 
+            x-model="stallSearchQuery"
+            placeholder="Search menu..."
+            class="w-full px-4 py-2.5 pr-10 text-sm bg-bistro-50 border border-bistro-200 rounded-xl
+                   focus:outline-none focus:border-bistro-400 focus:ring-2 focus:ring-bistro-400/20
+                   placeholder:text-nitkkr-gray"
+            aria-label="Search within menu"
+          />
+          <button 
             type="button"
-            onclick={`window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: null, name: 'All Dishes', mode: 'read' } }))`}
-            class="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+            @click="stallSearchQuery = ''"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-nitkkr-gray hover:text-bistro-500"
+            aria-label="Clear search"
           >
-            <span>💬</span>
-            <span>{vendorReviewCount} Reviews</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
-        )}
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-nitkkr-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
       </div>
 
       <!-- In-Menu Campus Ad / Sponsor Section -->
@@ -225,7 +252,7 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
 
       <!-- Modern Category Tabs and Dishes List -->
       {menuItems.length > 0 ? (
-        <CategoryTabs categories={categories} menuItems={menuItems} />
+        <CategoryTabs categories={categories} menuItems={menuItems} stallSearchQuery="" />
       ) : (
 
         <div class="bg-white rounded-3xl border border-slate-100 p-10 text-center shadow-sm">
@@ -242,24 +269,35 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
 
 
     <!-- 📱 Sleek Floating Glassmorphism Action Bar -->
-    <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-xl border-t border-slate-200/80 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-      <div class="max-w-2xl mx-auto flex items-center gap-3">
+    <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-bistro-200/80 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] pb-safe">
+      <div class="max-w-2xl mx-auto flex items-center gap-2">
         {showWhatsApp ? (
           <>
             <a
               href={vendorTelLink}
-              class="flex-1 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl font-bold text-sm text-center transition-all flex items-center justify-center gap-2 active:scale-98"
+              class="flex-1 py-3.5 px-4 bg-bistro-100 hover:bg-bistro-200 text-bistro-700 rounded-2xl font-bold text-sm text-center transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
               aria-label="Call vendor"
             >
               <span class="text-base">📞</span>
               <span>Call</span>
             </a>
 
+            <!-- Share Button -->
+            <button
+              type="button"
+              @click="shareVendor()"
+              class="flex-1 py-3.5 px-4 bg-bistro-100 hover:bg-bistro-200 text-bistro-700 rounded-2xl font-bold text-sm text-center transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+              aria-label="Share vendor"
+            >
+              <span class="text-base">🔗</span>
+              <span>Share</span>
+            </button>
+
             <a
               href={vendorWhatsAppLink}
               target="_blank"
               rel="noopener noreferrer"
-              class="flex-[2.5] py-3.5 px-5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 active:scale-98"
+              class="flex-[2.5] py-3.5 px-5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
               aria-label={whatsAppLabel}
             >
               <svg class="w-5 h-5 fill-current flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -269,10 +307,10 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
             </a>
           </>
         ) : (
-          <div class="w-full flex items-center gap-3">
+          <div class="w-full flex items-center gap-2">
             <a
               href={vendorTelLink}
-              class="flex-1 py-3.5 px-6 bg-gradient-to-r from-nitkkr-orange to-amber-600 hover:from-nitkkr-orange-dark hover:to-amber-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-nitkkr-orange/25 active:scale-98 cursor-pointer"
+              class="flex-1 py-3.5 px-6 bg-gradient-to-r from-bistro-500 to-bistro-600 hover:from-bistro-600 hover:to-bistro-700 text-white rounded-2xl font-extrabold text-sm text-center transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-bistro-500/25 active:scale-[0.98] cursor-pointer"
               aria-label="Call vendor"
             >
               <span class="text-base">📞</span>
