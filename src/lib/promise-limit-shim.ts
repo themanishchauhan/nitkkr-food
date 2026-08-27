@@ -1,6 +1,6 @@
-// Shim for promise-limit@2.7.0 to provide default export
+// @ts-ignore
 import promiseLimit from 'promise-limit';
 
-// Re-export with default export
 export default promiseLimit;
+// @ts-ignore
 export { promiseLimit } from 'promise-limit';

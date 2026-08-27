@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { verifySessionToken } from './lib/auth';
 import { createDb, setActiveD1 } from './lib/db';
+// @ts-ignore
 import { env } from 'cloudflare:workers';
 
 export const onRequest = defineMiddleware(async (context, next) => {

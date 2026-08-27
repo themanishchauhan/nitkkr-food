@@ -126,10 +126,11 @@ if (settingsObj.vibe_chips_json) {
         </div>
 
         <div class="space-y-3">
-          {vendorsWithStatus.map(v => (
+          {vendorsWithStatus.map((v: any) => (
             <VendorCard vendor={v} isOpen={v.isOpen} />
           ))}
         </div>
+
       </div>
 
     </div>

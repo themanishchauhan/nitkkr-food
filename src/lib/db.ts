@@ -1,6 +1,8 @@
 import { drizzle as drizzleD1 } from 'drizzle-orm/d1';
+// @ts-ignore
 import type { D1Database } from '@cloudflare/workers-types';
 import * as schema from './schema';
+// @ts-ignore
 import { env as cfEnv } from 'cloudflare:workers';
 
 export { schema };

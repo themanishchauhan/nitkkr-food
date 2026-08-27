@@ -329,11 +329,11 @@ export async function getMenuItemsWithReviewStats(vendorId: number) {
     const items = await getMenuItemsByVendor(vendorId);
     const vendorReviews = await getReviewsByVendor(vendorId);
 
-    return items.map(item => {
-      const itemReviews = vendorReviews.filter(r => r.menuItemId === item.id);
+    return items.map((item: any) => {
+      const itemReviews = vendorReviews.filter((r: any) => r.menuItemId === item.id);
       const reviewCount = itemReviews.length;
       const avgRating = reviewCount > 0
-        ? (itemReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewCount).toFixed(1)
+        ? (itemReviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / reviewCount).toFixed(1)
         : null;
       return {
         ...item,
@@ -342,6 +342,7 @@ export async function getMenuItemsWithReviewStats(vendorId: number) {
         recentReviews: itemReviews.slice(0, 5)
       };
     });
+
   } catch (e) {
     return [];
   }
