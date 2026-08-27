@@ -10,9 +10,9 @@ const { category } = Astro.props;
 ---
 <a
   href={`/search?category=${category.slug}`}
-  class="bg-white p-4 sm:p-5 rounded-2xl border border-bistro-200 text-center
-         hover:border-bistro-400 hover:shadow-lg active:scale-[0.98] transition-all duration-200 flex flex-col items-center justify-center min-w-[80px] sm:min-w-0"
+  class="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/90 text-center
+         hover:border-nitkkr-orange hover:shadow-md active:scale-95 transition-all duration-150 flex flex-col items-center justify-center min-w-[72px] sm:min-w-0 shadow-2xs group"
 >
-  <span class="text-2xl sm:text-3xl block mb-1" aria-hidden="true">{category.icon}</span>
-  <span class="font-bold text-xs sm:text-sm text-nitkkr-dark leading-tight line-clamp-2">{category.name}</span>
+  <span class="text-2xl sm:text-3xl block mb-1 group-hover:scale-110 transition-transform duration-200" aria-hidden="true">{category.icon}</span>
+  <span class="font-bold text-[11px] sm:text-xs text-slate-800 leading-tight line-clamp-2">{category.name}</span>
 </a>
