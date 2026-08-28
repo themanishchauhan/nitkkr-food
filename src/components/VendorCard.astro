@@ -1,61 +1,50 @@
 ---
+import { formatOperatingHours } from '../lib/utils';
+
 interface Props {
   vendor: {
     id: number;
     name: string;
     slug: string;
     image?: string | null;
-    deliversTo: string[];
-    opensAt: string;
-    closesAt: string;
+    deliversTo?: string[] | null;
+    opensAt?: string | null;
+    closesAt?: string | null;
     minPrice?: number | null;
   };
   isOpen?: boolean;
 }
-const { vendor, isOpen } = Astro.props;
 
-function formatTime12h(timeStr?: string): string {
-  if (!timeStr) return '';
-  const parts = timeStr.trim().split(':');
-  if (parts.length < 2) return timeStr;
-  let h = parseInt(parts[0], 10);
-  const m = parts[1];
-  if (isNaN(h)) return timeStr;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12;
-  h = h ? h : 12;
-  return `${h}:${m} ${ampm}`;
-}
-
-const formattedHours = `${formatTime12h(vendor.opensAt)} – ${formatTime12h(vendor.closesAt)}`;
+const { vendor, isOpen = false } = Astro.props;
+const formattedHours = formatOperatingHours(vendor.opensAt, vendor.closesAt);
 ---
+
 <a
   href={`/v/${vendor.slug}`}
-  class="flex items-center gap-4 bg-white p-4 rounded-2xl border border-bistro-200
-         hover:border-bistro-400 hover:shadow-lg transition-all duration-200 group"
+  class="flex items-center gap-3.5 bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90
+         hover:border-nitkkr-orange hover:shadow-md active:scale-[0.99] transition-all duration-200 group shadow-2xs"
 >
   <img
     src={vendor.image || '/placeholder-vendor.svg'}
-    alt=""
-    class="w-16 h-16 rounded-xl object-cover flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-bistro-200"
+    alt={vendor.name}
+    class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-slate-100 bg-slate-50"
     loading="lazy"
   />
   <div class="flex-1 min-w-0">
     <div class="flex items-center gap-2">
-      <p class="font-bold text-sm sm:text-base truncate text-slate-900 group-hover:text-bistro-600 transition-colors">{vendor.name}</p>
-      <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950">★ 4.8</span>
+      <p class="font-bold text-sm sm:text-base truncate text-slate-900 group-hover:text-nitkkr-orange transition-colors">{vendor.name}</p>
     </div>
     <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
       <span
-        class={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}
+        class={`w-2 h-2 rounded-full flex-shrink-0 ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}
         aria-hidden="true"
       ></span>
       <span class="truncate font-medium">{isOpen ? 'Open Now' : 'Closed'} • {formattedHours}</span>
     </p>
   </div>
   {typeof vendor.minPrice === 'number' && vendor.minPrice > 0 ? (
-    <span class="text-bistro-600 font-extrabold text-sm sm:text-base whitespace-nowrap">From ₹{vendor.minPrice}</span>
+    <span class="text-nitkkr-orange font-extrabold text-sm sm:text-base whitespace-nowrap">From ₹{Math.round(vendor.minPrice)}</span>
   ) : (
-    <span class="text-slate-400 font-bold text-xs whitespace-nowrap group-hover:text-bistro-600 transition-colors">View Menu →</span>
+    <span class="text-slate-400 font-bold text-xs whitespace-nowrap group-hover:text-nitkkr-orange transition-colors">View Menu →</span>
   )}
 </a>

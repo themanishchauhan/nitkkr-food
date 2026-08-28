@@ -1,8 +1,9 @@
 import type { APIRoute } from 'astro';
 import { createDb, schema } from '../../../lib/db';
-import { eq, desc, sql, and, gte } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { authenticateAdminRequest } from '../../../lib/auth';
 import { getReviewsByMenuItem, createReview } from '../../../lib/queries';
+import { checkRateLimit, getClientIp } from '../../../lib/rate-limit';
 
 export const prerender = false;
 
@@ -66,6 +67,15 @@ export const GET: APIRoute = async ({ url }) => {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    const ip = getClientIp(request);
+    const rateLimit = checkRateLimit(`review:${ip}`, { limit: 10, windowSeconds: 300 });
+    if (!rateLimit.success) {
+      return new Response(JSON.stringify({ error: 'You are submitting reviews too fast. Please wait a few minutes.' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await request.json();
     const { menuItemId, studentName, rating, comment } = body;
 

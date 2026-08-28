@@ -5,7 +5,7 @@ import CategoryTabs from '../../components/CategoryTabs.astro';
 import AdBanner from '../../components/AdBanner.astro';
 import ReviewModal from '../../components/ReviewModal.astro';
 import { getVendorBySlug, getMenuItemsWithReviewStats, getReviewsByVendor, getCategories, isVendorOpenNow, getAllSiteSettings } from '../../lib/queries';
-
+import { formatOperatingHours, cleanTelHref, cleanDisplayPhone, cleanWhatsAppHref, formatRating } from '../../lib/utils';
 
 const { slug } = Astro.params;
 const vendor = await getVendorBySlug(slug as string);
@@ -20,48 +20,8 @@ const isOpen = isVendorOpenNow(vendor.opensAt, vendor.closesAt);
 const vendorReviews = await getReviewsByVendor(vendor.id);
 const vendorReviewCount = vendorReviews.length;
 const vendorAvgRating = vendorReviewCount > 0
-  ? (vendorReviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / vendorReviewCount).toFixed(1)
+  ? formatRating(vendorReviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / vendorReviewCount)
   : null;
-
-
-function formatTime12h(timeStr?: string): string {
-  if (!timeStr) return '';
-  const parts = timeStr.trim().split(':');
-  if (parts.length < 2) return timeStr;
-  let h = parseInt(parts[0], 10);
-  const m = parts[1];
-  if (isNaN(h)) return timeStr;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12;
-  h = h ? h : 12;
-  return `${h}:${m} ${ampm}`;
-}
-
-function cleanTelHref(phone?: string): string {
-  if (!phone) return '#';
-  const digits = phone.replace(/[^0-9]/g, '');
-  if (digits.length === 10) return `tel:+91${digits}`;
-  if (digits.length > 10 && digits.startsWith('91')) return `tel:+${digits}`;
-  return `tel:+91${digits.slice(-10)}`;
-}
-
-function cleanDisplayPhone(phone?: string): string {
-  if (!phone) return '';
-  const digits = phone.replace(/[^0-9]/g, '');
-  const last10 = digits.slice(-10);
-  if (last10.length === 10) {
-    return `+91 ${last10.slice(0, 5)} ${last10.slice(5)}`;
-  }
-  return phone;
-}
-
-function cleanWhatsAppHref(phone?: string, text?: string): string {
-  if (!phone) return '#';
-  const digits = phone.replace(/[^0-9]/g, '');
-  const fullPhone = digits.length === 10 ? `91${digits}` : (digits.startsWith('91') ? digits : `91${digits.slice(-10)}`);
-  const query = text ? `?text=${encodeURIComponent(text)}` : '';
-  return `https://wa.me/${fullPhone}${query}`;
-}
 
 const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
@@ -71,10 +31,11 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 const whatsAppLabel = settingsObj.whatsapp_button_label || 'Order on WhatsApp';
 const msgTemplate = (settingsObj.whatsapp_msg_template || `Hi ${vendor.name}! I'd like to check menu availability from NITKKR Food.`).replace('{vendor_name}', vendor.name);
 
-const formattedHours = `${formatTime12h(vendor.opensAt)} – ${formatTime12h(vendor.closesAt)}`;
+const formattedHours = formatOperatingHours(vendor.opensAt, vendor.closesAt);
 const vendorTelLink = cleanTelHref(vendor.phone);
 const vendorDisplayPhone = cleanDisplayPhone(vendor.phone);
 const vendorWhatsAppLink = cleanWhatsAppHref(vendor.whatsapp || vendor.phone, msgTemplate);
+
 
 let deliversToList: string[] = [];
 if (Array.isArray(vendor.deliversTo)) {
@@ -103,10 +64,11 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
     <div class="relative w-full h-56 sm:h-72 bg-neutral-900 overflow-hidden">
 
       <img
-        src={vendor.image || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&auto=format&fit=crop&q=80'}
+        src={vendor.image || '/og-default.jpg'}
         alt={vendor.name}
         class="w-full h-full object-cover opacity-80 filter brightness-90 transform scale-105 transition-transform duration-700"
       />
+
       <!-- Gradient Overlay -->
       <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/40"></div>
 

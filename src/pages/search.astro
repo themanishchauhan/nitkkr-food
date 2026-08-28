@@ -156,17 +156,21 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         isVendorOpen(opensAt, closesAt) {
           if (!opensAt || !closesAt) return true;
           try {
-            var now = new Date();
-            var ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-            var current = ('0' + ist.getHours()).slice(-2) + ':' + ('0' + ist.getMinutes()).slice(-2);
-            if (opensAt > closesAt) {
-              return current >= opensAt || current <= closesAt;
-            }
-            return current >= opensAt && current <= closesAt;
+            var istFormatter = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
+            var parts = istFormatter.format(new Date()).split(':');
+            var curTotal = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+            var oParts = opensAt.split(':');
+            var cParts = closesAt.split(':');
+            var openTotal = parseInt(oParts[0], 10) * 60 + parseInt(oParts[1], 10);
+            var closeTotal = parseInt(cParts[0], 10) * 60 + parseInt(cParts[1], 10);
+            if (openTotal < closeTotal) return curTotal >= openTotal && curTotal < closeTotal;
+            if (openTotal > closeTotal) return curTotal >= openTotal || curTotal < closeTotal;
+            return true;
           } catch (e) {
             return true;
           }
         },
+
 
         get filteredVendors() {
           if (!this.query.trim()) {

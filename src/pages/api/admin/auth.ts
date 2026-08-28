@@ -1,12 +1,26 @@
 import type { APIRoute } from 'astro';
 import { createSessionToken, verifySessionToken, verifyAdminCredentials } from '../../../lib/auth';
+import { checkRateLimit, getClientIp } from '../../../lib/rate-limit';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
+    const ip = getClientIp(request);
+    const rateLimit = checkRateLimit(`login:${ip}`, { limit: 5, windowSeconds: 60 });
+    if (!rateLimit.success) {
+      return new Response(JSON.stringify({ error: 'Too many login attempts. Please try again in 1 minute.' }), {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(rateLimit.reset - Math.floor(Date.now() / 1000)),
+        },
+      });
+    }
+
     const body = await request.json();
     const { username, password, pin } = body;
+
 
     if (!username?.trim() || !password?.trim()) {
       return new Response(JSON.stringify({ error: 'Username and password required' }), {
