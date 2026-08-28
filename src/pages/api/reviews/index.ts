@@ -65,7 +65,7 @@ export const GET: APIRoute = async ({ url }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const ip = getClientIp(request);
     const rateLimit = checkRateLimit(`review:${ip}`, { limit: 10, windowSeconds: 300 });
@@ -109,7 +109,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // 2. Server-Side Deduplication Check (SEC-4)
-    const db = createDb();
+    const db = locals.db || createDb();
     const existingRecent = await db.select({ id: schema.reviews.id })
       .from(schema.reviews)
       .where(and(
@@ -118,7 +118,7 @@ export const POST: APIRoute = async ({ request }) => {
       ))
       .limit(1);
 
-    if (existingRecent.length > 0) {
+    if (existingRecent && existingRecent.length > 0) {
       return new Response(JSON.stringify({ error: 'A review with this name for this dish already exists.' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -138,7 +138,7 @@ export const POST: APIRoute = async ({ request }) => {
       studentName: cleanedName,
       rating: parsedRating,
       comment: typeof comment === 'string' ? comment.trim().slice(0, 500) : undefined,
-    });
+    }, db);
 
     const updatedReviewed = [...new Set([...reviewedItems, String(parsedItemId)])].join(',');
     const setCookie = `nitkkr_reviewed_items=${updatedReviewed}; Max-Age=2592000; Path=/; SameSite=Lax`;
@@ -150,14 +150,15 @@ export const POST: APIRoute = async ({ request }) => {
         'Set-Cookie': setCookie,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Submit review error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to submit review' }), {
+    return new Response(JSON.stringify({ error: error?.message || 'Failed to submit review' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 };
+
 
 export const DELETE: APIRoute = async ({ request, url }) => {
   const admin = await authenticateAdminRequest(request);

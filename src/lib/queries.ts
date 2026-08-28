@@ -605,9 +605,9 @@ export async function createReview(data: {
   studentName: string;
   rating: number;
   comment?: string;
-}) {
+}, dbInstance?: any) {
   try {
-    const db = createDb();
+    const db = dbInstance || createDb();
     const [review] = await db.insert(schema.reviews).values({
       menuItemId: data.menuItemId,
       studentName: data.studentName.trim(),
@@ -620,6 +620,7 @@ export async function createReview(data: {
     throw error;
   }
 }
+
 
 export async function getReviewsByMenuItem(menuItemId: number) {
   try {

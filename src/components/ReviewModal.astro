@@ -80,23 +80,33 @@ const reviewsData = vendorReviews || stallReviews || [];
             comment: this.comment.trim() || undefined
           })
         });
-        const data = await res.json();
+
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          data = { error: 'Server returned error ' + res.status };
+        }
+
         if (res.ok && data.success) {
           this.submitted = true;
-          this.reviewsList.unshift(data.review);
+          if (data.review) {
+            this.reviewsList.unshift(data.review);
+          }
           setTimeout(() => {
             this.submitted = false;
             this.activeTab = 'read';
-          }, 1500);
+          }, 1200);
         } else {
-          this.error = data.error || 'Failed to submit review. Try again.';
+          this.error = data.error || ('Failed with status ' + res.status);
         }
-      } catch (err) {
-        this.error = 'Network error. Please try again.';
+      } catch (err: any) {
+        this.error = err?.message || 'Network error. Please try again.';
       } finally {
         this.loading = false;
       }
     }
+
   }`}
   x-show="showModal"
   x-cloak
