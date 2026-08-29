@@ -5,13 +5,13 @@ interface Props {
 
 const defaultChips = [
   { label: 'Under ₹50', icon: '💸', href: '/search?maxPrice=50', isEnabled: true },
-  { label: 'Chowmein & Noodles', icon: '🥢', href: '/search?q=chowmein', isEnabled: true },
-  { label: 'Paneer Dishes', icon: '🧈', href: '/search?q=paneer', isEnabled: true },
-  { label: 'Rolls & Wraps', icon: '🌯', href: '/search?q=roll', isEnabled: true },
-  { label: 'Maggi & Pasta', icon: '🧀', href: '/search?q=maggi', isEnabled: true },
-  { label: 'Cold Shakes & Coffee', icon: '🥤', href: '/search?category=beverages', isEnabled: true },
   { label: 'Pure Veg', icon: '🌱', href: '/search?isVeg=true', isEnabled: true },
-  { label: 'Chicken & Non-Veg', icon: '🍗', href: '/search?isVeg=false', isEnabled: true },
+  { label: 'Non-Veg', icon: '🍗', href: '/search?isVeg=false', isEnabled: true },
+  { label: 'Chowmein', icon: '🥢', href: '/search?q=chowmein', isEnabled: true },
+  { label: 'Paneer', icon: '🧈', href: '/search?q=paneer', isEnabled: true },
+  { label: 'Rolls & Wraps', icon: '🌯', href: '/search?q=roll', isEnabled: true },
+  { label: 'Maggi', icon: '🧀', href: '/search?q=maggi', isEnabled: true },
+  { label: 'Cold Shakes & Coffee', icon: '🥤', href: '/search?category=beverages', isEnabled: true },
 ];
 
 const { chips = defaultChips } = Astro.props;
@@ -24,14 +24,14 @@ const activeChips = rawChips.map(c => ({
 }));
 ---
 
-<div class="grid grid-rows-2 grid-flow-col auto-cols-max gap-2 overflow-x-auto pb-1 scrollbar-none" role="group" aria-label="Quick student filters">
+<div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none" role="group" aria-label="Quick student filters">
   {activeChips.map(chip => (
     <a
       href={chip.href}
-      class="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-white border border-slate-200 text-slate-800 rounded-full text-xs font-semibold
-             hover:bg-amber-50/60 hover:border-nitkkr-orange hover:text-nitkkr-orange transition-all duration-150 flex items-center gap-1.5 whitespace-nowrap active:scale-95 shadow-2xs"
+      class="px-2.5 py-1 bg-white border border-slate-200/90 text-slate-700 rounded-full text-xs font-semibold
+             hover:bg-amber-50/80 hover:border-nitkkr-orange hover:text-nitkkr-orange transition-all duration-150 flex items-center gap-1 whitespace-nowrap active:scale-95 shadow-2xs"
     >
-      {chip.icon && <span aria-hidden="true">{chip.icon}</span>}
+      {chip.icon && <span class="text-xs" aria-hidden="true">{chip.icon}</span>}
       <span>{chip.label}</span>
     </a>
   ))}
