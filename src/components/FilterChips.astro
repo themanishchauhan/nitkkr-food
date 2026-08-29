@@ -24,7 +24,7 @@ const activeChips = rawChips.map(c => ({
 }));
 ---
 
-<div class="grid grid-rows-2 grid-flow-col auto-cols-max gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none" role="group" aria-label="Quick student filters">
+<div class="grid grid-rows-2 grid-flow-col auto-cols-max gap-2 overflow-x-auto pb-1 scrollbar-none" role="group" aria-label="Quick student filters">
   {activeChips.map(chip => (
     <a
       href={chip.href}
