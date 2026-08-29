@@ -1,0 +1,181 @@
+---
+/**
+ * Modern Deals & Offers Carousel for NITKKR Food
+ * Auto-playing, swipe-friendly, and responsive for mobile
+ */
+
+interface Deal {
+  id: string;
+  badge: string;
+  title: string;
+  description: string;
+  vendorName: string;
+  ctaText: string;
+  link: string;
+  bgGradient: string;
+  icon: string;
+}
+
+const defaultDeals: Deal[] = [
+  {
+    id: 'deal-1',
+    badge: '🔥 TODAY\'S CAMPUS DEAL',
+    title: 'Free Hostel Delivery on ₹149+',
+    description: 'Direct delivery to H-1 to H-10, DBH & Kalpana Bhawan till 2:00 AM!',
+    vendorName: 'Food Cave Fast Food',
+    ctaText: 'Order Now →',
+    link: '/v/food-cave',
+    bgGradient: 'from-orange-600 via-amber-600 to-rose-600',
+    icon: '🛵'
+  },
+  {
+    id: 'deal-2',
+    badge: '⚡ STUDENT SPECIAL',
+    title: 'Butter Maggi + Hot Chai @ ₹59',
+    description: 'Perfect evening study snack! Freshly prepared in 10 mins.',
+    vendorName: 'Campus Specials',
+    ctaText: 'View Deal →',
+    link: '/search?q=maggi',
+    bgGradient: 'from-emerald-700 via-teal-700 to-cyan-800',
+    icon: '🍜'
+  },
+  {
+    id: 'deal-3',
+    badge: '🎉 15% STUDENT DISCOUNT',
+    title: 'Buy 2 Paneer Rolls & Save 15%',
+    description: 'Hot grilled rolls with extra paneer & mint sauce. Show NIT ID.',
+    vendorName: 'Food Cave Fast Food',
+    ctaText: 'Explore Menu →',
+    link: '/v/food-cave',
+    bgGradient: 'from-indigo-700 via-purple-700 to-pink-700',
+    icon: '🌯'
+  }
+];
+---
+
+<div
+  x-data={`{
+    current: 0,
+    total: ${defaultDeals.length},
+    autoplayTimer: null,
+    startAutoplay() {
+      this.autoplayTimer = setInterval(() => {
+        this.current = (this.current + 1) % this.total;
+      }, 4500);
+    },
+    stopAutoplay() {
+      if (this.autoplayTimer) clearInterval(this.autoplayTimer);
+    },
+    next() {
+      this.current = (this.current + 1) % this.total;
+      this.stopAutoplay();
+      this.startAutoplay();
+    },
+    prev() {
+      this.current = (this.current - 1 + this.total) % this.total;
+      this.stopAutoplay();
+      this.startAutoplay();
+    },
+    goTo(index) {
+      this.current = index;
+      this.stopAutoplay();
+      this.startAutoplay();
+    }
+  }`}
+  x-init="startAutoplay()"
+  @mouseenter="stopAutoplay()"
+  @mouseleave="startAutoplay()"
+  class="relative w-full"
+>
+  <!-- Section Title -->
+  <div class="flex items-center justify-between mb-2.5 px-0.5">
+    <h2 class="font-display text-sm sm:text-base font-extrabold flex items-center gap-1.5 text-slate-900">
+      <span class="animate-bounce">🎁</span>
+      <span>Offers & Deals for Today</span>
+    </h2>
+    <div class="flex items-center gap-1.5">
+      <button
+        type="button"
+        @click="prev()"
+        class="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-amber-50 hover:text-nitkkr-orange flex items-center justify-center text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+        aria-label="Previous deal"
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        @click="next()"
+        class="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-amber-50 hover:text-nitkkr-orange flex items-center justify-center text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+        aria-label="Next deal"
+      >
+        ›
+      </button>
+    </div>
+  </div>
+
+  <!-- Carousel Slides Container -->
+  <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-md">
+    {defaultDeals.map((deal, idx) => (
+      <div
+        x-show={`current === ${idx}`}
+        x-cloak
+        x-transition:enter="transition ease-out duration-300 transform"
+        x-transition:enter-start="opacity-0 translate-x-4 scale-98"
+        x-transition:enter-end="opacity-100 translate-x-0 scale-100"
+        x-transition:leave="transition ease-in duration-200 transform absolute inset-0"
+        x-transition:leave-start="opacity-100 translate-x-0"
+        x-transition:leave-end="opacity-0 -translate-x-4"
+        class={`bg-gradient-to-r ${deal.bgGradient} p-4 sm:p-5 text-white flex flex-col justify-between min-h-[140px] sm:min-h-[155px] relative overflow-hidden`}
+      >
+        <!-- Background Decorative Watermark Icon -->
+        <span class="absolute -right-2 -bottom-4 text-7xl sm:text-8xl opacity-15 select-none pointer-events-none" aria-hidden="true">
+          {deal.icon}
+        </span>
+
+        <!-- Deal Header: Badge & Vendor -->
+        <div class="flex items-center justify-between gap-2 relative z-10">
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-xs">
+            {deal.badge}
+          </span>
+          <span class="text-[11px] font-semibold text-white/80 truncate">
+            {deal.vendorName}
+          </span>
+        </div>
+
+        <!-- Deal Content -->
+        <div class="my-2 relative z-10">
+          <h3 class="font-display text-base sm:text-lg font-black text-white tracking-tight leading-snug">
+            {deal.title}
+          </h3>
+          <p class="text-[11px] sm:text-xs text-white/90 font-medium mt-0.5 line-clamp-2">
+            {deal.description}
+          </p>
+        </div>
+
+        <!-- Action Button Link -->
+        <div class="flex items-center justify-between pt-1 relative z-10">
+          <a
+            href={deal.link}
+            class="px-3.5 py-1.5 bg-white text-slate-900 hover:bg-amber-50 active:scale-95 rounded-xl font-extrabold text-xs shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>{deal.ctaText}</span>
+          </a>
+
+          <!-- Pagination Indicators -->
+          <div class="flex items-center gap-1.5">
+            {defaultDeals.map((_, dotIdx) => (
+              <button
+                type="button"
+                @click={`goTo(${dotIdx})`}
+                class="transition-all duration-300 rounded-full cursor-pointer"
+                :class={`current === ${dotIdx} ? 'w-5 h-1.5 bg-white shadow-xs' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'`}
+                aria-label={`Go to slide ${dotIdx + 1}`}
+              ></button>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    ))}
+  </div>
+</div>

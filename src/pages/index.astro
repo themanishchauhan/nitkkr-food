@@ -3,6 +3,7 @@ export const prerender = false;
 import Layout from '../layouts/Layout.astro';
 import SearchBar from '../components/SearchBar.astro';
 import FilterChips from '../components/FilterChips.astro';
+import DealsCarousel from '../components/DealsCarousel.astro';
 import VendorCard from '../components/VendorCard.astro';
 import CategoryCard from '../components/CategoryCard.astro';
 import AdBanner from '../components/AdBanner.astro';
@@ -41,13 +42,12 @@ if (settingsObj.vibe_chips_json) {
     vibeChips = JSON.parse(settingsObj.vibe_chips_json);
   } catch (e) {}
 }
-
 ---
 
 <Layout title="NITKKR Food - Find Food Around Campus Instantly" description="Explore food vendors around NIT Kurukshetra. View menus, dishes, prices, and call directly.">
 
-  <section class="min-h-screen bg-gradient-to-b from-nitkkr-cream via-amber-50/20 to-white pb-16">
-    <div class="max-w-2xl mx-auto px-4 py-5 sm:py-8 space-y-4 sm:space-y-6">
+  <section class="min-h-screen bg-gradient-to-b from-nitkkr-cream via-amber-50/20 to-white pb-20">
+    <div class="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-6 sm:space-y-8">
       
       <!-- Live Campus Announcement Banner (if enabled) -->
       {bannerEnabled && bannerText && (
@@ -64,31 +64,32 @@ if (settingsObj.vibe_chips_json) {
         </div>
       )}
 
-      <!-- Clean Hero Section -->
-      <div class="text-center space-y-1.5 pt-2">
-        <h1 class="font-display text-3xl sm:text-5xl font-black text-nitkkr-dark tracking-tight">
+      <!-- Clean Hero Section with Generous Breathing Room -->
+      <div class="text-center space-y-2 pt-2 sm:pt-4">
+        <h1 class="font-display text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
           {heroTitle}
         </h1>
-        <p class="text-nitkkr-gray text-xs sm:text-base font-medium max-w-md mx-auto">
+        <p class="text-slate-500 text-xs sm:text-base font-medium max-w-md mx-auto leading-relaxed">
           {heroTagline}
         </p>
       </div>
 
-      <!-- Search Input -->
-      <div>
+      <!-- Search Input & Quick Vibe Filters Card -->
+      <div class="space-y-3.5">
         <SearchBar placeholder="What are you craving? chowmein, paratha, cold coffee, roll..." />
+        <FilterChips chips={vibeChips} />
       </div>
 
-      <!-- Student Cravings & Vibes Filter Chips -->
+      <!-- 🎁 Offers & Deals for Today (Touch-friendly Carousel) -->
       <div>
-        <FilterChips chips={vibeChips} />
+        <DealsCarousel />
       </div>
 
       <!-- Browse by Category Section -->
       <div>
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="font-display text-lg sm:text-xl font-bold flex items-center gap-2 text-nitkkr-dark">
-            <span class="text-bistro-500" aria-hidden="true">🍽️</span>
+        <div class="flex items-center justify-between mb-3 px-0.5">
+          <h2 class="font-display text-base sm:text-lg font-bold flex items-center gap-2 text-slate-900">
+            <span class="text-nitkkr-orange" aria-hidden="true">🍽️</span>
             Browse by Category
           </h2>
           <span class="text-xs font-semibold text-slate-400">{categories.length} categories</span>
@@ -114,13 +115,13 @@ if (settingsObj.vibe_chips_json) {
 
       <!-- Campus Vendors Section -->
       <div>
-        <div class="flex items-center justify-between mb-3.5">
-          <h2 class="font-display text-lg sm:text-xl font-bold flex items-center gap-2 text-nitkkr-dark">
+        <div class="flex items-center justify-between mb-3.5 px-0.5">
+          <h2 class="font-display text-base sm:text-lg font-bold flex items-center gap-2 text-slate-900">
             <span>🏪</span>
             Campus Vendors & Eateries
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
           </h2>
-          <span class="text-xs font-bold text-bistro-600 bg-bistro-100 px-2.5 py-0.5 rounded-full border border-bistro-200">
+          <span class="text-xs font-bold text-nitkkr-orange bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200">
             {vendorsWithStatus.length} Active
           </span>
         </div>
@@ -130,7 +131,6 @@ if (settingsObj.vibe_chips_json) {
             <VendorCard vendor={v} isOpen={v.isOpen} />
           ))}
         </div>
-
       </div>
 
     </div>
