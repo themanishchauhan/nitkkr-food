@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 import Layout from '../layouts/Layout.astro';
+import ReviewModal from '../components/ReviewModal.astro';
 import { getCategories, getAllSiteSettings, getActiveVendors, getAllMenuItemsForSearch } from '../lib/queries';
 
 const initialQuery = Astro.url.searchParams.get('q')?.trim() || '';
@@ -1035,30 +1036,40 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               </div>
             </template>
 
-            <!-- Actions: View Full Menu & Direct Call -->
-            <div class="pt-3 border-t border-slate-100 flex items-center gap-3">
+            <!-- Actions: Rate Dish + View Full Menu + Direct Call -->
+            <div class="pt-3 border-t border-slate-100 flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                @click="showDetailModal = false; window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: selectedItem.id, name: selectedItem.name, mode: 'write' } }))"
+                class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+              >
+                <span>⭐</span> Rate Dish
+              </button>
+
               <a
                 :href="`/v/${selectedItem.vendorSlug || 'food-cave'}`"
-                class="flex-1 py-2.5 bg-bistro-500 hover:bg-bistro-600 text-white font-bold text-xs rounded-xl shadow-sm text-center transition-all cursor-pointer"
+                class="flex-1 py-2.5 bg-bistro-500 hover:bg-bistro-600 text-white font-bold text-xs rounded-xl shadow-sm text-center transition-all cursor-pointer whitespace-nowrap"
               >
-                <span>View Full Menu ➔</span>
+                <span>View Menu ➔</span>
               </a>
 
               <template x-if="selectedItem.vendorPhone">
                 <a
                   :href="getTelHref(selectedItem.vendorPhone)"
-                  class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl text-center transition-all cursor-pointer flex items-center gap-1.5"
+                  class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl text-center transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   <span>📞</span> Call
                 </a>
               </template>
-
             </div>
           </div>
 
         </div>
       </template>
     </div>
+
+    <!-- Reusable Review Modal for Search -->
+    <ReviewModal menuItems={initialItems} />
 
   </section>
 </Layout>

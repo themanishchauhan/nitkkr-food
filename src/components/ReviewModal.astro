@@ -25,17 +25,30 @@ const reviewsData = vendorReviews || stallReviews || [];
     menuItemsList: ${JSON.stringify(menuItems)},
 
     init() {
-      window.addEventListener('open-review-modal', (e) => {
-        this.itemId = e.detail?.id || null;
-        this.itemName = e.detail?.name || (this.itemId ? (this.menuItemsList.find(m => m.id === this.itemId)?.name || '') : 'General Feedback');
-        this.activeTab = e.detail?.mode || (this.filteredReviews.length > 0 ? 'read' : 'write');
+      window.addEventListener('open-review-modal', async (e) => {
+        this.itemId = e.detail?.id ? Number(e.detail.id) : null;
+        this.itemName = e.detail?.name || (this.itemId ? (this.menuItemsList.find(m => m.id === this.itemId)?.name || '') : 'Dish Review');
+        this.activeTab = e.detail?.mode || 'write';
         this.dishDropdownOpen = false;
-        this.rating = 0;
+        this.rating = e.detail?.initialRating || 0;
         this.comment = '';
         this.studentName = localStorage.getItem('student_name') || '';
         this.submitted = false;
         this.error = '';
         this.showModal = true;
+
+        if (this.itemId) {
+          try {
+            const res = await fetch('/api/reviews?menuItemId=' + this.itemId);
+            if (res.ok) {
+              const data = await res.json();
+              if (Array.isArray(data.reviews)) {
+                const otherReviews = this.reviewsList.filter(r => r.menuItemId !== this.itemId);
+                this.reviewsList = [...data.reviews, ...otherReviews];
+              }
+            }
+          } catch (e) {}
+        }
       });
     },
     get selectedItem() {
@@ -44,7 +57,7 @@ const reviewsData = vendorReviews || stallReviews || [];
     },
     get filteredReviews() {
       if (!this.itemId) return this.reviewsList;
-      return this.reviewsList.filter(r => r.menuItemId === this.itemId);
+      return this.reviewsList.filter(r => Number(r.menuItemId) === Number(this.itemId));
     },
     get modalAvgRating() {
       const revs = this.filteredReviews;
@@ -55,11 +68,11 @@ const reviewsData = vendorReviews || stallReviews || [];
 
     async submitReview() {
       if (!this.studentName.trim()) {
-        this.error = 'Please enter your name / hostel';
+        this.error = 'Please enter your name or hostel (e.g. Rahul H-7)';
         return;
       }
       if (this.rating <= 0) {
-        this.error = 'Please select a star rating (1 to 5 stars)';
+        this.error = 'Please tap 1 to 5 stars to rate this dish';
         return;
       }
       if (!this.itemId && this.menuItemsList.length > 0) {
@@ -81,27 +94,30 @@ const reviewsData = vendorReviews || stallReviews || [];
           })
         });
 
-        let data = {};
+        let data: any = {};
         try {
           data = await res.json();
         } catch (jsonErr) {
-          data = { error: 'Server returned error ' + res.status };
+          data = { error: 'Server error: ' + res.status };
         }
 
         if (res.ok && data.success) {
           this.submitted = true;
           if (data.review) {
+            // Remove previous review by this student if updated
+            this.reviewsList = this.reviewsList.filter(r => !(r.menuItemId === this.itemId && r.studentName.toLowerCase() === this.studentName.trim().toLowerCase()));
             this.reviewsList.unshift(data.review);
           }
+          window.dispatchEvent(new CustomEvent('review-updated', { detail: { menuItemId: this.itemId, rating: this.rating } }));
           setTimeout(() => {
             this.submitted = false;
             this.activeTab = 'read';
-          }, 1200);
+          }, 1000);
         } else {
-          this.error = data.error || ('Failed with status ' + res.status);
+          this.error = data.error || ('Failed to submit rating (status ' + res.status + ')');
         }
       } catch (err: any) {
-        this.error = err?.message || 'Network error. Please try again.';
+        this.error = err?.message || 'Network error. Please check connection and try again.';
       } finally {
         this.loading = false;
       }

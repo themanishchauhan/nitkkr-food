@@ -90,26 +90,23 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const cleanedName = String(studentName || '').trim().slice(0, 50);
 
     if (!cleanedName) {
-      return new Response(JSON.stringify({ error: 'Student name is required' }), {
+      return new Response(JSON.stringify({ error: 'Student name or hostel is required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // 1. Client-Side Cookie Check
-    const cookieHeader = request.headers.get('cookie') || '';
-    const match = cookieHeader.match(/nitkkr_reviewed_items=([^;]+)/);
-    const reviewedItems = match ? match[1].split(',') : [];
-
-    if (reviewedItems.includes(String(parsedItemId))) {
-      return new Response(JSON.stringify({ error: 'You have already reviewed this dish! Thank you for your feedback.' }), {
+    const parsedRating = parseInt(rating, 10);
+    if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      return new Response(JSON.stringify({ error: 'Rating must be between 1 and 5 stars' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // 2. Server-Side Deduplication Check (SEC-4)
     const db = locals.db || createDb();
+
+    // Check if review by this student already exists for this dish
     const existingRecent = await db.select({ id: schema.reviews.id })
       .from(schema.reviews)
       .where(and(
@@ -118,32 +115,46 @@ export const POST: APIRoute = async ({ request, locals }) => {
       ))
       .limit(1);
 
+    let reviewResult: any = null;
+
     if (existingRecent && existingRecent.length > 0) {
-      return new Response(JSON.stringify({ error: 'A review with this name for this dish already exists.' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      // Update existing review seamlessly
+      const existingId = existingRecent[0].id;
+      const cleanComment = typeof comment === 'string' && comment.trim() ? comment.trim().slice(0, 500) : null;
+      await db.update(schema.reviews)
+        .set({
+          rating: parsedRating,
+          comment: cleanComment,
+          createdAt: new Date().toISOString()
+        })
+        .where(eq(schema.reviews.id, existingId));
+
+      reviewResult = {
+        id: existingId,
+        menuItemId: parsedItemId,
+        studentName: cleanedName,
+        rating: parsedRating,
+        comment: cleanComment,
+        createdAt: new Date().toISOString()
+      };
+    } else {
+      // Create new review
+      reviewResult = await createReview({
+        menuItemId: parsedItemId,
+        studentName: cleanedName,
+        rating: parsedRating,
+        comment: typeof comment === 'string' && comment.trim() ? comment.trim().slice(0, 500) : undefined,
+      }, db);
     }
 
-    const parsedRating = parseInt(rating, 10);
-    if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
-      return new Response(JSON.stringify({ error: 'Rating must be between 1 and 5' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const review = await createReview({
-      menuItemId: parsedItemId,
-      studentName: cleanedName,
-      rating: parsedRating,
-      comment: typeof comment === 'string' ? comment.trim().slice(0, 500) : undefined,
-    }, db);
-
+    // Set updated cookie for client tracking
+    const cookieHeader = request.headers.get('cookie') || '';
+    const match = cookieHeader.match(/nitkkr_reviewed_items=([^;]+)/);
+    const reviewedItems = match ? match[1].split(',') : [];
     const updatedReviewed = [...new Set([...reviewedItems, String(parsedItemId)])].join(',');
     const setCookie = `nitkkr_reviewed_items=${updatedReviewed}; Max-Age=2592000; Path=/; SameSite=Lax`;
 
-    return new Response(JSON.stringify({ success: true, review }), {
+    return new Response(JSON.stringify({ success: true, review: reviewResult }), {
       status: 201,
       headers: {
         'Content-Type': 'application/json',
