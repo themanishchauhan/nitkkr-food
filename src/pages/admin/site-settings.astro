@@ -204,7 +204,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           description: this.newSlide.description.trim() || 'Special campus discount for NITKKR students.',
           ctaText: this.newSlide.ctaText.trim() || 'View Deal →',
           ctaLink: this.newSlide.ctaLink.trim() || '/search',
-          gradient: this.newSlide.gradient || 'from-orange-600 via-amber-600 to-rose-600',
+          gradient: this.newSlide.gradient || 'from-bistro-800 via-bistro-700 to-amber-700',
           icon: this.newSlide.icon || '🔥',
           isEnabled: true
         });
@@ -215,7 +215,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           description: '',
           ctaText: 'Explore Menu →',
           ctaLink: '/search',
-          gradient: 'from-orange-600 via-amber-600 to-rose-600',
+          gradient: 'from-bistro-800 via-bistro-700 to-amber-700',
           icon: '🍕'
         };
         this.showToast('Slide added! Click "Save All Changes" to publish live.');
@@ -615,11 +615,11 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
                   <div>
                     <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Color Theme Gradient</label>
                     <select x-model="newSlide.gradient" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs font-semibold">
-                      <option value="from-orange-600 via-amber-600 to-rose-600">🔥 Sunset Orange/Amber</option>
-                      <option value="from-emerald-700 via-teal-700 to-cyan-800">⚡ Emerald / Teal Special</option>
-                      <option value="from-indigo-700 via-purple-700 to-pink-700">🎉 Purple / Pink Discount</option>
-                      <option value="from-blue-700 via-indigo-700 to-slate-900">🌙 Midnight Blue</option>
-                      <option value="from-rose-600 via-red-600 to-amber-700">🌶️ Spicy Red</option>
+                      <option value="from-bistro-800 via-bistro-700 to-amber-700">🥘 Bistro Roasted Amber</option>
+                      <option value="from-stone-900 via-stone-800 to-bistro-900">☕ Espresso & Dark Bronze</option>
+                      <option value="from-amber-800 via-bistro-700 to-orange-800">🍯 Warm Caramel & Honey</option>
+                      <option value="from-emerald-900 via-stone-800 to-stone-900">🥑 Fresh Olive & Herb</option>
+                      <option value="from-rose-900 via-bistro-800 to-amber-800">🌶️ Smoked Paprika Bistro</option>
                     </select>
                   </div>
                   <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
