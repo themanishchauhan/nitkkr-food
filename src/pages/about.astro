@@ -6,53 +6,156 @@ import { getAllSiteSettings } from '../lib/queries';
 const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+const brandName = settingsObj.site_title || settingsObj.brand_name || 'NITKKR Food';
 const customAbout = settingsObj.about_custom_text || '';
-
 ---
 
-<Layout title="About Us - NITKKR Food" description="About NITKKR Food, built for the students of National Institute of Technology, Kurukshetra.">
-  <section class="min-h-screen bg-nitkkr-cream py-12 px-4">
-    <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 border border-amber-200/80 shadow-sm space-y-6">
+<Layout title={`About Us - ${brandName}`} description={`Learn why we are building ${brandName} to make student life easier and support local businesses around campus.`}>
+  <section class="min-h-screen bg-nitkkr-cream/60 py-10 sm:py-14 px-4">
+    <div class="max-w-3xl mx-auto space-y-8">
+      
+      <!-- Back Link -->
       <div>
-        <a href="/" class="text-xs text-slate-500 hover:text-nitkkr-orange mb-2 inline-block font-semibold">← Back to Home</a>
-        <h1 class="font-display text-3xl sm:text-4xl font-bold text-nitkkr-dark">🍜 About NITKKR Food</h1>
-        <p class="text-xs sm:text-sm text-slate-500 mt-1">Built by students, for students at NIT Kurukshetra.</p>
+        <a href="/" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-nitkkr-orange transition-colors">
+          <span>←</span> Back to Home
+        </a>
       </div>
 
-      {customAbout ? (
-        <div class="p-5 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line">
-          {customAbout}
+      <!-- Hero Header -->
+      <div class="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-2xs space-y-4">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-[11px] font-bold text-amber-900 uppercase tracking-wider">
+          <span>🌱</span> Our Story & Mission
         </div>
-      ) : null}
+        
+        <h1 class="font-display text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          Making student life a little easier.
+        </h1>
 
-      <div class="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
-        <p>
-          <strong>NITKKR Food</strong> was born out of a simple late-night hostel problem: <em>"Where do we order food from right now, what are the exact prices, and who delivers to Hostel 7 or DB Hall?"</em>
-        </p>
-        <p>
-          Instead of passing around blurry paper menu photos in WhatsApp groups, NITKKR Food brings all campus eateries, night canteens, dhabas, and food vendors into one ultra-fast, mobile-friendly digital directory.
-        </p>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
-          <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-center">
-            <span class="text-2xl font-bold text-amber-900 block">20+</span>
-            <span class="text-[11px] text-amber-700 font-medium">Campus Vendors</span>
-          </div>
-
-          <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-center">
-            <span class="text-2xl font-bold text-amber-900 block">0%</span>
-            <span class="text-[11px] text-amber-700 font-medium">Commission Fees</span>
-          </div>
-          <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-center">
-            <span class="text-2xl font-bold text-amber-900 block">&lt; 1 sec</span>
-            <span class="text-[11px] text-amber-700 font-medium">Instant Menu Search</span>
+        <div class="space-y-4 text-sm sm:text-base text-slate-700 leading-relaxed pt-2">
+          <p>
+            We started with a simple observation: around every college, there are dozens of small businesses and local services that students use every day—but finding them isn't always easy.
+          </p>
+          <p>
+            Food stalls have great menus but no proper online presence. Local services rely on WhatsApp or word of mouth. Students often have to ask friends, search through old messages, or walk around to find out what's available.
+          </p>
+          <p class="font-semibold text-slate-900">
+            We believe it shouldn't be this complicated.
+          </p>
+          <p>
+            <strong class="text-nitkkr-orange font-bold">{brandName}</strong> is being built as a simple digital place where students can discover what's available around their campus—from food and everyday services to local shops, deals, events, and more.
+          </p>
+          <div class="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 text-amber-950 text-xs sm:text-sm font-medium">
+            ✨ <strong>Our first step is simple:</strong> bring useful local information together in one fast, easy-to-use platform.
           </div>
         </div>
-
-        <p class="pt-2">
-          We believe in supporting local campus vendors while providing students with transparent prices, authentic reviews, and lightning-fast WhatsApp ordering.
-        </p>
       </div>
+
+      {customAbout && (
+        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-2xs space-y-2">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Campus Note</h3>
+          <p class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">{customAbout}</p>
+        </div>
+      )}
+
+      <!-- Pillars / Key Principles Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Pillar 1: Built for Students -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xs space-y-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-100/70 border border-amber-200 flex items-center justify-center text-lg">
+            🎓
+          </div>
+          <h2 class="font-display font-extrabold text-lg text-slate-900">Built for students</h2>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            We don't want to create another complicated app that takes five minutes to figure out.
+          </p>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            We want something students can open, find what they need, and get on with their day.
+          </p>
+          <div class="pt-2 flex items-center gap-2 text-xs font-bold text-nitkkr-orange">
+            <span>⚡ Fast</span>
+            <span>•</span>
+            <span>✨ Simple</span>
+            <span>•</span>
+            <span>🎯 Useful</span>
+          </div>
+        </div>
+
+        <!-- Pillar 2: Supporting local businesses -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xs space-y-3">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-100/70 border border-emerald-200 flex items-center justify-center text-lg">
+            🏪
+          </div>
+          <h2 class="font-display font-extrabold text-lg text-slate-900">Supporting local businesses</h2>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Many of the businesses students depend on are small, informal, and run through phone calls or WhatsApp. They may not have the time, money, or technical knowledge to build websites or manage complicated software.
+          </p>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            We want to help them get discovered without making things complicated.
+          </p>
+          <p class="text-[11px] text-slate-500 italic pt-1">
+            At the beginning, we take care of putting their information and menus online. As the platform grows, we plan to give businesses better tools to manage their own presence, offers, menus, and customer interactions.
+          </p>
+        </div>
+
+        <!-- Pillar 3: Starting small, building bigger -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xs space-y-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-100/70 border border-indigo-200 flex items-center justify-center text-lg">
+            🚀
+          </div>
+          <h2 class="font-display font-extrabold text-lg text-slate-900">Starting small, building bigger</h2>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            We're starting around a college because that's where the problem is easiest to understand and solve.
+          </p>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            But the long-term vision is much bigger: build a network where students can easily discover the businesses, services, and opportunities around them—starting with one campus and gradually expanding to more campuses and communities.
+          </p>
+          <p class="text-xs font-bold text-indigo-700">
+            📍 One campus at a time.
+          </p>
+        </div>
+
+        <!-- Pillar 4: Our principle -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xs space-y-3">
+          <div class="w-10 h-10 rounded-2xl bg-rose-100/70 border border-rose-200 flex items-center justify-center text-lg">
+            💡
+          </div>
+          <h2 class="font-display font-extrabold text-lg text-slate-900">Our principle</h2>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            We don't believe every local business needs complicated technology.
+          </p>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Sometimes, a simple menu, accurate information, a phone number, and an easy way to find them can make a huge difference.
+          </p>
+          <p class="text-xs font-bold text-slate-800 pt-1">
+            🤝 We're building around that idea.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Quick Action Bar -->
+      <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="space-y-1 text-center sm:text-left">
+          <h3 class="font-display font-extrabold text-lg sm:text-xl">Ready to explore campus food?</h3>
+          <p class="text-xs text-white/90">Find dishes, canteens, and direct phone / WhatsApp numbers.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a
+            href="/search"
+            class="px-5 py-2.5 bg-white text-orange-600 hover:bg-orange-50 active:scale-95 font-bold text-xs rounded-2xl shadow-sm transition-all"
+          >
+            🔍 Search Dishes
+          </a>
+          <a
+            href="/search?tab=vendors"
+            class="px-5 py-2.5 bg-black/20 hover:bg-black/30 active:scale-95 text-white font-bold text-xs rounded-2xl transition-all"
+          >
+            🏪 View Vendors
+          </a>
+        </div>
+      </div>
+
     </div>
   </section>
 </Layout>
