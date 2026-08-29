@@ -100,7 +100,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         query: initialQuery,
         activeCat: initialCategory || 'all',
         vibeTag: initialTag || 'all',
-        maxPrice: initialMaxPrice,
+        priceBracket: initialMaxPrice ? (initialMaxPrice === '50' ? 'under-50' : (initialMaxPrice === '100' ? '50-100' : (initialMaxPrice === '150' ? '100-150' : (initialMaxPrice === '150+' ? 'above-150' : initialMaxPrice)))) : 'all',
         vegFilter: initialIsVeg === 'true' ? 'veg' : ((initialIsVeg === 'false' || initialIsVeg === 'nonveg' || initialIsVeg === 'non-veg') ? 'nonveg' : 'all'),
         vendorFilter: 'all',
         displayLimit: 20,
@@ -109,6 +109,10 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         allItems: Array.isArray(initialItems) ? initialItems : [],
         selectedItem: null,
         showDetailModal: false,
+        formatCount(count) {
+          var num = Number(count) || 0;
+          return num > 99 ? '99+' : String(num);
+        },
         toggleVendorExpand(vendorName) {
           this.expandedVendors[vendorName] = !this.expandedVendors[vendorName];
         },
@@ -209,34 +213,30 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             if (itm.stallId) matchingItemVendorIds.add(itm.stallId);
           }
 
-          if (!this.query.trim()) {
-            // If category/veg filters are active, show vendors serving those dishes
-            if (this.activeCat !== 'all' || this.vibeTag !== 'all' || this.maxPrice !== '' || this.vegFilter !== 'all') {
-              return this.allVendors.filter(function(v) {
-                return matchingItemVendorIds.has(v.id);
+          var vList = this.allVendors;
+
+          if (this.query.trim()) {
+            var rawQuery = this.query.toLowerCase().trim();
+            var tokens = rawQuery.split(/\s+/).filter(Boolean);
+
+            return vList.filter(function(v) {
+              var nameLower = (v.name || '').toLowerCase();
+              var addrLower = (v.address || '').toLowerCase();
+              var descLower = (v.description || '').toLowerCase();
+              var full = nameLower + ' ' + addrLower + ' ' + descLower;
+              var words = full.split(/[\s,()\/+-]+/).filter(Boolean);
+
+              var directMatch = tokens.every(function(t) {
+                return isFuzzyTokenMatch(t, words, full);
               });
-            }
-            return this.allVendors;
+
+              var hasMatchingItems = matchingItemVendorIds.has(v.id);
+
+              return directMatch || hasMatchingItems;
+            });
           }
 
-          var rawQuery = this.query.toLowerCase().trim();
-          var tokens = rawQuery.split(/\s+/).filter(Boolean);
-
-          return this.allVendors.filter(function(v) {
-            // 1. Matched because this vendor serves matching dishes (e.g. "paneer", "maggi", "coffee")
-            if (matchingItemVendorIds.has(v.id)) return true;
-
-            // 2. Or matched because vendor name/location/delivery directly matches
-            var nameLower = (v.name || '').toLowerCase();
-            var addressLower = (v.address || '').toLowerCase();
-            var deliversLower = Array.isArray(v.deliversTo) ? v.deliversTo.join(' ').toLowerCase() : (typeof v.deliversTo === 'string' ? v.deliversTo.toLowerCase() : '');
-            var fullText = nameLower + ' ' + addressLower + ' ' + deliversLower;
-            var targetWords = fullText.split(/[\s,()\/+-]+/).filter(Boolean);
-
-            return tokens.every(function(token) {
-              return isFuzzyTokenMatch(token, targetWords, fullText);
-            });
-          });
+          return vList;
         },
 
 
@@ -251,10 +251,10 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
           // 1. Category Filter
           if (this.activeCat && this.activeCat !== 'all') {
-            var targetCat = this.activeCat.toLowerCase();
+            var catSlug = this.activeCat.toLowerCase();
             list = list.filter(function(i) {
-              return (i.categorySlug && i.categorySlug.toLowerCase() === targetCat) || 
-                     (i.categoryName && i.categoryName.toLowerCase() === targetCat);
+              return (i.categorySlug && i.categorySlug.toLowerCase() === catSlug) ||
+                     (i.categoryName && i.categoryName.toLowerCase() === catSlug);
             });
           }
 
@@ -299,11 +299,17 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             });
           }
 
-          // 3. Price Filter
-          if (this.maxPrice && !isNaN(parseFloat(this.maxPrice))) {
-            var maxP = parseFloat(this.maxPrice);
+          // 3. Smart Mutual Price Brackets
+          if (this.priceBracket && this.priceBracket !== 'all') {
+            var b = this.priceBracket;
             list = list.filter(function(i) {
-              return Number(i.price) <= maxP;
+              var p = Number(i.price);
+              if (isNaN(p)) return false;
+              if (b === 'under-50' || b === '50') return p <= 50;
+              if (b === '50-100' || b === '100') return p > 50 && p <= 100;
+              if (b === '100-150' || b === '150') return p > 100 && p <= 150;
+              if (b === 'above-150' || b === '150+') return p > 150;
+              return true;
             });
           }
 
@@ -470,7 +476,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           >
             <span>🍱</span>
             <span>Dishes</span>
-            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'dishes' ? 'bg-white/20 text-white' : 'bg-bistro-100 text-bistro-600'" x-text="filteredItems.length"></span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'dishes' ? 'bg-white/20 text-white' : 'bg-bistro-100 text-bistro-600'" x-text="formatCount(filteredItems.length)"></span>
           </button>
           <button
             type="button"
@@ -480,7 +486,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           >
             <span>🏪</span>
             <span>Campus Vendors</span>
-            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'vendors' ? 'bg-white/20 text-white' : 'bg-bistro-100 text-bistro-600'" x-text="filteredVendors.length"></span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'vendors' ? 'bg-white/20 text-white' : 'bg-bistro-100 text-bistro-600'" x-text="formatCount(filteredVendors.length)"></span>
           </button>
         </div>
 
@@ -498,7 +504,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                   :class="vendorFilter === 'all' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-400 font-semibold'"
                   class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer text-xs"
                 >
-                  All Eateries (<span x-text="allItems.length"></span>)
+                  All Eateries (<span x-text="formatCount(allItems.length)"></span>)
                 </button>
                 <template x-for="v in activeVendorsInSearch" :key="v.name">
                   <button
@@ -509,7 +515,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                   >
                     <span>🏪</span>
                     <span x-text="v.name"></span>
-                    <span class="text-[10px] opacity-80" x-text="`(${v.count})`"></span>
+                    <span class="text-[10px] opacity-80" x-text="`(${formatCount(v.count)})`"></span>
                   </button>
                 </template>
               </div>
@@ -587,41 +593,53 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             </div>
           </div>
 
-          <!-- 2. Price & Diet Bar -->
+          <!-- 2. Smart Distinct Price Brackets & Diet Bar -->
           <div class="flex flex-wrap items-center justify-between gap-1.5 text-xs pt-1.5 border-t border-slate-200/60">
             <div class="flex items-center gap-1 flex-wrap">
-              <span class="font-semibold text-slate-500 mr-1 text-[11px]">💰 Price:</span>
+              <span class="font-semibold text-slate-500 mr-1 text-[11px]">💰 Budget:</span>
               <button
                 type="button"
-                @click="maxPrice = ''; displayLimit = 20;"
-                :class="maxPrice === '' ? 'bg-bistro-500 text-white font-bold' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
+                @click="priceBracket = 'all'; displayLimit = 20;"
+                :class="priceBracket === 'all' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
                 class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
               >
                 Any
               </button>
               <button
                 type="button"
-                @click="maxPrice = (maxPrice === '50' ? '' : '50'); displayLimit = 20;"
-                :class="maxPrice === '50' ? 'bg-bistro-500 text-white font-bold' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
+                @click="priceBracket = (priceBracket === 'under-50' ? 'all' : 'under-50'); displayLimit = 20;"
+                :class="priceBracket === 'under-50' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
                 class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                title="Pocket friendly: ₹10 - ₹50"
               >
                 ≤ ₹50
               </button>
               <button
                 type="button"
-                @click="maxPrice = (maxPrice === '100' ? '' : '100'); displayLimit = 20;"
-                :class="maxPrice === '100' ? 'bg-bistro-500 text-white font-bold' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
+                @click="priceBracket = (priceBracket === '50-100' ? 'all' : '50-100'); displayLimit = 20;"
+                :class="priceBracket === '50-100' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
                 class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                title="Quick Meals: ₹51 - ₹100"
               >
-                ≤ ₹100
+                ₹50 – ₹100
               </button>
               <button
                 type="button"
-                @click="maxPrice = (maxPrice === '150' ? '' : '150'); displayLimit = 20;"
-                :class="maxPrice === '150' ? 'bg-bistro-500 text-white font-bold' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
+                @click="priceBracket = (priceBracket === '100-150' ? 'all' : '100-150'); displayLimit = 20;"
+                :class="priceBracket === '100-150' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
                 class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                title="Combos & Thalis: ₹101 - ₹150"
               >
-                ≤ ₹150
+                ₹100 – ₹150
+              </button>
+              <button
+                type="button"
+                @click="priceBracket = (priceBracket === 'above-150' ? 'all' : 'above-150'); displayLimit = 20;"
+                :class="priceBracket === 'above-150' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
+                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                title="Platters & Treats: > ₹150"
+              >
+                ₹150+
               </button>
             </div>
 
@@ -649,11 +667,11 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
         <!-- 3. Result counter and reset button -->
         <p class="mt-2.5 text-xs font-semibold text-nitkkr-gray flex items-center justify-between px-0.5">
-          <span x-show="activeTab === 'dishes'" x-text="`Found ${filteredItems.length} dish${filteredItems.length !== 1 ? 'es' : ''}`"></span>
-          <span x-show="activeTab === 'vendors'" x-text="`Found ${filteredVendors.length} campus vendor${filteredVendors.length !== 1 ? 's' : ''}`"></span>
+          <span x-show="activeTab === 'dishes'" x-text="`Found ${formatCount(filteredItems.length)} dish${filteredItems.length === 1 ? '' : 'es'}`"></span>
+          <span x-show="activeTab === 'vendors'" x-text="`Found ${formatCount(filteredVendors.length)} campus vendor${filteredVendors.length === 1 ? '' : 's'}`"></span>
           <button
-            x-show="query || activeCat !== 'all' || vibeTag !== 'all' || maxPrice !== '' || vegFilter !== 'all' || vendorFilter !== 'all'"
-            @click="query = ''; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;"
+            x-show="query || activeCat !== 'all' || vibeTag !== 'all' || priceBracket !== 'all' || vegFilter !== 'all' || vendorFilter !== 'all'"
+            @click="query = ''; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;"
             class="text-bistro-600 hover:underline font-bold cursor-pointer text-xs"
           >
             Reset Filters
@@ -720,7 +738,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                   <div class="mt-1">
                     <span class="text-[10px] font-extrabold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
                       <span>✨</span>
-                      <span x-text="getVendorMatchCount(vendor.id) + ' matching items'"></span>
+                      <span x-text="formatCount(getVendorMatchCount(vendor.id)) + ' matching items'"></span>
                     </span>
                   </div>
                 </template>
@@ -800,7 +818,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                     <span class="text-xl">🏪</span>
                     <div class="min-w-0">
                       <h3 class="font-extrabold text-sm sm:text-base text-slate-900 truncate" x-text="group.name"></h3>
-                      <p class="text-[11px] text-slate-400 truncate" x-text="`${group.items.length} matching dishes • ${group.address}`"></p>
+                      <p class="text-[11px] text-slate-400 truncate" x-text="`${formatCount(group.items.length)} matching dishes • ${group.address}`"></p>
                     </div>
                   </div>
                   <a
@@ -844,7 +862,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                     type="button"
                     @click="toggleVendorExpand(group.name)"
                     class="w-full py-1.5 text-center text-xs font-bold text-slate-600 hover:text-nitkkr-orange hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
-                    x-text="expandedVendors[group.name] ? 'Show less ↑' : `+ Show all ${group.items.length} dishes from ${group.name} ↓`"
+                    x-text="expandedVendors[group.name] ? 'Show less ↑' : `+ Show all ${formatCount(group.items.length)} dishes from ${group.name} ↓`"
                   ></button>
                 </template>
               </div>
@@ -903,7 +921,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             <!-- Load More Pagination Button -->
             <template x-if="filteredItems.length > visibleItems.length">
               <div class="text-center pt-3 pb-2">
-                <p class="text-[11px] font-semibold text-slate-400 mb-2" x-text="`Showing ${visibleItems.length} of ${filteredItems.length} dishes`"></p>
+                <p class="text-[11px] font-semibold text-slate-400 mb-2" x-text="`Showing ${formatCount(visibleItems.length)} of ${formatCount(filteredItems.length)} dishes`"></p>
                 <button
                   type="button"
                   @click="loadMore()"
@@ -922,16 +940,16 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           <p class="text-base font-bold text-slate-900">No dishes found matching your filters</p>
           <p class="text-xs text-slate-500">Tap one of these popular campus cravings:</p>
           <div class="flex flex-wrap items-center justify-center gap-1.5 pt-1 max-w-sm mx-auto">
-            <button type="button" @click="query = 'maggi'; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🍜 Maggi</button>
-            <button type="button" @click="query = 'chai'; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">☕ Chai</button>
-            <button type="button" @click="query = 'chowmein'; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🥢 Chowmein</button>
-            <button type="button" @click="query = 'paneer'; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🧀 Paneer</button>
-            <button type="button" @click="query = 'shake'; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🥤 Cold Shake</button>
+            <button type="button" @click="query = 'maggi'; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🍜 Maggi</button>
+            <button type="button" @click="query = 'chai'; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">☕ Chai</button>
+            <button type="button" @click="query = 'chowmein'; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🥢 Chowmein</button>
+            <button type="button" @click="query = 'paneer'; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🧀 Paneer</button>
+            <button type="button" @click="query = 'shake'; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🥤 Cold Shake</button>
           </div>
           <div>
             <button
               type="button"
-              @click="query = ''; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;"
+              @click="query = ''; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;"
               class="mt-2 px-4 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
             >
               Reset All Filters
