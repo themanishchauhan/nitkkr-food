@@ -27,105 +27,109 @@ const {
 ---
 
 <div
-  x-data={`{
-    activeCat: 'all',
-    searchQuery: '',
-    searchExpanded: false,
-    categories: ${JSON.stringify(categories)},
-    menuItems: ${JSON.stringify(menuItems)},
-    selectedItem: null,
-    showDetailModal: false,
-
-    get totalCount() {
-      return this.menuItems.length;
-    },
-
-    normalize(str) {
-      return (str || '').toLowerCase()
-        .replace(/aa/g, 'a')
-        .replace(/ee/g, 'i')
-        .replace(/oo/g, 'u')
-        .replace(/nn/g, 'n')
-        .replace(/tt/g, 't')
-        .replace(/pp/g, 'p')
-        .replace(/rr/g, 'r')
-        .replace(/ll/g, 'l')
-        .replace(/mm/g, 'm')
-        .replace(/kk/g, 'k')
-        .replace(/ss/g, 's')
-        .replace(/zz/g, 'z')
-        .replace(/ph/g, 'f')
-        .replace(/bh/g, 'b')
-        .replace(/dh/g, 'd')
-        .replace(/th/g, 't')
-        .replace(/sh/g, 's')
-        .replace(/[^a-z0-9]/g, '');
-    },
-
-    matchToken(token, full, normFull) {
-      if (full.includes(token)) return true;
-      const normToken = this.normalize(token);
-      if (normToken && normFull.includes(normToken)) return true;
-      if (token.endsWith('s') && full.includes(token.slice(0, -1))) return true;
-      if (token.endsWith('es') && full.includes(token.slice(0, -2))) return true;
-      return false;
-    },
-
-    get searchedItems() {
-      if (!this.searchQuery.trim()) return this.menuItems;
-      const rawTokens = this.searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
-      return this.menuItems.filter(item => {
-        const name = (item.name || '').toLowerCase();
-        const desc = (item.description || '').toLowerCase();
-        const cat = (item.categoryName || '').toLowerCase();
-        const rawTags = Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? [item.tags] : []);
-        const tags = rawTags.join(' ').toLowerCase();
-        const full = [name, desc, cat, tags].join(' ');
-        const normFull = this.normalize(full);
-        return rawTokens.every(token => this.matchToken(token, full, normFull));
-      });
-    },
-
-
-    get displayedItems() {
-      const list = this.searchedItems;
-      if (this.activeCat === 'all') return list;
-      return list.filter(i => (i.categorySlug === this.activeCat || i.categoryId === this.activeCat));
-    },
-
-    getCatCount(slug) {
-      if (slug === 'all') return this.searchedItems.length;
-      return this.searchedItems.filter(i => (i.categorySlug === slug || i.categoryId === slug)).length;
-    },
-
-    openDetail(item) {
-      this.selectedItem = item;
-      this.showDetailModal = true;
-    },
-
-    async shareVendor() {
-      const activeUrl = (typeof window !== 'undefined' && window.location.href) ? window.location.href : '${shareUrl}';
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: '${shareTitle.replace(/'/g, "\\'")}',
-            text: '${shareText.replace(/'/g, "\\'")}',
-            url: activeUrl
-          });
-        } catch (e) {}
-      } else {
-        try {
-          await navigator.clipboard.writeText(activeUrl);
-          alert('Link copied to clipboard: ' + activeUrl);
-        } catch (e) {
-          prompt('Copy link:', activeUrl);
-        }
-      }
-    }
-
-  }`}
+  x-data="categoryTabsComponent()"
   class="mb-8"
 >
+
+<script is:inline define:vars={{ initialCategories: categories, initialMenuItems: menuItems, shareUrlVal: shareUrl, shareTitleVal: shareTitle, shareTextVal: shareText }}>
+  window.categoryTabsComponent = function() {
+    return {
+      activeCat: 'all',
+      searchQuery: '',
+      searchExpanded: false,
+      categories: Array.isArray(initialCategories) ? initialCategories : [],
+      menuItems: Array.isArray(initialMenuItems) ? initialMenuItems : [],
+      selectedItem: null,
+      showDetailModal: false,
+
+      get totalCount() {
+        return this.menuItems.length;
+      },
+
+      normalize(str) {
+        return (str || '').toLowerCase()
+          .replace(/aa/g, 'a')
+          .replace(/ee/g, 'i')
+          .replace(/oo/g, 'u')
+          .replace(/nn/g, 'n')
+          .replace(/tt/g, 't')
+          .replace(/pp/g, 'p')
+          .replace(/rr/g, 'r')
+          .replace(/ll/g, 'l')
+          .replace(/mm/g, 'm')
+          .replace(/kk/g, 'k')
+          .replace(/ss/g, 's')
+          .replace(/zz/g, 'z')
+          .replace(/ph/g, 'f')
+          .replace(/bh/g, 'b')
+          .replace(/dh/g, 'd')
+          .replace(/th/g, 't')
+          .replace(/sh/g, 's')
+          .replace(/[^a-z0-9]/g, '');
+      },
+
+      matchToken(token, full, normFull) {
+        if (full.includes(token)) return true;
+        const normToken = this.normalize(token);
+        if (normToken && normFull.includes(normToken)) return true;
+        if (token.endsWith('s') && full.includes(token.slice(0, -1))) return true;
+        if (token.endsWith('es') && full.includes(token.slice(0, -2))) return true;
+        return false;
+      },
+
+      get searchedItems() {
+        if (!this.searchQuery.trim()) return this.menuItems;
+        const rawTokens = this.searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        return this.menuItems.filter(item => {
+          const name = (item.name || '').toLowerCase();
+          const desc = (item.description || '').toLowerCase();
+          const cat = (item.categoryName || '').toLowerCase();
+          const rawTags = Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? [item.tags] : []);
+          const tags = rawTags.join(' ').toLowerCase();
+          const full = [name, desc, cat, tags].join(' ');
+          const normFull = this.normalize(full);
+          return rawTokens.every(token => this.matchToken(token, full, normFull));
+        });
+      },
+
+      get displayedItems() {
+        const list = this.searchedItems;
+        if (this.activeCat === 'all') return list;
+        return list.filter(i => (i.categorySlug === this.activeCat || i.categoryId === this.activeCat));
+      },
+
+      getCatCount(slug) {
+        if (slug === 'all') return this.searchedItems.length;
+        return this.searchedItems.filter(i => (i.categorySlug === slug || i.categoryId === slug)).length;
+      },
+
+      openDetail(item) {
+        this.selectedItem = item;
+        this.showDetailModal = true;
+      },
+
+      async shareVendor() {
+        const activeUrl = (typeof window !== 'undefined' && window.location.href) ? window.location.href : (shareUrlVal || '');
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: shareTitleVal || 'NITKKR Food',
+              text: shareTextVal || 'Check out this menu on NITKKR Food',
+              url: activeUrl
+            });
+          } catch (e) {}
+        } else {
+          try {
+            await navigator.clipboard.writeText(activeUrl);
+            alert('Link copied to clipboard: ' + activeUrl);
+          } catch (e) {
+            prompt('Copy link:', activeUrl);
+          }
+        }
+      }
+    };
+  };
+</script>
   <!-- Menu Header -->
   <div class="mb-4">
     <h2 class="font-display text-xl font-extrabold text-slate-900 flex items-center gap-2">
