@@ -185,14 +185,40 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         },
 
 
+        getVendorMatchCount(vendorId) {
+          if (!vendorId) return 0;
+          return this.filteredItems.filter(function(i) {
+            return i.vendorId === vendorId || i.stallId === vendorId;
+          }).length;
+        },
+
         get filteredVendors() {
+          var matchingItemVendorIds = new Set();
+          var matchedItems = this.filteredItems;
+          for (var j = 0; j < matchedItems.length; j++) {
+            var itm = matchedItems[j];
+            if (itm.vendorId) matchingItemVendorIds.add(itm.vendorId);
+            if (itm.stallId) matchingItemVendorIds.add(itm.stallId);
+          }
+
           if (!this.query.trim()) {
+            // If category/veg filters are active, show vendors serving those dishes
+            if (this.activeCat !== 'all' || this.vibeTag !== 'all' || this.maxPrice !== '' || this.vegFilter !== 'all') {
+              return this.allVendors.filter(function(v) {
+                return matchingItemVendorIds.has(v.id);
+              });
+            }
             return this.allVendors;
           }
+
           var rawQuery = this.query.toLowerCase().trim();
           var tokens = rawQuery.split(/\s+/).filter(Boolean);
 
           return this.allVendors.filter(function(v) {
+            // 1. Matched because this vendor serves matching dishes (e.g. "paneer", "maggi", "coffee")
+            if (matchingItemVendorIds.has(v.id)) return true;
+
+            // 2. Or matched because vendor name/location/delivery directly matches
             var nameLower = (v.name || '').toLowerCase();
             var addressLower = (v.address || '').toLowerCase();
             var deliversLower = (v.deliversTo || []).join(' ').toLowerCase();
@@ -204,6 +230,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             });
           });
         },
+
 
         get matchingStall() {
           if (!this.query.trim()) return null;
@@ -596,8 +623,17 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                   <span class="font-semibold text-nitkkr-dark">Hours:</span>
                   <span x-text="(vendor.opensAt || '09:00') + ' – ' + (vendor.closesAt || '23:00')"></span>
                 </p>
+                <template x-if="query.trim() && getVendorMatchCount(vendor.id) > 0">
+                  <div class="mt-1">
+                    <span class="text-[10px] font-extrabold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                      <span>✨</span>
+                      <span x-text="getVendorMatchCount(vendor.id) + ' matching items'"></span>
+                    </span>
+                  </div>
+                </template>
               </div>
             </div>
+
 
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-nitkkr-cream">
               <a
