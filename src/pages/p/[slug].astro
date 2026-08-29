@@ -1,15 +1,14 @@
 ---
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
+import { getRawD1Binding } from '../../lib/db';
 
 const { slug } = Astro.params;
 
 let page: any = null;
 
 try {
-  const rawD1 = (globalThis as any).DB || 
-                (globalThis as any).__CF_ENV__?.DB || 
-                (globalThis as any).env?.DB;
+  const rawD1 = (Astro.locals as any)?.db || getRawD1Binding();
 
   if (rawD1 && typeof rawD1.prepare === 'function') {
     const res = await rawD1.prepare('SELECT * FROM custom_pages WHERE slug = ?1 AND is_published = 1 LIMIT 1').bind(slug).first();

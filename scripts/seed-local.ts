@@ -102,9 +102,10 @@ async function seed() {
 
   // Insert Menu Items
   for (const m of MOCK_MENU_ITEMS) {
+    const item = m as any;
     await client.execute({
       sql: `INSERT OR REPLACE INTO menu_items (id, vendor_id, category_id, name, description, price, image, is_veg, is_available, tags, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [m.id, m.vendorId, m.categoryId, m.name, m.description || null, m.price, m.image || null, m.isVeg ? 1 : 0, m.isAvailable ? 1 : 0, JSON.stringify(m.tags), m.displayOrder]
+      args: [item.id, item.vendorId, item.categoryId, item.name, item.description || null, item.price, item.image || null, item.isVeg ? 1 : 0, item.isAvailable ? 1 : 0, JSON.stringify(item.tags || []), item.displayOrder || 0]
     });
   }
 

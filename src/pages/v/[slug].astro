@@ -129,10 +129,10 @@ const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length}
         </div>
 
 
-        {vendor.deliversTo && vendor.deliversTo.length > 0 && (
+        {deliversToList.length > 0 && (
           <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
             <span class="text-base">🛵</span>
-            <span><strong class="text-slate-800 font-semibold">Delivers to:</strong> {vendor.deliversTo.join(', ')}</span>
+            <span><strong class="text-slate-800 font-semibold">Delivers to:</strong> {deliversToList.join(', ')}</span>
           </div>
         )}
       </div>

@@ -101,7 +101,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         activeCat: initialCategory || 'all',
         vibeTag: initialTag || 'all',
         maxPrice: initialMaxPrice,
-        vegFilter: initialIsVeg === 'true' ? 'veg' : (initialIsVeg === 'false' ? 'non-veg' : 'all'),
+        vegFilter: initialIsVeg === 'true' ? 'veg' : ((initialIsVeg === 'false' || initialIsVeg === 'nonveg' || initialIsVeg === 'non-veg') ? 'nonveg' : 'all'),
         allVendors: Array.isArray(initialVendors) ? initialVendors : [],
         allItems: Array.isArray(initialItems) ? initialItems : [],
         selectedItem: null,
@@ -137,16 +137,15 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           return 'https://wa.me/' + full;
         },
 
-
-
         async init() {
           if (this.allItems.length === 0 || this.allVendors.length === 0) {
             try {
               const res = await fetch('/api/search.json?limit=250');
               if (res.ok) {
                 const data = await res.json();
-                if (data.results && data.results.length > 0) {
-                  this.allItems = data.results;
+                const items = data.hits || data.results || [];
+                if (items.length > 0) {
+                  this.allItems = items;
                 }
               }
             } catch (e) {}
@@ -221,7 +220,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             // 2. Or matched because vendor name/location/delivery directly matches
             var nameLower = (v.name || '').toLowerCase();
             var addressLower = (v.address || '').toLowerCase();
-            var deliversLower = (v.deliversTo || []).join(' ').toLowerCase();
+            var deliversLower = Array.isArray(v.deliversTo) ? v.deliversTo.join(' ').toLowerCase() : (typeof v.deliversTo === 'string' ? v.deliversTo.toLowerCase() : '');
             var fullText = nameLower + ' ' + addressLower + ' ' + deliversLower;
             var targetWords = fullText.split(/[\s,()\/+-]+/).filter(Boolean);
 
@@ -256,7 +255,8 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             list = list.filter(function(i) {
               var nameLower = (i.name || '').toLowerCase();
               var descLower = (i.description || '').toLowerCase();
-              var tags = (i.tags || []).map(function(t) { return t.toLowerCase(); });
+              var rawTags = Array.isArray(i.tags) ? i.tags : (typeof i.tags === 'string' ? [i.tags] : []);
+              var tags = rawTags.map(function(t) { return String(t).toLowerCase(); });
               var full = nameLower + ' ' + descLower + ' ' + tags.join(' ');
 
               if (vibe === 'protein') {
@@ -300,13 +300,12 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
           // 4. Diet Filter
           if (this.vegFilter === 'veg') {
-            list = list.filter(function(i) { return i.isVeg === true; });
-          } else if (this.vegFilter === 'nonveg') {
+            list = list.filter(function(i) { return i.isVeg === true || i.isVeg === 1; });
+          } else if (this.vegFilter === 'nonveg' || this.vegFilter === 'non-veg') {
             list = list.filter(function(i) { return !i.isVeg; });
           }
 
-
-          // 4. Keyword & Typo-Tolerant Search
+          // 5. Keyword & Typo-Tolerant Search
           if (!this.query.trim()) {
             return list;
           }
@@ -320,7 +319,8 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               var descLower = (item.description || '').toLowerCase();
               var vendorLower = (item.vendorName || '').toLowerCase();
               var categoryLower = (item.categoryName || '').toLowerCase();
-              var tagsText = (item.tags || []).join(' ').toLowerCase();
+              var rawItemTags = Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? [item.tags] : []);
+              var tagsText = rawItemTags.join(' ').toLowerCase();
               var fullSearchText = nameLower + ' ' + descLower + ' ' + vendorLower + ' ' + categoryLower + ' ' + tagsText;
 
               var targetWords = fullSearchText.split(/[\s,()\/+-]+/).filter(Boolean);

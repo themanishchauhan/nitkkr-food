@@ -1,12 +1,14 @@
-import { db, schema } from '../src/lib/db';
+import { createDb, schema } from '../src/lib/db';
 import { MOCK_CATEGORIES, MOCK_VENDORS, MOCK_MENU_ITEMS } from '../src/lib/mock-data';
 
 export async function seedDatabase() {
-  console.log('Seeding database with 20 NITKKR vendors data...');
+  console.log('Seeding database with NITKKR vendors data...');
   if (!process.env.DATABASE_URL) {
     console.log('No DATABASE_URL configured. Mock fallback data is enabled.');
     return;
   }
+
+  const db = createDb();
 
   try {
     // Insert categories

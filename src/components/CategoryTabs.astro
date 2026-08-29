@@ -78,7 +78,8 @@ const {
         const name = (item.name || '').toLowerCase();
         const desc = (item.description || '').toLowerCase();
         const cat = (item.categoryName || '').toLowerCase();
-        const tags = (item.tags || []).join(' ').toLowerCase();
+        const rawTags = Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? [item.tags] : []);
+        const tags = rawTags.join(' ').toLowerCase();
         const full = [name, desc, cat, tags].join(' ');
         const normFull = this.normalize(full);
         return rawTokens.every(token => this.matchToken(token, full, normFull));

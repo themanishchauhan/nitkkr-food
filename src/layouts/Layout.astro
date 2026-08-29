@@ -18,6 +18,7 @@ const canonicalURL = new URL(Astro.url.pathname, siteBase);
 const resolvedOgImage = ogImage.startsWith('http') ? ogImage : new URL(ogImage, siteBase).href;
 
 import { getAllSiteSettings } from '../lib/queries';
+import { getRawD1Binding } from '../lib/db';
 
 let customFooterPages: any[] = [];
 let siteSettingsObj: Record<string, string> = {};
@@ -26,9 +27,7 @@ try {
   const settingsList = Array.isArray(settings) ? settings : [];
   siteSettingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 
-  const rawD1 = (globalThis as any).DB || 
-                (globalThis as any).__CF_ENV__?.DB || 
-                (globalThis as any).env?.DB;
+  const rawD1 = (Astro.locals as any)?.db || getRawD1Binding();
   if (rawD1 && typeof rawD1.prepare === 'function') {
     const res = await rawD1.prepare('SELECT title, slug, category, icon FROM custom_pages WHERE show_in_footer = 1 AND is_published = 1 ORDER BY display_order ASC, id ASC').all();
     customFooterPages = res?.results || [];
@@ -206,7 +205,7 @@ const isVendorPage = currentPath.startsWith('/v/');
             <span>🍜</span> NITKKR Food
           </a>
           <p class="text-slate-500 leading-relaxed text-[11px]">
-            Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.
+            {siteSettingsObj.footer_tagline || 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.'}
           </p>
         </div>
 
@@ -251,8 +250,8 @@ const isVendorPage = currentPath.startsWith('/v/');
 
 
       <div class="pt-6 border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-400 text-center sm:text-left">
-        <p>© {new Date().getFullYear()} {siteSettingsObj.company_name || 'NITKKR Food'} • {siteSettingsObj.footer_copyright_text || 'Built with ❤️ for NIT Kurukshetra students'}</p>
-        <p class="text-slate-400">Zero Commissions • Direct Vendor Connect</p>
+        <p>© {new Date().getFullYear()} {siteSettingsObj.company_name || 'NITKKR Food'} • {siteSettingsObj.footer_copyright || siteSettingsObj.footer_copyright_text || 'Built with ❤️ for NIT Kurukshetra students'}</p>
+        <p class="text-slate-400">{siteSettingsObj.footer_custom_note || 'Zero Commissions • Direct Vendor Connect'}</p>
       </div>
 
     </div>
