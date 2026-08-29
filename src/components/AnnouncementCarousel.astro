@@ -73,7 +73,7 @@ const activeSlides = rawSlides.filter(s => s.isEnabled !== false && s.title?.tri
         this.stopAutoplay();
         this.autoplayTimer = setInterval(() => {
           this.next();
-        }, 4500);
+        }, 4000);
       },
       stopAutoplay() {
         if (this.autoplayTimer) {
@@ -115,9 +115,9 @@ const activeSlides = rawSlides.filter(s => s.isEnabled !== false && s.title?.tri
     class="relative w-full select-none"
   >
     <!-- Section Header -->
-    <div class="flex items-center justify-between mb-1.5 px-0.5">
+    <div class="flex items-center justify-between mb-2 px-0.5">
       <h2 class="font-display text-xs sm:text-sm font-extrabold flex items-center gap-1.5 text-slate-900 tracking-tight">
-        <span class="text-amber-500 animate-bounce">🎁</span>
+        <span class="text-amber-500">🎁</span>
         <span>Campus Offers & Deals</span>
       </h2>
 
@@ -126,16 +126,16 @@ const activeSlides = rawSlides.filter(s => s.isEnabled !== false && s.title?.tri
           <button
             type="button"
             @click="prev(); stopAutoplay(); startAutoplay();"
-            class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-amber-50 hover:text-nitkkr-orange flex items-center justify-center text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
-            aria-label="Previous announcement"
+            class="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-amber-50 hover:text-nitkkr-orange flex items-center justify-center text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+            aria-label="Previous offer"
           >
             ‹
           </button>
           <button
             type="button"
             @click="next(); stopAutoplay(); startAutoplay();"
-            class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-amber-50 hover:text-nitkkr-orange flex items-center justify-center text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
-            aria-label="Next announcement"
+            class="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-amber-50 hover:text-nitkkr-orange flex items-center justify-center text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+            aria-label="Next offer"
           >
             ›
           </button>
@@ -143,73 +143,70 @@ const activeSlides = rawSlides.filter(s => s.isEnabled !== false && s.title?.tri
       )}
     </div>
 
-    <!-- Carousel Container -->
-    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm border border-black/5 bg-slate-900 min-h-[135px] sm:min-h-[145px]">
-      {activeSlides.map((slide, idx) => (
-        <div
-          x-show={`current === ${idx}`}
-          x-cloak
-          x-transition:enter="transition-all ease-out duration-350 transform"
-          x-transition:enter-start="opacity-0 translate-x-3 scale-[0.99]"
-          x-transition:enter-end="opacity-100 translate-x-0 scale-100"
-          x-transition:leave="transition-all ease-in duration-200 transform absolute inset-0"
-          x-transition:leave-start="opacity-100 translate-x-0 scale-100"
-          x-transition:leave-end="opacity-0 -translate-x-3 scale-[0.99]"
-          class={`bg-gradient-to-r ${slide.gradient || 'from-orange-600 via-amber-600 to-rose-600'} p-3.5 sm:p-4 text-white flex flex-col justify-between h-full min-h-[135px] sm:min-h-[145px] relative overflow-hidden`}
-        >
-          <!-- Background Decorative Watermark Icon -->
-          <span class="absolute -right-2 -bottom-3 text-6xl sm:text-7xl opacity-15 select-none pointer-events-none" aria-hidden="true">
-            {slide.icon || '🔥'}
-          </span>
-
-          <!-- Header: Badge & Vendor -->
-          <div class="flex items-center justify-between gap-2 relative z-10">
-            <span class="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-xs">
-              {slide.badge}
+    <!-- Carousel Viewport & Horizontal Track -->
+    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-xs border border-black/5 bg-slate-900">
+      <div
+        class="flex w-full transition-transform duration-500 ease-[cubic-bezier(0.2,1,0.3,1)]"
+        :style="`transform: translateX(-${current * 100}%);`"
+      >
+        {activeSlides.map((slide) => (
+          <div
+            class={`w-full shrink-0 p-4 sm:p-4.5 text-white flex flex-col justify-between min-h-[140px] sm:min-h-[145px] relative overflow-hidden bg-gradient-to-r ${slide.gradient || 'from-orange-600 via-amber-600 to-rose-600'}`}
+          >
+            <!-- Background Decorative Watermark Icon -->
+            <span class="absolute -right-2 -bottom-3 text-6xl sm:text-7xl opacity-15 select-none pointer-events-none" aria-hidden="true">
+              {slide.icon || '🔥'}
             </span>
-            {slide.vendorName && (
-              <span class="text-[10px] sm:text-[11px] font-semibold text-white/85 truncate">
-                {slide.vendorName}
+
+            <!-- Header: Badge & Vendor -->
+            <div class="flex items-center justify-between gap-2 relative z-10">
+              <span class="px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-xs">
+                {slide.badge}
               </span>
-            )}
-          </div>
+              {slide.vendorName && (
+                <span class="text-[10px] sm:text-[11px] font-semibold text-white/85 truncate">
+                  {slide.vendorName}
+                </span>
+              )}
+            </div>
 
-          <!-- Slide Content -->
-          <div class="my-1.5 relative z-10">
-            <h3 class="font-display text-sm sm:text-base font-black text-white tracking-tight leading-snug">
-              {slide.title}
-            </h3>
-            <p class="text-[10px] sm:text-[11px] text-white/90 font-medium mt-0.5 line-clamp-2 leading-relaxed">
-              {slide.description}
-            </p>
-          </div>
+            <!-- Slide Content -->
+            <div class="my-2 relative z-10">
+              <h3 class="font-display text-sm sm:text-base font-black text-white tracking-tight leading-snug">
+                {slide.title}
+              </h3>
+              <p class="text-[11px] text-white/90 font-medium mt-0.5 line-clamp-2 leading-relaxed">
+                {slide.description}
+              </p>
+            </div>
 
-          <!-- Footer Actions & Progress Indicators -->
-          <div class="flex items-center justify-between pt-1 relative z-10">
-            <a
-              href={slide.ctaLink || '/search'}
-              class="px-3 py-1 bg-white text-slate-900 hover:bg-amber-50 active:scale-95 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-xs shadow-xs transition-all inline-flex items-center gap-1 cursor-pointer"
-            >
-              <span>{slide.ctaText || 'View Deal →'}</span>
-            </a>
+            <!-- Footer Actions & Progress Indicators -->
+            <div class="flex items-center justify-between pt-1 relative z-10">
+              <a
+                href={slide.ctaLink || '/search'}
+                class="px-3.5 py-1.5 bg-white text-slate-900 hover:bg-amber-50 active:scale-95 rounded-xl font-extrabold text-[11px] sm:text-xs shadow-xs transition-all inline-flex items-center gap-1 cursor-pointer"
+              >
+                <span>{slide.ctaText || 'View Deal →'}</span>
+              </a>
 
-            <!-- Pagination Dots -->
-            {activeSlides.length > 1 && (
-              <div class="flex items-center gap-1">
-                {activeSlides.map((_, dotIdx) => (
-                  <button
-                    type="button"
-                    @click={`goTo(${dotIdx})`}
-                    class="transition-all duration-300 rounded-full cursor-pointer"
-                    :class={`current === ${dotIdx} ? 'w-4 h-1 bg-white shadow-xs' : 'w-1 h-1 bg-white/40 hover:bg-white/70'`}
-                    aria-label={`Go to slide ${dotIdx + 1}`}
-                  ></button>
-                ))}
-              </div>
-            )}
+              <!-- Pagination Dots -->
+              {activeSlides.length > 1 && (
+                <div class="flex items-center gap-1.5">
+                  {activeSlides.map((_, dotIdx) => (
+                    <button
+                      type="button"
+                      @click={`goTo(${dotIdx})`}
+                      class="transition-all duration-300 rounded-full cursor-pointer h-1.5"
+                      :class={`current === ${dotIdx} ? 'w-5 bg-white shadow-xs' : 'w-1.5 bg-white/40 hover:bg-white/70'`}
+                      aria-label={`Go to slide ${dotIdx + 1}`}
+                    ></button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   </div>
 )}
