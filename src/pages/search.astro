@@ -110,6 +110,19 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           this.selectedItem = item;
           this.showDetailModal = true;
         },
+        switchTab(tab) {
+          this.activeTab = tab;
+          try {
+            var url = new URL(window.location.href);
+            if (tab === 'vendors') {
+              url.searchParams.set('tab', 'vendors');
+            } else {
+              url.searchParams.delete('tab');
+            }
+            window.history.replaceState(null, '', url.toString());
+          } catch (e) {}
+        },
+
         getTelHref(phone) {
           if (!phone) return '#';
           var digits = String(phone).replace(/[^0-9]/g, '');
@@ -358,7 +371,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         <div class="flex gap-2 mt-4 bg-white p-1.5 rounded-2xl border border-bistro-200 shadow-xs">
           <button
             type="button"
-            @click="activeTab = 'dishes'"
+            @click="switchTab('dishes')"
             :class="activeTab === 'dishes' ? 'bg-bistro-500 text-white shadow-sm' : 'text-nitkkr-dark hover:bg-bistro-50'"
             class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
@@ -368,7 +381,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           </button>
           <button
             type="button"
-            @click="activeTab = 'vendors'"
+            @click="switchTab('vendors')"
             :class="activeTab === 'vendors' ? 'bg-bistro-500 text-white shadow-sm' : 'text-nitkkr-dark hover:bg-bistro-50'"
             class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
@@ -377,6 +390,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'vendors' ? 'bg-white/20 text-white' : 'bg-bistro-100 text-bistro-600'" x-text="filteredVendors.length"></span>
           </button>
         </div>
+
 
 
         <!-- Filter Controls for Dishes tab -->
@@ -695,11 +709,28 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           </template>
         </div>
 
-        <div x-show="filteredItems.length === 0" class="text-center py-16 text-nitkkr-gray bg-white rounded-2xl border border-bistro-200 p-8">
-          <p class="text-3xl mb-2">🔍</p>
-          <p class="text-lg font-bold text-nitkkr-dark">No dishes found matching your filters</p>
-          <p class="text-xs text-nitkkr-gray mt-1">Try switching to the "Campus Vendors" tab above or changing your search terms.</p>
+        <div x-show="filteredItems.length === 0" class="text-center py-12 text-nitkkr-gray bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 space-y-3 shadow-2xs">
+          <p class="text-3xl">🔍</p>
+          <p class="text-base font-bold text-slate-900">No dishes found matching your filters</p>
+          <p class="text-xs text-slate-500">Tap one of these popular campus cravings:</p>
+          <div class="flex flex-wrap items-center justify-center gap-1.5 pt-1 max-w-sm mx-auto">
+            <button type="button" @click="query = 'maggi'; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🍜 Maggi</button>
+            <button type="button" @click="query = 'chai'; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">☕ Chai</button>
+            <button type="button" @click="query = 'chowmein'; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🥢 Chowmein</button>
+            <button type="button" @click="query = 'paneer'; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🧀 Paneer</button>
+            <button type="button" @click="query = 'shake'; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🥤 Cold Shake</button>
+          </div>
+          <div>
+            <button
+              type="button"
+              @click="query = ''; activeCat = 'all'; vibeTag = 'all'; maxPrice = ''; vegFilter = 'all'"
+              class="mt-2 px-4 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+            >
+              Reset All Filters
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
 

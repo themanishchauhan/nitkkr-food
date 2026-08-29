@@ -1,8 +1,9 @@
-const CACHE_NAME = 'nitkkr-food-v1';
+const CACHE_NAME = 'nitkkr-food-v2';
 const STATIC_ASSETS = [
   '/',
   '/search',
   '/how-it-works',
+  '/offline',
   '/manifest.webmanifest',
   '/favicon.ico',
   '/og-default.jpg'
@@ -39,10 +40,14 @@ self.addEventListener('fetch', (event) => {
   // Network first with cache fallback for HTML pages
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(event.request).catch(async () => {
+        const cached = await caches.match(event.request);
+        return cached || caches.match('/offline');
+      })
     );
     return;
   }
+
 
   // Stale-while-revalidate for static assets
   event.respondWith(

@@ -257,7 +257,7 @@ const {
         x-transition:enter="transition ease-out duration-300 transform"
         x-transition:enter-start="scale-95 translate-y-4 opacity-0"
         x-transition:enter-end="scale-100 translate-y-0 opacity-100"
-        class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-amber-200/50 space-y-0 relative text-slate-900"
+        class="bg-white rounded-3xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-amber-200/50 space-y-0 relative text-slate-900"
       >
         <!-- Modal Close Button -->
         <button
@@ -269,7 +269,7 @@ const {
         </button>
 
         <!-- Large Dish Image Cover -->
-        <div class="relative w-full h-48 sm:h-56 bg-slate-100 overflow-hidden">
+        <div class="relative w-full h-44 sm:h-52 bg-slate-100 overflow-hidden flex-shrink-0">
           <img
             :src="selectedItem.image || '/placeholder-food.svg'"
             :alt="selectedItem.name"
@@ -290,7 +290,7 @@ const {
         </div>
 
         <!-- Modal Body Content -->
-        <div class="p-5 sm:p-6 space-y-4">
+        <div class="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1">
           <div>
             <div class="flex items-center justify-between gap-2">
               <h2 class="font-display text-xl sm:text-2xl font-extrabold text-slate-900" x-text="selectedItem.name"></h2>
@@ -339,7 +339,8 @@ const {
   </div>
 
   <!-- 📱 Sleek Floating Island Bottom Dock (Efficient, Modern & Responsive) -->
-  <div class="fixed bottom-3 sm:bottom-5 left-0 right-0 z-40 px-4 pointer-events-none">
+  <div class="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:bottom-5 left-0 right-0 z-40 px-4 pointer-events-none">
+
     <div class="max-w-md mx-auto bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl p-1.5 sm:p-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] pointer-events-auto transition-all">
       
       <!-- STATE 1: Default Action Row (Call [flex-1] + Share [flex-1] + Search [icon-only]) -->
