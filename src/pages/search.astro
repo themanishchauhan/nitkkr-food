@@ -152,6 +152,24 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         },
 
         async init() {
+          window.addEventListener('review-updated', (e) => {
+            const { menuItemId, rating } = e.detail || {};
+            if (!menuItemId) return;
+            const target = this.allItems.find(i => Number(i.id) === Number(menuItemId));
+            if (target) {
+              const currentCount = Number(target.reviewCount) || 0;
+              const currentAvg = Number(target.avgRating) || Number(rating) || 5;
+              const newCount = currentCount + 1;
+              const newAvg = ((currentAvg * currentCount + Number(rating)) / newCount).toFixed(1);
+              target.reviewCount = newCount;
+              target.avgRating = newAvg;
+              if (this.selectedItem && Number(this.selectedItem.id) === Number(menuItemId)) {
+                this.selectedItem.reviewCount = newCount;
+                this.selectedItem.avgRating = newAvg;
+              }
+            }
+          });
+
           if (this.allItems.length === 0 || this.allVendors.length === 0) {
             try {
               const res = await fetch('/api/search.json?limit=250');
@@ -846,7 +864,15 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                         </span>
                         <div class="min-w-0">
                           <h4 class="font-bold text-xs sm:text-sm text-slate-900 truncate group-hover:text-nitkkr-orange transition-colors" x-text="item.name"></h4>
-                          <span class="text-[10px] text-slate-400 truncate block" x-text="item.categoryName || 'Campus Dish'"></span>
+                          <div class="flex items-center gap-1.5 text-[10px] text-slate-400 truncate">
+                            <span class="truncate" x-text="item.categoryName || 'Campus Dish'"></span>
+                            <template x-if="item.avgRating && item.reviewCount > 0">
+                              <span class="inline-flex items-center gap-0.5 text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200/60">
+                                <span>★</span>
+                                <span x-text="item.avgRating"></span>
+                              </span>
+                            </template>
+                          </div>
                         </div>
                       </div>
                       <div class="flex items-center gap-1.5 shrink-0">
@@ -890,7 +916,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                   />
                 </div>
 
-                <!-- Middle: Veg/Non-Veg icon + Dish Name + Vendor & Category -->
+                <!-- Middle: Veg/Non-Veg icon + Dish Name + Vendor & Category & Rating -->
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5 min-w-0">
                     <span
@@ -908,6 +934,13 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                     <span class="font-medium text-slate-600 truncate" x-text="item.vendorName || 'Food Cave Fast Food'"></span>
                     <span class="text-slate-300">•</span>
                     <span class="truncate" x-text="item.categoryName || 'Campus Fast Food'"></span>
+                    <template x-if="item.avgRating && item.reviewCount > 0">
+                      <span class="inline-flex items-center gap-0.5 text-amber-600 font-bold text-[11px] bg-amber-50 px-1.5 py-0.2 rounded-md border border-amber-200/60 ml-1">
+                        <span>★</span>
+                        <span x-text="item.avgRating"></span>
+                        <span class="text-[10px] text-amber-700 opacity-80" x-text="'(' + item.reviewCount + ')'"></span>
+                      </span>
+                    </template>
                   </div>
                 </div>
 
@@ -1036,21 +1069,44 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               </div>
             </template>
 
-            <!-- Actions: Rate Dish + View Full Menu + Direct Call -->
-            <div class="pt-3 border-t border-slate-100 flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                @click="showDetailModal = false; window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: selectedItem.id, name: selectedItem.name, mode: 'write' } }))"
-                class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
-              >
-                <span>⭐</span> Rate Dish
-              </button>
+            <!-- Reviews / Ratings & Action Row -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+              <div class="flex items-center gap-2">
+                <span class="text-amber-500 text-lg">★</span>
+                <div>
+                  <p class="text-xs font-extrabold text-slate-900" x-text="selectedItem.avgRating ? selectedItem.avgRating + ' / 5.0' : 'No ratings yet'"></p>
+                  <p class="text-[10px] text-slate-400" x-text="selectedItem.reviewCount > 0 ? selectedItem.reviewCount + (selectedItem.reviewCount === 1 ? ' student review' : ' student reviews') : 'Be the first to rate'"></p>
+                </div>
+              </div>
 
+              <div class="flex items-center gap-1.5 ml-auto">
+                <template x-if="selectedItem.reviewCount > 0">
+                  <button
+                    type="button"
+                    @click="showDetailModal = false; window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: selectedItem.id, name: selectedItem.name, mode: 'read' } }))"
+                    class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                  >
+                    <span>💬</span> Reviews (<span x-text="selectedItem.reviewCount"></span>)
+                  </button>
+                </template>
+
+                <button
+                  type="button"
+                  @click="showDetailModal = false; window.dispatchEvent(new CustomEvent('open-review-modal', { detail: { id: selectedItem.id, name: selectedItem.name, mode: 'write' } }))"
+                  class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                >
+                  <span>⭐</span> Rate Dish
+                </button>
+              </div>
+            </div>
+
+            <!-- Secondary Actions: View Full Menu & Direct Call -->
+            <div class="pt-2 flex items-center gap-2">
               <a
                 :href="`/v/${selectedItem.vendorSlug || 'food-cave'}`"
                 class="flex-1 py-2.5 bg-bistro-500 hover:bg-bistro-600 text-white font-bold text-xs rounded-xl shadow-sm text-center transition-all cursor-pointer whitespace-nowrap"
               >
-                <span>View Menu ➔</span>
+                <span>View Full Vendor Menu ➔</span>
               </a>
 
               <template x-if="selectedItem.vendorPhone">

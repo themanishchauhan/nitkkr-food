@@ -374,7 +374,42 @@ export async function getAllMenuItemsForSearch() {
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
       .where(and(eq(schema.menuItems.isAvailable, true), eq(schema.vendors.isActive, true)));
 
-    if (items && items.length > 0) return items;
+    if (items && items.length > 0) {
+      const allReviews = await db.select({
+        id: schema.reviews.id,
+        menuItemId: schema.reviews.menuItemId,
+        rating: schema.reviews.rating,
+        studentName: schema.reviews.studentName,
+        comment: schema.reviews.comment,
+        createdAt: schema.reviews.createdAt
+      }).from(schema.reviews);
+
+      const reviewStatsMap: Record<number, { count: number; avgRating: string; reviews: any[] }> = {};
+      for (const r of (allReviews || [])) {
+        if (!r.menuItemId) continue;
+        if (!reviewStatsMap[r.menuItemId]) {
+          reviewStatsMap[r.menuItemId] = { count: 0, avgRating: '0.0', reviews: [] };
+        }
+        reviewStatsMap[r.menuItemId].reviews.push(r);
+      }
+      for (const id in reviewStatsMap) {
+        const revs = reviewStatsMap[id].reviews;
+        const count = revs.length;
+        const avg = (revs.reduce((sum, r) => sum + (r.rating || 0), 0) / count).toFixed(1);
+        reviewStatsMap[id].count = count;
+        reviewStatsMap[id].avgRating = avg;
+      }
+
+      return items.map((item: any) => {
+        const stats = reviewStatsMap[item.id];
+        return {
+          ...item,
+          avgRating: stats ? stats.avgRating : null,
+          reviewCount: stats ? stats.count : 0,
+          reviews: stats ? stats.reviews : []
+        };
+      });
+    }
 
     await ensureRealDatabasePopulated();
     items = await db.select({
@@ -399,7 +434,42 @@ export async function getAllMenuItemsForSearch() {
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
       .where(and(eq(schema.menuItems.isAvailable, true), eq(schema.vendors.isActive, true)));
 
-    if (items && items.length > 0) return items;
+    if (items && items.length > 0) {
+      const allReviews = await db.select({
+        id: schema.reviews.id,
+        menuItemId: schema.reviews.menuItemId,
+        rating: schema.reviews.rating,
+        studentName: schema.reviews.studentName,
+        comment: schema.reviews.comment,
+        createdAt: schema.reviews.createdAt
+      }).from(schema.reviews);
+
+      const reviewStatsMap: Record<number, { count: number; avgRating: string; reviews: any[] }> = {};
+      for (const r of (allReviews || [])) {
+        if (!r.menuItemId) continue;
+        if (!reviewStatsMap[r.menuItemId]) {
+          reviewStatsMap[r.menuItemId] = { count: 0, avgRating: '0.0', reviews: [] };
+        }
+        reviewStatsMap[r.menuItemId].reviews.push(r);
+      }
+      for (const id in reviewStatsMap) {
+        const revs = reviewStatsMap[id].reviews;
+        const count = revs.length;
+        const avg = (revs.reduce((sum, r) => sum + (r.rating || 0), 0) / count).toFixed(1);
+        reviewStatsMap[id].count = count;
+        reviewStatsMap[id].avgRating = avg;
+      }
+
+      return items.map((item: any) => {
+        const stats = reviewStatsMap[item.id];
+        return {
+          ...item,
+          avgRating: stats ? stats.avgRating : null,
+          reviewCount: stats ? stats.count : 0,
+          reviews: stats ? stats.reviews : []
+        };
+      });
+    }
   } catch (e) {
     console.error('getAllMenuItemsForSearch error:', e);
   }
