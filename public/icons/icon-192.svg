@@ -1,4 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-    <rect width="192" height="192" rx="38.4" fill="#FF6B35"/>
-    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="86.4" fill="#FFFFFF">🍜</text>
-  </svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="foodGrad192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF7A30" />
+      <stop offset="50%" stop-color="#E87D2E" />
+      <stop offset="100%" stop-color="#D6651F" />
+    </linearGradient>
+    <linearGradient id="bowlGrad192" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FFF3E8" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="34" fill="url(#foodGrad192)" />
+  <rect x="2" y="2" width="124" height="124" rx="32" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2" fill="none" />
+  <path d="M44 38 C 42 32, 46 26, 44 20" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-opacity="0.9" fill="none" />
+  <path d="M64 36 C 62 28, 66 22, 64 16" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" fill="none" />
+  <path d="M84 38 C 82 32, 86 26, 84 20" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-opacity="0.9" fill="none" />
+  <path d="M26 54 C 26 50, 30 48, 34 48 L 94 48 C 98 48, 102 50, 102 54 C 102 78, 85 96, 64 96 C 43 96, 26 78, 26 54 Z" fill="url(#bowlGrad192)" />
+  <path d="M46 96 L 82 96 C 85 96, 87 99, 85 102 L 81 108 C 80 110, 77 112, 74 112 L 54 112 C 51 112, 48 110, 47 108 L 43 102 C 41 99, 43 96, 46 96 Z" fill="#FFFFFF" fill-opacity="0.95" />
+  <line x1="88" y1="40" x2="38" y2="44" stroke="#D6651F" stroke-width="4" stroke-linecap="round" />
+  <line x1="90" y1="36" x2="42" y2="40" stroke="#E87D2E" stroke-width="3" stroke-linecap="round" />
+  <path d="M100 24 Q 100 30 106 30 Q 100 30 100 36 Q 100 30 94 30 Q 100 30 100 24 Z" fill="#FFE082" />
+</svg>

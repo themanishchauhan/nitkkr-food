@@ -1,0 +1,215 @@
+---
+interface Slide {
+  id?: string;
+  badge: string;
+  vendorName?: string;
+  title: string;
+  description: string;
+  ctaText?: string;
+  ctaLink?: string;
+  gradient?: string;
+  icon?: string;
+  isEnabled?: boolean;
+}
+
+interface Props {
+  slides?: Slide[];
+}
+
+const defaultSlides: Slide[] = [
+  {
+    id: 'deal-1',
+    badge: "🔥 TODAY'S CAMPUS DEAL",
+    vendorName: 'Food Cave Fast Food',
+    title: 'Free Hostel Delivery on ₹149+',
+    description: 'Direct delivery to H-1 to H-11, DBH & Kalpana Bhawan till 2:00 AM!',
+    ctaText: 'Order Now →',
+    ctaLink: '/v/food-cave',
+    gradient: 'from-orange-600 via-amber-600 to-rose-600',
+    icon: '🛵',
+    isEnabled: true
+  },
+  {
+    id: 'deal-2',
+    badge: '⚡ STUDENT SPECIAL',
+    vendorName: 'Campus Specials',
+    title: 'Butter Maggi + Hot Chai @ ₹59',
+    description: 'Perfect evening study snack! Freshly prepared in 10 mins.',
+    ctaText: 'View Deal →',
+    ctaLink: '/search?q=maggi',
+    gradient: 'from-emerald-700 via-teal-700 to-cyan-800',
+    icon: '🍜',
+    isEnabled: true
+  },
+  {
+    id: 'deal-3',
+    badge: '🎉 15% STUDENT DISCOUNT',
+    vendorName: 'Food Cave Fast Food',
+    title: 'Buy 2 Paneer Rolls & Save 15%',
+    description: 'Hot grilled rolls with extra paneer & mint sauce. Show NIT ID.',
+    ctaText: 'Explore Menu →',
+    ctaLink: '/v/food-cave',
+    gradient: 'from-indigo-700 via-purple-700 to-pink-700',
+    icon: '🌯',
+    isEnabled: true
+  }
+];
+
+const { slides: propSlides } = Astro.props;
+const rawSlides = propSlides && propSlides.length > 0 ? propSlides : defaultSlides;
+const activeSlides = rawSlides.filter(s => s.isEnabled !== false && s.title?.trim());
+---
+
+{activeSlides.length > 0 && (
+  <div
+    x-data={`{
+      current: 0,
+      total: ${activeSlides.length},
+      touchStartX: 0,
+      touchEndX: 0,
+      autoplayTimer: null,
+      startAutoplay() {
+        if (this.total <= 1) return;
+        this.stopAutoplay();
+        this.autoplayTimer = setInterval(() => {
+          this.next();
+        }, 4500);
+      },
+      stopAutoplay() {
+        if (this.autoplayTimer) {
+          clearInterval(this.autoplayTimer);
+          this.autoplayTimer = null;
+        }
+      },
+      next() {
+        this.current = (this.current + 1) % this.total;
+      },
+      prev() {
+        this.current = (this.current - 1 + this.total) % this.total;
+      },
+      goTo(idx) {
+        this.current = idx;
+        this.stopAutoplay();
+        this.startAutoplay();
+      },
+      handleTouchStart(e) {
+        this.touchStartX = e.touches[0].clientX;
+        this.stopAutoplay();
+      },
+      handleTouchEnd(e) {
+        this.touchEndX = e.changedTouches[0].clientX;
+        const diff = this.touchStartX - this.touchEndX;
+        if (diff > 45) {
+          this.next();
+        } else if (diff < -45) {
+          this.prev();
+        }
+        this.startAutoplay();
+      }
+    }`}
+    x-init="startAutoplay()"
+    @mouseenter="stopAutoplay()"
+    @mouseleave="startAutoplay()"
+    @touchstart.passive="handleTouchStart($event)"
+    @touchend.passive="handleTouchEnd($event)"
+    class="relative w-full select-none"
+  >
+    <!-- Section Header -->
+    <div class="flex items-center justify-between mb-1.5 px-0.5">
+      <h2 class="font-display text-xs sm:text-sm font-extrabold flex items-center gap-1.5 text-slate-900 tracking-tight">
+        <span class="text-amber-500 animate-bounce">🎁</span>
+        <span>Campus Offers & Deals</span>
+      </h2>
+
+      {activeSlides.length > 1 && (
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            @click="prev(); stopAutoplay(); startAutoplay();"
+            class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-amber-50 hover:text-nitkkr-orange flex items-center justify-center text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+            aria-label="Previous announcement"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            @click="next(); stopAutoplay(); startAutoplay();"
+            class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-amber-50 hover:text-nitkkr-orange flex items-center justify-center text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+            aria-label="Next announcement"
+          >
+            ›
+          </button>
+        </div>
+      )}
+    </div>
+
+    <!-- Carousel Container -->
+    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm border border-black/5 bg-slate-900 min-h-[135px] sm:min-h-[145px]">
+      {activeSlides.map((slide, idx) => (
+        <div
+          x-show={`current === ${idx}`}
+          x-cloak
+          x-transition:enter="transition-all ease-out duration-350 transform"
+          x-transition:enter-start="opacity-0 translate-x-3 scale-[0.99]"
+          x-transition:enter-end="opacity-100 translate-x-0 scale-100"
+          x-transition:leave="transition-all ease-in duration-200 transform absolute inset-0"
+          x-transition:leave-start="opacity-100 translate-x-0 scale-100"
+          x-transition:leave-end="opacity-0 -translate-x-3 scale-[0.99]"
+          class={`bg-gradient-to-r ${slide.gradient || 'from-orange-600 via-amber-600 to-rose-600'} p-3.5 sm:p-4 text-white flex flex-col justify-between h-full min-h-[135px] sm:min-h-[145px] relative overflow-hidden`}
+        >
+          <!-- Background Decorative Watermark Icon -->
+          <span class="absolute -right-2 -bottom-3 text-6xl sm:text-7xl opacity-15 select-none pointer-events-none" aria-hidden="true">
+            {slide.icon || '🔥'}
+          </span>
+
+          <!-- Header: Badge & Vendor -->
+          <div class="flex items-center justify-between gap-2 relative z-10">
+            <span class="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-xs">
+              {slide.badge}
+            </span>
+            {slide.vendorName && (
+              <span class="text-[10px] sm:text-[11px] font-semibold text-white/85 truncate">
+                {slide.vendorName}
+              </span>
+            )}
+          </div>
+
+          <!-- Slide Content -->
+          <div class="my-1.5 relative z-10">
+            <h3 class="font-display text-sm sm:text-base font-black text-white tracking-tight leading-snug">
+              {slide.title}
+            </h3>
+            <p class="text-[10px] sm:text-[11px] text-white/90 font-medium mt-0.5 line-clamp-2 leading-relaxed">
+              {slide.description}
+            </p>
+          </div>
+
+          <!-- Footer Actions & Progress Indicators -->
+          <div class="flex items-center justify-between pt-1 relative z-10">
+            <a
+              href={slide.ctaLink || '/search'}
+              class="px-3 py-1 bg-white text-slate-900 hover:bg-amber-50 active:scale-95 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-xs shadow-xs transition-all inline-flex items-center gap-1 cursor-pointer"
+            >
+              <span>{slide.ctaText || 'View Deal →'}</span>
+            </a>
+
+            <!-- Pagination Dots -->
+            {activeSlides.length > 1 && (
+              <div class="flex items-center gap-1">
+                {activeSlides.map((_, dotIdx) => (
+                  <button
+                    type="button"
+                    @click={`goTo(${dotIdx})`}
+                    class="transition-all duration-300 rounded-full cursor-pointer"
+                    :class={`current === ${dotIdx} ? 'w-4 h-1 bg-white shadow-xs' : 'w-1 h-1 bg-white/40 hover:bg-white/70'`}
+                    aria-label={`Go to slide ${dotIdx + 1}`}
+                  ></button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}

@@ -29,6 +29,56 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
         href: '/search?q='
       },
 
+      announcementSlides: [
+        {
+          id: 'deal-1',
+          badge: "🔥 TODAY'S CAMPUS DEAL",
+          vendorName: 'Food Cave Fast Food',
+          title: 'Free Hostel Delivery on ₹149+',
+          description: 'Direct delivery to H-1 to H-11, DBH & Kalpana Bhawan till 2:00 AM!',
+          ctaText: 'Order Now →',
+          ctaLink: '/v/food-cave',
+          gradient: 'from-orange-600 via-amber-600 to-rose-600',
+          icon: '🛵',
+          isEnabled: true
+        },
+        {
+          id: 'deal-2',
+          badge: '⚡ STUDENT SPECIAL',
+          vendorName: 'Campus Specials',
+          title: 'Butter Maggi + Hot Chai @ ₹59',
+          description: 'Perfect evening study snack! Freshly prepared in 10 mins.',
+          ctaText: 'View Deal →',
+          ctaLink: '/search?q=maggi',
+          gradient: 'from-emerald-700 via-teal-700 to-cyan-800',
+          icon: '🍜',
+          isEnabled: true
+        },
+        {
+          id: 'deal-3',
+          badge: '🎉 15% STUDENT DISCOUNT',
+          vendorName: 'Food Cave Fast Food',
+          title: 'Buy 2 Paneer Rolls & Save 15%',
+          description: 'Hot grilled rolls with extra paneer & mint sauce. Show NIT ID.',
+          ctaText: 'Explore Menu →',
+          ctaLink: '/v/food-cave',
+          gradient: 'from-indigo-700 via-purple-700 to-pink-700',
+          icon: '🌯',
+          isEnabled: true
+        }
+      ],
+
+      newSlide: {
+        badge: '🔥 CAMPUS OFFER',
+        vendorName: 'Food Cave Fast Food',
+        title: '',
+        description: '',
+        ctaText: 'Explore Menu →',
+        ctaLink: '/search',
+        gradient: 'from-orange-600 via-amber-600 to-rose-600',
+        icon: '🍕'
+      },
+
       settings: {
         homepage_title: 'Hungry? We got you. 🍜',
         homepage_tagline: 'Search 20+ food vendors around NITKKR',
@@ -36,6 +86,8 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
         announcement_banner_enabled: 'false',
         announcement_banner_text: '',
         announcement_banner_type: 'info',
+        announcement_carousel_enabled: 'true',
+        announcement_carousel_json: '',
         ad_banner_enabled: 'false',
         ad_banner_badge: '⚡ SPONSORED DEAL',
         ad_banner_title: 'Kurukshetra Protein & Shake Hub',
@@ -101,6 +153,15 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
                 }
               } catch (e) {}
             }
+
+            if (this.settings.announcement_carousel_json) {
+              try {
+                const parsedSlides = JSON.parse(this.settings.announcement_carousel_json);
+                if (Array.isArray(parsedSlides) && parsedSlides.length > 0) {
+                  this.announcementSlides = parsedSlides;
+                }
+              } catch (e) {}
+            }
           }
         } catch (e) {
           console.error('Load settings error', e);
@@ -130,10 +191,49 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
         this.vibeChips[index].isEnabled = !this.vibeChips[index].isEnabled;
       },
 
+      addSlide() {
+        if (!this.newSlide.title.trim()) {
+          alert('Offer / Announcement title is required');
+          return;
+        }
+        this.announcementSlides.push({
+          id: 'deal-' + Date.now(),
+          badge: this.newSlide.badge.trim() || '🔥 CAMPUS DEAL',
+          vendorName: this.newSlide.vendorName.trim() || 'Campus Eatery',
+          title: this.newSlide.title.trim(),
+          description: this.newSlide.description.trim() || 'Special campus discount for NITKKR students.',
+          ctaText: this.newSlide.ctaText.trim() || 'View Deal →',
+          ctaLink: this.newSlide.ctaLink.trim() || '/search',
+          gradient: this.newSlide.gradient || 'from-orange-600 via-amber-600 to-rose-600',
+          icon: this.newSlide.icon || '🔥',
+          isEnabled: true
+        });
+        this.newSlide = {
+          badge: '🔥 CAMPUS OFFER',
+          vendorName: 'Food Cave Fast Food',
+          title: '',
+          description: '',
+          ctaText: 'Explore Menu →',
+          ctaLink: '/search',
+          gradient: 'from-orange-600 via-amber-600 to-rose-600',
+          icon: '🍕'
+        };
+        this.showToast('Slide added! Click "Save All Changes" to publish live.');
+      },
+
+      removeSlide(index) {
+        this.announcementSlides.splice(index, 1);
+      },
+
+      toggleSlide(index) {
+        this.announcementSlides[index].isEnabled = !this.announcementSlides[index].isEnabled;
+      },
+
       async saveAllSettings() {
         this.saving = true;
         try {
           this.settings.vibe_chips_json = JSON.stringify(this.vibeChips);
+          this.settings.announcement_carousel_json = JSON.stringify(this.announcementSlides);
 
           const res = await fetch('/api/admin/settings', {
             method: 'POST',
@@ -141,7 +241,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             body: JSON.stringify({ settings: this.settings })
           });
           if (res.ok) {
-            this.showToast('🎉 All website settings & vibe chips saved live!');
+            this.showToast('🎉 All website settings & deals carousel saved live!');
           } else {
             const errData = await res.json().catch(() => ({}));
             this.showToast('❌ ' + (errData.error || 'Failed to save settings'));
@@ -433,32 +533,156 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           </div>
 
           <!-- TAB 4: LIVE BANNERS & ANNOUNCEMENTS -->
-          <div x-show="activeTab === 'announcements'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 class="font-display text-lg font-bold text-nitkkr-dark">📢 Campus Live Alert Banner</h3>
-                <p class="text-xs text-nitkkr-gray">Show an urgent campus broadcast at the top of the homepage</p>
+          <div x-show="activeTab === 'announcements'" class="space-y-6">
+            <!-- 1. Top Alert Banner -->
+            <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <h3 class="font-display text-lg font-bold text-nitkkr-dark">📢 Campus Live Alert Banner</h3>
+                  <p class="text-xs text-nitkkr-gray">Show an urgent campus broadcast at the top of the homepage</p>
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" x-model="settings.announcement_banner_enabled" :checked="settings.announcement_banner_enabled === 'true'" @change="settings.announcement_banner_enabled = $el.checked ? 'true' : 'false'" class="rounded text-nitkkr-orange" />
+                  <span class="text-xs font-bold text-nitkkr-dark">Show Banner</span>
+                </label>
               </div>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" x-model="settings.announcement_banner_enabled" :checked="settings.announcement_banner_enabled === 'true'" @change="settings.announcement_banner_enabled = $el.checked ? 'true' : 'false'" class="rounded text-nitkkr-orange" />
-                <span class="text-xs font-bold text-nitkkr-dark">Show Banner</span>
-              </label>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="text-xs font-bold text-nitkkr-dark block mb-1">Banner Announcement Text</label>
+                  <input type="text" x-model="settings.announcement_banner_text" placeholder="e.g. Late Night Canteens open till 3:30 AM during exams!" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+                </div>
+
+                <div>
+                  <label class="text-xs font-bold text-nitkkr-dark block mb-1">Banner Theme Style</label>
+                  <select x-model="settings.announcement_banner_type" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
+                    <option value="info">🔵 Info / Announcement (Blue)</option>
+                    <option value="offer">🎉 Offer / Discount (Orange/Amber)</option>
+                    <option value="warning">⚠️ Notice / Weather Alert (Yellow)</option>
+                    <option value="danger">🚨 Urgent / Vendor Closed (Red)</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
-            <div class="space-y-4">
-              <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Banner Announcement Text</label>
-                <input type="text" x-model="settings.announcement_banner_text" placeholder="e.g. Late Night Canteens open till 3:30 AM during exams!" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+            <!-- 2. Dynamic Deals & Announcements Carousel Studio -->
+            <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <h3 class="font-display text-lg font-bold text-nitkkr-dark flex items-center gap-2">
+                    <span>🎁</span> Campus Offers & Deals Carousel Studio
+                  </h3>
+                  <p class="text-xs text-nitkkr-gray">Create, edit, and toggle dynamic announcement slides shown on the homepage with smooth transitions</p>
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" x-model="settings.announcement_carousel_enabled" :checked="settings.announcement_carousel_enabled !== 'false'" @change="settings.announcement_carousel_enabled = $el.checked ? 'true' : 'false'" class="rounded text-nitkkr-orange" />
+                  <span class="text-xs font-bold text-nitkkr-dark">Show Carousel</span>
+                </label>
               </div>
 
-              <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Banner Theme Style</label>
-                <select x-model="settings.announcement_banner_type" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
-                  <option value="info">🔵 Info / Announcement (Blue)</option>
-                  <option value="offer">🎉 Offer / Discount (Orange/Amber)</option>
-                  <option value="warning">⚠️ Notice / Weather Alert (Yellow)</option>
-                  <option value="danger">🚨 Urgent / Vendor Closed (Red)</option>
-                </select>
+              <!-- Add New Slide -->
+              <div class="bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-2xl p-4 sm:p-5 space-y-4">
+                <span class="text-xs font-bold text-nitkkr-dark block">➕ Create New Announcement Slide</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Badge Tag</label>
+                    <input type="text" x-model="newSlide.badge" placeholder="🔥 TODAY'S CAMPUS DEAL" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs font-bold" />
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Vendor / Source</label>
+                    <input type="text" x-model="newSlide.vendorName" placeholder="Food Cave Fast Food" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs font-bold" />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Main Offer / Headline *</label>
+                    <input type="text" x-model="newSlide.title" placeholder="Free Hostel Delivery on ₹149+" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs font-bold" />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Subtitle / Details</label>
+                    <input type="text" x-model="newSlide.description" placeholder="Direct delivery to H-1 to H-11 & DBH till 2:00 AM" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs font-medium" />
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Button CTA Text</label>
+                    <input type="text" x-model="newSlide.ctaText" placeholder="Order Now →" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs font-bold" />
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Target Link (/v/... or /search?...)</label>
+                    <input type="text" x-model="newSlide.ctaLink" placeholder="/v/food-cave" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs font-mono" />
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Decorative Icon</label>
+                    <input type="text" x-model="newSlide.icon" placeholder="🛵" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs text-center font-bold" />
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold text-nitkkr-gray block mb-1">Color Theme Gradient</label>
+                    <select x-model="newSlide.gradient" class="w-full px-3 py-2 bg-white border border-nitkkr-orange/30 rounded-xl text-xs font-semibold">
+                      <option value="from-orange-600 via-amber-600 to-rose-600">🔥 Sunset Orange/Amber</option>
+                      <option value="from-emerald-700 via-teal-700 to-cyan-800">⚡ Emerald / Teal Special</option>
+                      <option value="from-indigo-700 via-purple-700 to-pink-700">🎉 Purple / Pink Discount</option>
+                      <option value="from-blue-700 via-indigo-700 to-slate-900">🌙 Midnight Blue</option>
+                      <option value="from-rose-600 via-red-600 to-amber-700">🌶️ Spicy Red</option>
+                    </select>
+                  </div>
+                  <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
+                    <button
+                      @click="addSlide()"
+                      class="px-5 py-2.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                    >
+                      Add Announcement Slide ➕
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Active Slides List -->
+              <div class="space-y-3">
+                <span class="text-xs font-bold text-nitkkr-dark block">Active Carousel Slides (<span x-text="announcementSlides.length"></span>)</span>
+                <div class="space-y-3">
+                  <template x-for="(slide, sIdx) in announcementSlides" :key="sIdx">
+                    <div class="bg-white border rounded-2xl p-4 shadow-2xs transition-all space-y-3" :class="slide.isEnabled ? 'border-amber-200' : 'border-slate-200 opacity-60 bg-slate-50'">
+                      <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                          <span class="text-xl" x-text="slide.icon || '🔥'"></span>
+                          <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-800" x-text="slide.badge"></span>
+                          <span class="text-xs font-semibold text-slate-500" x-text="slide.vendorName"></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <button
+                            @click="toggleSlide(sIdx)"
+                            class="px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-colors"
+                            :class="slide.isEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'"
+                            x-text="slide.isEnabled ? 'Active 🟢' : 'Hidden ⚪'"
+                          ></button>
+                          <button
+                            @click="removeSlide(sIdx)"
+                            class="text-red-500 hover:text-red-700 px-2 py-1 text-xs cursor-pointer font-bold"
+                            title="Delete Slide"
+                          >
+                            ✕ Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 block">Headline</label>
+                          <input type="text" x-model="slide.title" class="w-full font-bold text-slate-900 border-b border-slate-200 py-1 bg-transparent focus:border-nitkkr-orange focus:outline-hidden" />
+                        </div>
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 block">Subtitle</label>
+                          <input type="text" x-model="slide.description" class="w-full text-slate-600 border-b border-slate-200 py-1 bg-transparent focus:border-nitkkr-orange focus:outline-hidden" />
+                        </div>
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 block">CTA Label</label>
+                          <input type="text" x-model="slide.ctaText" class="w-full font-bold text-slate-700 border-b border-slate-200 py-1 bg-transparent focus:border-nitkkr-orange focus:outline-hidden" />
+                        </div>
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 block">Target Link</label>
+                          <input type="text" x-model="slide.ctaLink" class="w-full font-mono text-slate-600 border-b border-slate-200 py-1 bg-transparent focus:border-nitkkr-orange focus:outline-hidden" />
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
               </div>
             </div>
           </div>

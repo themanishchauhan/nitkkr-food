@@ -3,6 +3,7 @@ export const prerender = false;
 import Layout from '../layouts/Layout.astro';
 import SearchBar from '../components/SearchBar.astro';
 import FilterChips from '../components/FilterChips.astro';
+import AnnouncementCarousel from '../components/AnnouncementCarousel.astro';
 import VendorCard from '../components/VendorCard.astro';
 import CategoryCard from '../components/CategoryCard.astro';
 import AdBanner from '../components/AdBanner.astro';
@@ -23,6 +24,17 @@ const heroTagline = settingsObj.homepage_tagline || 'Explore campus eateries & f
 const bannerEnabled = settingsObj.announcement_banner_enabled === 'true';
 const bannerText = settingsObj.announcement_banner_text || '';
 const bannerType = settingsObj.announcement_banner_type || 'info';
+
+const carouselEnabled = settingsObj.announcement_carousel_enabled !== 'false';
+let announcementSlides: any[] | undefined = undefined;
+if (settingsObj.announcement_carousel_json) {
+  try {
+    const parsed = JSON.parse(settingsObj.announcement_carousel_json);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      announcementSlides = parsed;
+    }
+  } catch (e) {}
+}
 
 const adEnabled = settingsObj.ad_banner_enabled === 'true';
 const adBadge = settingsObj.ad_banner_badge || '⚡ SPONSORED DEAL';
@@ -82,6 +94,13 @@ if (settingsObj.vibe_chips_json) {
         <SearchBar placeholder="What are you craving? chowmein, paratha, cold coffee, roll..." />
         <FilterChips chips={vibeChips} />
       </div>
+
+      <!-- 🎁 Dynamic Campus Offers & Announcements Carousel (Backend Managed with Smooth Transitions) -->
+      {carouselEnabled && (
+        <div>
+          <AnnouncementCarousel slides={announcementSlides} />
+        </div>
+      )}
 
       <!-- Browse by Category Section (Top Compact Categories) -->
       <div>
