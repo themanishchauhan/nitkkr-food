@@ -10,7 +10,7 @@ export const FOOD_CAVE_VENDOR = {
   longitude: '76.8808',
   opensAt: '09:00',
   closesAt: '23:30',
-  deliversTo: ['Hostel 1-11', 'DB Hall', 'Academic Block', 'Campus Gate 1 & 2', 'Faculty Flats'],
+  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel'],
   image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

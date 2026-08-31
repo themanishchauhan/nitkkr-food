@@ -15,7 +15,10 @@ if (!vendor) {
 }
 
 const menuItems = await getMenuItemsWithReviewStats(vendor.id);
-const categories = await getCategories();
+const allCategories = await getCategories();
+const categories = allCategories.filter((c: any) => 
+  menuItems.some((item: any) => item.categoryId === c.id || item.categorySlug === c.slug)
+);
 const isOpen = isVendorOpenNow(vendor.opensAt, vendor.closesAt);
 const vendorReviews = await getReviewsByVendor(vendor.id);
 const vendorReviewCount = vendorReviews.length;

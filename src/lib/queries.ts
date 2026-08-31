@@ -134,8 +134,8 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
           vendor.displayOrder
         ).run();
       } else {
-        await d1.prepare(`UPDATE vendors SET phone = ?, whatsapp = ?, address = ? WHERE slug = ?`)
-          .bind(vendor.phone, vendor.whatsapp, vendor.address, vendor.slug)
+        await d1.prepare(`UPDATE vendors SET phone = ?, whatsapp = ?, address = ?, delivers_to = ? WHERE slug = ?`)
+          .bind(vendor.phone, vendor.whatsapp, vendor.address, JSON.stringify(vendor.deliversTo), vendor.slug)
           .run();
       }
     }

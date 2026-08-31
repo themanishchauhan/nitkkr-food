@@ -98,6 +98,10 @@ const {
         return list.filter(i => (i.categorySlug === this.activeCat || i.categoryId === this.activeCat));
       },
 
+      get visibleCategories() {
+        return this.categories.filter(cat => this.getCatCount(cat.slug) > 0);
+      },
+
       getCatCount(slug) {
         if (slug === 'all') return this.searchedItems.length;
         return this.searchedItems.filter(i => (i.categorySlug === slug || i.categoryId === slug)).length;
@@ -153,7 +157,7 @@ const {
     >
       All (<span x-text="getCatCount('all')">{menuItems.length}</span>)
     </button>
-    <template x-for="cat in categories" :key="cat.slug">
+    <template x-for="cat in visibleCategories" :key="cat.slug">
       <button
         @click="activeCat=cat.slug"
         :class="activeCat===cat.slug ? 'bg-nitkkr-orange text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 font-medium'"

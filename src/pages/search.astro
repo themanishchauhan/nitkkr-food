@@ -826,147 +826,74 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           </div>
         </template>
 
-        <!-- 🏪 Case A: Multi-Vendor Grouped View (Cleanly grouped under each Eatery) -->
-        <template x-if="isMultiVendor">
-          <div class="space-y-5">
-            <template x-for="group in groupedDishesByVendor" :key="group.name">
-              <div class="bg-white rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
-                <!-- Group Header -->
-                <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
-                  <div class="flex items-center gap-2.5 min-w-0">
-                    <span class="text-xl">🏪</span>
-                    <div class="min-w-0">
-                      <h3 class="font-extrabold text-sm sm:text-base text-slate-900 truncate" x-text="group.name"></h3>
-                      <p class="text-[11px] text-slate-400 truncate" x-text="`${formatCount(group.items.length)} matching dishes • ${group.address}`"></p>
-                    </div>
-                  </div>
-                  <a
-                    :href="group.slug ? `/v/${group.slug}` : `/search?q=${encodeURIComponent(group.name)}`"
-                    class="px-3 py-1 bg-amber-50 hover:bg-amber-100 text-nitkkr-orange text-xs font-bold rounded-xl transition-colors shrink-0"
+        <!-- 🍱 Mixed Dishes Stream (Unified across all vendors with vendor badges & pagination) -->
+        <div class="space-y-2.5">
+          <template x-for="item in visibleItems" :key="item.id">
+            <div
+              @click="openDetail(item)"
+              class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 flex items-center justify-between gap-3
+                     hover:border-bistro-400 hover:shadow-md transition-all duration-200 cursor-pointer group select-none active:scale-[0.99]"
+            >
+              <!-- Left: Dish Thumbnail Image -->
+              <div class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100">
+                <img
+                  :src="item.image || '/placeholder-food.svg'"
+                  :alt="item.name"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
+              </div>
+
+              <!-- Middle: Veg/Non-Veg icon + Dish Name + Vendor & Category & Rating -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span
+                    class="w-3.5 h-3.5 rounded-xs border flex items-center justify-center flex-shrink-0"
+                    :class="item.isVeg ? 'border-emerald-600 bg-emerald-50' : 'border-rose-600 bg-rose-50'"
+                    :title="item.isVeg ? 'Pure Veg' : 'Non-Veg'"
                   >
-                    View Stall Menu →
-                  </a>
+                    <span class="w-1.5 h-1.5 rounded-full" :class="item.isVeg ? 'bg-emerald-600' : 'bg-rose-600'"></span>
+                  </span>
+
+                  <h3 class="font-bold text-sm sm:text-base text-slate-900 truncate group-hover:text-bistro-600 transition-colors" x-text="item.name"></h3>
                 </div>
 
-                <!-- Top 4-6 Dishes from this vendor -->
-                <div class="space-y-2">
-                  <template x-for="item in (expandedVendors[group.name] ? group.items : group.items.slice(0, 4))" :key="item.id">
-                    <div
-                      @click="openDetail(item)"
-                      class="p-2.5 rounded-xl border border-slate-100 hover:border-bistro-300 hover:bg-amber-50/30 flex items-center justify-between gap-3 transition-all cursor-pointer group select-none active:scale-[0.99]"
-                    >
-                      <div class="flex items-center gap-2.5 min-w-0">
-                        <span
-                          class="w-3.5 h-3.5 rounded-xs border flex items-center justify-center flex-shrink-0"
-                          :class="item.isVeg ? 'border-emerald-600 bg-emerald-50' : 'border-rose-600 bg-rose-50'"
-                        >
-                          <span class="w-1.5 h-1.5 rounded-full" :class="item.isVeg ? 'bg-emerald-600' : 'bg-rose-600'"></span>
-                        </span>
-                        <div class="min-w-0">
-                          <h4 class="font-bold text-xs sm:text-sm text-slate-900 truncate group-hover:text-nitkkr-orange transition-colors" x-text="item.name"></h4>
-                          <div class="flex items-center gap-1.5 text-[10px] text-slate-400 truncate">
-                            <span class="truncate" x-text="item.categoryName || 'Campus Dish'"></span>
-                            <template x-if="item.avgRating && item.reviewCount > 0">
-                              <span class="inline-flex items-center gap-0.5 text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200/60">
-                                <span>★</span>
-                                <span x-text="item.avgRating"></span>
-                              </span>
-                            </template>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex items-center gap-1.5 shrink-0">
-                        <span class="font-extrabold text-xs sm:text-sm text-nitkkr-orange" x-text="'₹' + Number(item.price).toFixed(0)"></span>
-                        <span class="text-slate-300 text-xs group-hover:text-nitkkr-orange group-hover:translate-x-0.5 transition-all">›</span>
-                      </div>
-                    </div>
+                <div class="flex items-center gap-1.5 mt-0.5 text-xs text-slate-400 truncate">
+                  <span class="font-medium text-slate-700 truncate bg-slate-100 px-1.5 py-0.5 rounded-md" x-text="item.vendorName || 'Campus Eatery'"></span>
+                  <span class="text-slate-300">•</span>
+                  <span class="truncate" x-text="item.categoryName || 'Campus Fast Food'"></span>
+                  <template x-if="item.avgRating && item.reviewCount > 0">
+                    <span class="inline-flex items-center gap-0.5 text-amber-600 font-bold text-[11px] bg-amber-50 px-1.5 py-0.2 rounded-md border border-amber-200/60 ml-1">
+                      <span>★</span>
+                      <span x-text="item.avgRating"></span>
+                      <span class="text-[10px] text-amber-700 opacity-80" x-text="'(' + item.reviewCount + ')'"></span>
+                    </span>
                   </template>
                 </div>
-
-                <!-- Expand/Collapse toggle if more than 4 items -->
-                <template x-if="group.items.length > 4">
-                  <button
-                    type="button"
-                    @click="toggleVendorExpand(group.name)"
-                    class="w-full py-1.5 text-center text-xs font-bold text-slate-600 hover:text-nitkkr-orange hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
-                    x-text="expandedVendors[group.name] ? 'Show less ↑' : `+ Show all ${formatCount(group.items.length)} dishes from ${group.name} ↓`"
-                  ></button>
-                </template>
               </div>
-            </template>
-          </div>
-        </template>
 
-        <!-- 🍱 Case B: Flat List with Smart Batching (for Single Stall or Specific Search) -->
-        <template x-if="!isMultiVendor">
-          <div class="space-y-2.5">
-            <template x-for="item in visibleItems" :key="item.id">
-              <div
-                @click="openDetail(item)"
-                class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 flex items-center justify-between gap-3
-                       hover:border-bistro-400 hover:shadow-md transition-all duration-200 cursor-pointer group select-none active:scale-[0.99]"
+              <!-- Right: Bold Price + Arrow Hint -->
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="text-bistro-600 font-extrabold text-base sm:text-lg whitespace-nowrap" x-text="'₹' + Number(item.price).toFixed(0)"></span>
+                <span class="text-slate-300 group-hover:text-bistro-600 group-hover:translate-x-0.5 transition-all text-base font-bold">›</span>
+              </div>
+            </div>
+          </template>
+
+          <!-- Load More Pagination Button -->
+          <template x-if="filteredItems.length > visibleItems.length">
+            <div class="text-center pt-3 pb-2">
+              <p class="text-[11px] font-semibold text-slate-400 mb-2" x-text="`Showing ${formatCount(visibleItems.length)} of ${formatCount(filteredItems.length)} dishes`"></p>
+              <button
+                type="button"
+                @click="loadMore()"
+                class="px-6 py-2.5 bg-white border border-slate-200 hover:border-nitkkr-orange hover:text-nitkkr-orange text-slate-800 font-bold text-xs rounded-2xl shadow-xs transition-all active:scale-95 cursor-pointer"
               >
-                <!-- Left: Dish Thumbnail Image -->
-                <div class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100">
-                  <img
-                    :src="item.image || '/placeholder-food.svg'"
-                    :alt="item.name"
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                </div>
-
-                <!-- Middle: Veg/Non-Veg icon + Dish Name + Vendor & Category & Rating -->
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-1.5 min-w-0">
-                    <span
-                      class="w-3.5 h-3.5 rounded-xs border flex items-center justify-center flex-shrink-0"
-                      :class="item.isVeg ? 'border-emerald-600 bg-emerald-50' : 'border-rose-600 bg-rose-50'"
-                      :title="item.isVeg ? 'Pure Veg' : 'Non-Veg'"
-                    >
-                      <span class="w-1.5 h-1.5 rounded-full" :class="item.isVeg ? 'bg-emerald-600' : 'bg-rose-600'"></span>
-                    </span>
-
-                    <h3 class="font-bold text-sm sm:text-base text-slate-900 truncate group-hover:text-bistro-600 transition-colors" x-text="item.name"></h3>
-                  </div>
-
-                  <div class="flex items-center gap-1.5 mt-0.5 text-xs text-slate-400 truncate">
-                    <span class="font-medium text-slate-600 truncate" x-text="item.vendorName || 'Food Cave Fast Food'"></span>
-                    <span class="text-slate-300">•</span>
-                    <span class="truncate" x-text="item.categoryName || 'Campus Fast Food'"></span>
-                    <template x-if="item.avgRating && item.reviewCount > 0">
-                      <span class="inline-flex items-center gap-0.5 text-amber-600 font-bold text-[11px] bg-amber-50 px-1.5 py-0.2 rounded-md border border-amber-200/60 ml-1">
-                        <span>★</span>
-                        <span x-text="item.avgRating"></span>
-                        <span class="text-[10px] text-amber-700 opacity-80" x-text="'(' + item.reviewCount + ')'"></span>
-                      </span>
-                    </template>
-                  </div>
-                </div>
-
-                <!-- Right: Bold Price + Arrow Hint -->
-                <div class="flex items-center gap-2 flex-shrink-0">
-                  <span class="text-bistro-600 font-extrabold text-base sm:text-lg whitespace-nowrap" x-text="'₹' + Number(item.price).toFixed(0)"></span>
-                  <span class="text-slate-300 group-hover:text-bistro-600 group-hover:translate-x-0.5 transition-all text-base font-bold">›</span>
-                </div>
-              </div>
-            </template>
-
-            <!-- Load More Pagination Button -->
-            <template x-if="filteredItems.length > visibleItems.length">
-              <div class="text-center pt-3 pb-2">
-                <p class="text-[11px] font-semibold text-slate-400 mb-2" x-text="`Showing ${formatCount(visibleItems.length)} of ${formatCount(filteredItems.length)} dishes`"></p>
-                <button
-                  type="button"
-                  @click="loadMore()"
-                  class="px-6 py-2.5 bg-white border border-slate-200 hover:border-nitkkr-orange hover:text-nitkkr-orange text-slate-800 font-bold text-xs rounded-2xl shadow-xs transition-all active:scale-95 cursor-pointer"
-                >
-                  Load Next 20 Dishes ↓
-                </button>
-              </div>
-            </template>
-          </div>
-        </template>
+                Load Next 20 Dishes ↓
+              </button>
+            </div>
+          </template>
+        </div>
 
         <!-- Empty State -->
         <div x-show="filteredItems.length === 0" class="text-center py-12 text-nitkkr-gray bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 space-y-3 shadow-2xs">
