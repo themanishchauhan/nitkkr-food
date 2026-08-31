@@ -2,6 +2,7 @@ import { createDb, schema, getRawD1Binding } from './db';
 import { eq, and, asc, sql, desc } from 'drizzle-orm';
 import { MOCK_VENDORS, MOCK_CATEGORIES, MOCK_MENU_ITEMS, MOCK_REVIEWS } from './mock-data';
 import { FOOD_CAVE_VENDOR, FOOD_CAVE_MENU_ITEMS } from './food-cave-data';
+import { APNA_FAST_FOOD_VENDOR, APNA_FAST_FOOD_MENU_ITEMS } from './apna-fast-food-data';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -103,81 +104,81 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       `).bind(cat.id, cat.name, cat.slug, cat.icon, cat.displayOrder).run();
     }
 
-    // 2. Check if Food Cave exists in Real D1 Database
-    const check = await d1.prepare(`SELECT id FROM vendors WHERE slug = ? OR id = ? LIMIT 1`)
-      .bind(FOOD_CAVE_VENDOR.slug, FOOD_CAVE_VENDOR.id)
-      .first();
+    // 2. Ensure Vendors exist in Real D1 Database
+    const vendorsToSeed = [FOOD_CAVE_VENDOR, APNA_FAST_FOOD_VENDOR];
+    for (const vendor of vendorsToSeed) {
+      const check = await d1.prepare(`SELECT id FROM vendors WHERE slug = ? OR id = ? LIMIT 1`)
+        .bind(vendor.slug, vendor.id)
+        .first();
 
-    if (!check) {
-      console.log('🌱 Inserting Food Cave Fast Food into Real D1 Database...');
-      await d1.prepare(`
-        INSERT INTO vendors (id, name, slug, phone, whatsapp, address, latitude, longitude, opens_at, closes_at, delivers_to, image, is_active, is_featured, display_order)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).bind(
-        FOOD_CAVE_VENDOR.id,
-        FOOD_CAVE_VENDOR.name,
-        FOOD_CAVE_VENDOR.slug,
-        FOOD_CAVE_VENDOR.phone,
-        FOOD_CAVE_VENDOR.whatsapp,
-        FOOD_CAVE_VENDOR.address,
-        FOOD_CAVE_VENDOR.latitude,
-        FOOD_CAVE_VENDOR.longitude,
-        FOOD_CAVE_VENDOR.opensAt,
-        FOOD_CAVE_VENDOR.closesAt,
-        JSON.stringify(FOOD_CAVE_VENDOR.deliversTo),
-        FOOD_CAVE_VENDOR.image,
-        FOOD_CAVE_VENDOR.isActive ? 1 : 0,
-        FOOD_CAVE_VENDOR.isFeatured ? 1 : 0,
-        FOOD_CAVE_VENDOR.displayOrder
-      ).run();
-
-      // Batch insert all 172 menu items
-      const statements: any[] = [];
-      for (const item of FOOD_CAVE_MENU_ITEMS) {
-        statements.push(
-          d1.prepare(`
-            INSERT OR REPLACE INTO menu_items (id, vendor_id, category_id, name, description, price, is_veg, is_available, tags, display_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).bind(
-            item.id,
-            item.vendorId,
-            item.categoryId,
-            item.name,
-            item.description || null,
-            parseFloat(item.price),
-            item.isVeg ? 1 : 0,
-            item.isAvailable ? 1 : 0,
-            JSON.stringify(item.tags),
-            item.displayOrder
-          )
-        );
+      if (!check) {
+        console.log(`🌱 Inserting ${vendor.name} into Real D1 Database...`);
+        await d1.prepare(`
+          INSERT INTO vendors (id, name, slug, phone, whatsapp, address, latitude, longitude, opens_at, closes_at, delivers_to, image, is_active, is_featured, display_order)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          vendor.id,
+          vendor.name,
+          vendor.slug,
+          vendor.phone,
+          vendor.whatsapp,
+          vendor.address,
+          vendor.latitude,
+          vendor.longitude,
+          vendor.opensAt,
+          vendor.closesAt,
+          JSON.stringify(vendor.deliversTo),
+          vendor.image,
+          vendor.isActive ? 1 : 0,
+          vendor.isFeatured ? 1 : 0,
+          vendor.displayOrder
+        ).run();
+      } else {
+        await d1.prepare(`UPDATE vendors SET phone = ?, whatsapp = ? WHERE slug = ?`)
+          .bind(vendor.phone, vendor.whatsapp, vendor.slug)
+          .run();
       }
+    }
 
-      if (statements.length > 0) {
-        if (typeof d1.batch === 'function') {
-          for (let i = 0; i < statements.length; i += 50) {
-            await d1.batch(statements.slice(i, i + 50));
-          }
-        } else {
-          for (const stmt of statements) {
-            await stmt.run();
-          }
+    // 3. Ensure Menu Items exist
+    const allDishes = [...FOOD_CAVE_MENU_ITEMS, ...APNA_FAST_FOOD_MENU_ITEMS];
+    const statements: any[] = [];
+    for (const item of allDishes) {
+      statements.push(
+        d1.prepare(`
+          INSERT OR REPLACE INTO menu_items (id, vendor_id, category_id, name, description, price, is_veg, is_available, tags, display_order)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          item.id,
+          item.vendorId,
+          item.categoryId,
+          item.name,
+          item.description || null,
+          parseFloat(item.price),
+          item.isVeg ? 1 : 0,
+          item.isAvailable ? 1 : 0,
+          JSON.stringify(item.tags),
+          item.displayOrder
+        )
+      );
+    }
+
+    if (statements.length > 0) {
+      if (typeof d1.batch === 'function') {
+        for (let i = 0; i < statements.length; i += 50) {
+          await d1.batch(statements.slice(i, i + 50));
+        }
+      } else {
+        for (const stmt of statements) {
+          await stmt.run();
         }
       }
-      console.log(`✅ Successfully seeded Food Cave and ${FOOD_CAVE_MENU_ITEMS.length} dishes into Real D1 Database.`);
-    } else {
-      // Sync phone and whatsapp numbers to clean formatted values
-      await d1.prepare(`UPDATE vendors SET phone = ?, whatsapp = ? WHERE slug = ?`)
-        .bind(FOOD_CAVE_VENDOR.phone, FOOD_CAVE_VENDOR.whatsapp, FOOD_CAVE_VENDOR.slug)
-        .run();
     }
     hasCheckedD1Seed = true;
   } catch (err) {
     console.error('Database populate error:', err);
   }
 }
-
-
 
 function getDb(customDb?: any) {
   return customDb || createDb();
@@ -192,12 +193,15 @@ export async function getActiveVendors() {
       .where(eq(schema.vendors.isActive, true))
       .orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
     if (result && result.length > 0) {
-      // Ensure Food Cave is included if not yet present in D1 query result
-      const hasFoodCave = result.some((v: any) => v.slug === 'food-cave' || v.id === 21);
-      if (!hasFoodCave) {
-        return [FOOD_CAVE_VENDOR, ...result];
+      // Ensure essential campus stalls exist in result
+      let combined = [...result];
+      if (!combined.some((v: any) => v.slug === 'food-cave' || v.id === 21)) {
+        combined.unshift(FOOD_CAVE_VENDOR);
       }
-      return result;
+      if (!combined.some((v: any) => v.slug === 'apna-fast-food' || v.id === 22)) {
+        combined.push(APNA_FAST_FOOD_VENDOR);
+      }
+      return combined;
     }
     return MOCK_VENDORS.filter(v => v.isActive);
   } catch (e) {
@@ -218,16 +222,27 @@ export async function getVendorBySlug(slug: string) {
       return FOOD_CAVE_VENDOR;
     }
 
+    if (slug === 'apna-fast-food' || slug === 'apna-fresh-fast-food') {
+      const db = getDb();
+      const result = await db.select()
+        .from(schema.vendors)
+        .where(and(eq(schema.vendors.slug, 'apna-fast-food'), eq(schema.vendors.isActive, true)))
+        .limit(1);
+      if (result && result[0]) return result[0];
+      return APNA_FAST_FOOD_VENDOR;
+    }
+
     const db = getDb();
     const result = await db.select()
       .from(schema.vendors)
       .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
     if (result && result[0]) return result[0];
-    return MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   } catch (e) {
     if (slug === 'food-cave') return FOOD_CAVE_VENDOR;
-    return MOCK_VENDORS.find(v => v.slug === slug && v.isActive) || null;
+    if (slug === 'apna-fast-food' || slug === 'apna-fresh-fast-food') return APNA_FAST_FOOD_VENDOR;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   }
 }
 
@@ -303,10 +318,36 @@ export async function getMenuItemsByVendor(vendorId: number) {
         };
       });
     }
+
+    if (vendorId === 22) {
+      return APNA_FAST_FOOD_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
     return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable);
   } catch (e) {
     if (vendorId === 21) {
       return FOOD_CAVE_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
+
+    if (vendorId === 22) {
+      return APNA_FAST_FOOD_MENU_ITEMS.map(item => {
         const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
         return {
           ...item,
@@ -344,6 +385,7 @@ export async function getMenuItemsWithReviewStats(vendorId: number) {
     });
 
   } catch (e) {
+    console.error('getMenuItemsWithReviewStats error:', e);
     return [];
   }
 }
@@ -475,8 +517,10 @@ export async function getAllMenuItemsForSearch() {
   }
 
   const { FOOD_CAVE_MENU_ITEMS, FOOD_CAVE_VENDOR } = await import('./food-cave-data');
+  const { APNA_FAST_FOOD_MENU_ITEMS, APNA_FAST_FOOD_VENDOR } = await import('./apna-fast-food-data');
   const { MOCK_CATEGORIES } = await import('./mock-data');
-  return FOOD_CAVE_MENU_ITEMS.map((item: any) => {
+
+  const foodCaveList = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
     const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
     return {
       id: item.id,
@@ -496,6 +540,29 @@ export async function getAllMenuItemsForSearch() {
       categorySlug: cat?.slug || 'general',
     };
   });
+
+  const apnaList = APNA_FAST_FOOD_MENU_ITEMS.map((item: any) => {
+    const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: (item as any).image || null,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable,
+      tags: item.tags || [],
+      vendorName: APNA_FAST_FOOD_VENDOR.name,
+      vendorSlug: APNA_FAST_FOOD_VENDOR.slug,
+      vendorPhone: APNA_FAST_FOOD_VENDOR.phone,
+      vendorWhatsApp: APNA_FAST_FOOD_VENDOR.whatsapp,
+      categoryId: item.categoryId,
+      categoryName: cat?.name || 'General',
+      categorySlug: cat?.slug || 'general',
+    };
+  });
+
+  return [...foodCaveList, ...apnaList];
 }
 
 
