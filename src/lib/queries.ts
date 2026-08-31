@@ -3,6 +3,7 @@ import { eq, and, asc, sql, desc } from 'drizzle-orm';
 import { MOCK_VENDORS, MOCK_CATEGORIES, MOCK_MENU_ITEMS, MOCK_REVIEWS } from './mock-data';
 import { FOOD_CAVE_VENDOR, FOOD_CAVE_MENU_ITEMS } from './food-cave-data';
 import { APNA_FAST_FOOD_VENDOR, APNA_FAST_FOOD_MENU_ITEMS } from './apna-fast-food-data';
+import { SURAJ_VENDOR, SURAJ_MENU_ITEMS } from './suraj-restaurant-data';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -105,7 +106,7 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
     }
 
     // 2. Ensure Vendors exist in Real D1 Database
-    const vendorsToSeed = [FOOD_CAVE_VENDOR, APNA_FAST_FOOD_VENDOR];
+    const vendorsToSeed = [FOOD_CAVE_VENDOR, APNA_FAST_FOOD_VENDOR, SURAJ_VENDOR];
     for (const vendor of vendorsToSeed) {
       const check = await d1.prepare(`SELECT id FROM vendors WHERE slug = ? OR id = ? LIMIT 1`)
         .bind(vendor.slug, vendor.id)
@@ -141,7 +142,7 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
     }
 
     // 3. Ensure Menu Items exist
-    const allDishes = [...FOOD_CAVE_MENU_ITEMS, ...APNA_FAST_FOOD_MENU_ITEMS];
+    const allDishes = [...FOOD_CAVE_MENU_ITEMS, ...APNA_FAST_FOOD_MENU_ITEMS, ...SURAJ_MENU_ITEMS];
     const statements: any[] = [];
     for (const item of allDishes) {
       statements.push(
@@ -201,6 +202,9 @@ export async function getActiveVendors() {
       if (!combined.some((v: any) => v.slug === 'apna-fast-food' || v.id === 22)) {
         combined.push(APNA_FAST_FOOD_VENDOR);
       }
+      if (!combined.some((v: any) => v.slug === 'suraj-restaurant' || v.id === 23)) {
+        combined.push(SURAJ_VENDOR);
+      }
       return combined;
     }
     return MOCK_VENDORS.filter(v => v.isActive);
@@ -232,17 +236,28 @@ export async function getVendorBySlug(slug: string) {
       return APNA_FAST_FOOD_VENDOR;
     }
 
+    if (slug === 'suraj-restaurant' || slug === 'suraj') {
+      const db = getDb();
+      const result = await db.select()
+        .from(schema.vendors)
+        .where(and(eq(schema.vendors.slug, 'suraj-restaurant'), eq(schema.vendors.isActive, true)))
+        .limit(1);
+      if (result && result[0]) return result[0];
+      return SURAJ_VENDOR;
+    }
+
     const db = getDb();
     const result = await db.select()
       .from(schema.vendors)
       .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
     if (result && result[0]) return result[0];
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   } catch (e) {
     if (slug === 'food-cave') return FOOD_CAVE_VENDOR;
     if (slug === 'apna-fast-food' || slug === 'apna-fresh-fast-food') return APNA_FAST_FOOD_VENDOR;
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    if (slug === 'suraj-restaurant' || slug === 'suraj') return SURAJ_VENDOR;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   }
 }
 
@@ -331,6 +346,19 @@ export async function getMenuItemsByVendor(vendorId: number) {
         };
       });
     }
+
+    if (vendorId === 23) {
+      return SURAJ_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
     return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable);
   } catch (e) {
     if (vendorId === 21) {
@@ -348,6 +376,19 @@ export async function getMenuItemsByVendor(vendorId: number) {
 
     if (vendorId === 22) {
       return APNA_FAST_FOOD_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
+
+    if (vendorId === 23) {
+      return SURAJ_MENU_ITEMS.map(item => {
         const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
         return {
           ...item,
@@ -383,18 +424,62 @@ export async function getMenuItemsWithReviewStats(vendorId: number) {
         recentReviews: itemReviews.slice(0, 5)
       };
     });
-
   } catch (e) {
     console.error('getMenuItemsWithReviewStats error:', e);
     return [];
   }
 }
 
+function fairInterleaveByVendor(items: any[]): any[] {
+  if (!items || items.length <= 1) return items;
+
+  const vendorBuckets: Record<string, any[]> = {};
+  const vendorKeys: string[] = [];
+
+  for (const item of items) {
+    const key = item.vendorSlug || item.vendorName || String(item.vendorId) || 'unknown';
+    if (!vendorBuckets[key]) {
+      vendorBuckets[key] = [];
+      vendorKeys.push(key);
+    }
+    vendorBuckets[key].push(item);
+  }
+
+  // Shuffle individual buckets so different types of food from each vendor surface
+  for (const key of vendorKeys) {
+    const bucket = vendorBuckets[key];
+    for (let i = bucket.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [bucket[i], bucket[j]] = [bucket[j], bucket[i]];
+    }
+  }
+
+  // Shuffle vendor order randomly so all vendors get equal first-place distribution
+  for (let i = vendorKeys.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [vendorKeys[i], vendorKeys[j]] = [vendorKeys[j], vendorKeys[i]];
+  }
+
+  const result: any[] = [];
+  let added = true;
+
+  while (added) {
+    added = false;
+    for (const key of vendorKeys) {
+      if (vendorBuckets[key] && vendorBuckets[key].length > 0) {
+        result.push(vendorBuckets[key].shift());
+        added = true;
+      }
+    }
+  }
+
+  return result;
+}
 
 export async function getAllMenuItemsForSearch() {
   try {
     const db = getDb();
-    let items = await db.select({
+    let items: any = await db.select({
       id: schema.menuItems.id,
       name: schema.menuItems.name,
       description: schema.menuItems.description,
@@ -442,7 +527,7 @@ export async function getAllMenuItemsForSearch() {
         reviewStatsMap[id].avgRating = avg;
       }
 
-      return items.map((item: any) => {
+      const mapped = items.map((item: any) => {
         const stats = reviewStatsMap[item.id];
         return {
           ...item,
@@ -451,6 +536,8 @@ export async function getAllMenuItemsForSearch() {
           reviews: stats ? stats.reviews : []
         };
       });
+
+      return fairInterleaveByVendor(mapped);
     }
 
     await ensureRealDatabasePopulated();
@@ -502,7 +589,7 @@ export async function getAllMenuItemsForSearch() {
         reviewStatsMap[id].avgRating = avg;
       }
 
-      return items.map((item: any) => {
+      const mapped = items.map((item: any) => {
         const stats = reviewStatsMap[item.id];
         return {
           ...item,
@@ -511,6 +598,8 @@ export async function getAllMenuItemsForSearch() {
           reviews: stats ? stats.reviews : []
         };
       });
+
+      return fairInterleaveByVendor(mapped);
     }
   } catch (e) {
     console.error('getAllMenuItemsForSearch error:', e);
@@ -518,6 +607,7 @@ export async function getAllMenuItemsForSearch() {
 
   const { FOOD_CAVE_MENU_ITEMS, FOOD_CAVE_VENDOR } = await import('./food-cave-data');
   const { APNA_FAST_FOOD_MENU_ITEMS, APNA_FAST_FOOD_VENDOR } = await import('./apna-fast-food-data');
+  const { SURAJ_MENU_ITEMS, SURAJ_VENDOR } = await import('./suraj-restaurant-data');
   const { MOCK_CATEGORIES } = await import('./mock-data');
 
   const foodCaveList = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
@@ -562,7 +652,28 @@ export async function getAllMenuItemsForSearch() {
     };
   });
 
-  return [...foodCaveList, ...apnaList];
+  const surajList = SURAJ_MENU_ITEMS.map((item: any) => {
+    const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: (item as any).image || null,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable,
+      tags: item.tags || [],
+      vendorName: SURAJ_VENDOR.name,
+      vendorSlug: SURAJ_VENDOR.slug,
+      vendorPhone: SURAJ_VENDOR.phone,
+      vendorWhatsApp: SURAJ_VENDOR.whatsapp,
+      categoryId: item.categoryId,
+      categoryName: cat?.name || 'General',
+      categorySlug: cat?.slug || 'general',
+    };
+  });
+
+  return fairInterleaveByVendor([...foodCaveList, ...apnaList, ...surajList]);
 }
 
 

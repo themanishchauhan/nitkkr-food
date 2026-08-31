@@ -1,7 +1,8 @@
 import { FOOD_CAVE_VENDOR, FOOD_CAVE_MENU_ITEMS } from './food-cave-data';
 import { APNA_FAST_FOOD_VENDOR, APNA_FAST_FOOD_MENU_ITEMS } from './apna-fast-food-data';
+import { SURAJ_VENDOR, SURAJ_MENU_ITEMS } from './suraj-restaurant-data';
 
-export { APNA_FAST_FOOD_VENDOR, APNA_FAST_FOOD_MENU_ITEMS };
+export { FOOD_CAVE_VENDOR, FOOD_CAVE_MENU_ITEMS, APNA_FAST_FOOD_VENDOR, APNA_FAST_FOOD_MENU_ITEMS, SURAJ_VENDOR, SURAJ_MENU_ITEMS };
 
 export const MOCK_CATEGORIES = [
   { id: 1, name: 'Fast Food', slug: 'fast-food', icon: '🍔', displayOrder: 1 },
@@ -16,12 +17,14 @@ export const MOCK_CATEGORIES = [
 
 export const MOCK_VENDORS = [
   FOOD_CAVE_VENDOR,
-  APNA_FAST_FOOD_VENDOR
+  APNA_FAST_FOOD_VENDOR,
+  SURAJ_VENDOR
 ];
 
 export const MOCK_MENU_ITEMS = [
   ...FOOD_CAVE_MENU_ITEMS,
-  ...APNA_FAST_FOOD_MENU_ITEMS
+  ...APNA_FAST_FOOD_MENU_ITEMS,
+  ...SURAJ_MENU_ITEMS
 ];
 
 export const MOCK_REVIEWS = [
