@@ -4,7 +4,7 @@ export const APNA_FAST_FOOD_VENDOR = {
   slug: 'apna-fast-food',
   phone: '9992010548',
   whatsapp: '7082497764',
-  address: 'Near NIT Campus, Kurukshetra',
+  address: 'Front of NIT Main Gate, Kurukshetra',
   latitude: '29.9670',
   longitude: '76.8815',
   opensAt: '08:00',
