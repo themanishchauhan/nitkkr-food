@@ -3,6 +3,8 @@ import { createDb, getRawD1Binding, schema } from '../../../lib/db';
 import { FOOD_CAVE_VENDOR, FOOD_CAVE_MENU_ITEMS } from '../../../lib/food-cave-data';
 import { APNA_FAST_FOOD_VENDOR, APNA_FAST_FOOD_MENU_ITEMS } from '../../../lib/apna-fast-food-data';
 import { SURAJ_VENDOR, SURAJ_MENU_ITEMS } from '../../../lib/suraj-restaurant-data';
+import { FOOD_POINT_VENDOR, FOOD_POINT_MENU_ITEMS } from '../../../lib/food-point-data';
+import { HANGRY_CLUB_VENDOR, HANGRY_CLUB_MENU_ITEMS } from '../../../lib/hangry-club-data';
 import { MOCK_CATEGORIES } from '../../../lib/mock-data';
 
 export const prerender = false;
@@ -28,7 +30,13 @@ export const POST: APIRoute = async ({ locals }) => {
       `).bind(cat.id, cat.name, cat.slug, cat.icon, cat.displayOrder).run();
     }
 
-    const vendorsToSeed = [FOOD_CAVE_VENDOR, APNA_FAST_FOOD_VENDOR, SURAJ_VENDOR];
+    const vendorsToSeed = [
+      FOOD_CAVE_VENDOR, 
+      APNA_FAST_FOOD_VENDOR, 
+      SURAJ_VENDOR,
+      FOOD_POINT_VENDOR,
+      HANGRY_CLUB_VENDOR
+    ];
     for (const vendor of vendorsToSeed) {
       await d1.prepare(`
         INSERT OR REPLACE INTO vendors (id, name, slug, phone, whatsapp, address, latitude, longitude, opens_at, closes_at, delivers_to, image, is_active, is_featured, display_order)
@@ -53,7 +61,13 @@ export const POST: APIRoute = async ({ locals }) => {
     }
 
     // Batch insert menu items
-    const allMenuItems = [...FOOD_CAVE_MENU_ITEMS, ...APNA_FAST_FOOD_MENU_ITEMS, ...SURAJ_MENU_ITEMS];
+    const allMenuItems = [
+      ...FOOD_CAVE_MENU_ITEMS, 
+      ...APNA_FAST_FOOD_MENU_ITEMS, 
+      ...SURAJ_MENU_ITEMS,
+      ...FOOD_POINT_MENU_ITEMS,
+      ...HANGRY_CLUB_MENU_ITEMS
+    ];
     const statements: any[] = [];
     for (const item of allMenuItems) {
       statements.push(

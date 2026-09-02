@@ -4,6 +4,8 @@ import { MOCK_VENDORS, MOCK_CATEGORIES, MOCK_MENU_ITEMS, MOCK_REVIEWS } from './
 import { FOOD_CAVE_VENDOR, FOOD_CAVE_MENU_ITEMS } from './food-cave-data';
 import { APNA_FAST_FOOD_VENDOR, APNA_FAST_FOOD_MENU_ITEMS } from './apna-fast-food-data';
 import { SURAJ_VENDOR, SURAJ_MENU_ITEMS } from './suraj-restaurant-data';
+import { FOOD_POINT_VENDOR, FOOD_POINT_MENU_ITEMS } from './food-point-data';
+import { HANGRY_CLUB_VENDOR, HANGRY_CLUB_MENU_ITEMS } from './hangry-club-data';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -106,7 +108,13 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
     }
 
     // 2. Ensure Vendors exist in Real D1 Database
-    const vendorsToSeed = [FOOD_CAVE_VENDOR, APNA_FAST_FOOD_VENDOR, SURAJ_VENDOR];
+    const vendorsToSeed = [
+      FOOD_CAVE_VENDOR, 
+      APNA_FAST_FOOD_VENDOR, 
+      SURAJ_VENDOR,
+      FOOD_POINT_VENDOR,
+      HANGRY_CLUB_VENDOR
+    ];
     for (const vendor of vendorsToSeed) {
       const check = await d1.prepare(`SELECT id FROM vendors WHERE slug = ? OR id = ? LIMIT 1`)
         .bind(vendor.slug, vendor.id)
@@ -142,7 +150,13 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
     }
 
     // 3. Ensure Menu Items exist
-    const allDishes = [...FOOD_CAVE_MENU_ITEMS, ...APNA_FAST_FOOD_MENU_ITEMS, ...SURAJ_MENU_ITEMS];
+    const allDishes = [
+      ...FOOD_CAVE_MENU_ITEMS, 
+      ...APNA_FAST_FOOD_MENU_ITEMS, 
+      ...SURAJ_MENU_ITEMS,
+      ...FOOD_POINT_MENU_ITEMS,
+      ...HANGRY_CLUB_MENU_ITEMS
+    ];
     const statements: any[] = [];
     for (const item of allDishes) {
       statements.push(
@@ -205,6 +219,12 @@ export async function getActiveVendors() {
       if (!combined.some((v: any) => v.slug === 'suraj-restaurant' || v.id === 23)) {
         combined.push(SURAJ_VENDOR);
       }
+      if (!combined.some((v: any) => v.slug === 'food-point' || v.id === 24)) {
+        combined.push(FOOD_POINT_VENDOR);
+      }
+      if (!combined.some((v: any) => v.slug === 'the-hangry-club' || v.id === 25)) {
+        combined.push(HANGRY_CLUB_VENDOR);
+      }
       return combined;
     }
     return MOCK_VENDORS.filter(v => v.isActive);
@@ -246,18 +266,40 @@ export async function getVendorBySlug(slug: string) {
       return SURAJ_VENDOR;
     }
 
+    if (slug === 'food-point') {
+      const db = getDb();
+      const result = await db.select()
+        .from(schema.vendors)
+        .where(and(eq(schema.vendors.slug, 'food-point'), eq(schema.vendors.isActive, true)))
+        .limit(1);
+      if (result && result[0]) return result[0];
+      return FOOD_POINT_VENDOR;
+    }
+
+    if (slug === 'the-hangry-club' || slug === 'hangry-club') {
+      const db = getDb();
+      const result = await db.select()
+        .from(schema.vendors)
+        .where(and(eq(schema.vendors.slug, 'the-hangry-club'), eq(schema.vendors.isActive, true)))
+        .limit(1);
+      if (result && result[0]) return result[0];
+      return HANGRY_CLUB_VENDOR;
+    }
+
     const db = getDb();
     const result = await db.select()
       .from(schema.vendors)
       .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
     if (result && result[0]) return result[0];
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   } catch (e) {
     if (slug === 'food-cave') return FOOD_CAVE_VENDOR;
     if (slug === 'apna-fast-food' || slug === 'apna-fresh-fast-food') return APNA_FAST_FOOD_VENDOR;
     if (slug === 'suraj-restaurant' || slug === 'suraj') return SURAJ_VENDOR;
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    if (slug === 'food-point') return FOOD_POINT_VENDOR;
+    if (slug === 'the-hangry-club' || slug === 'hangry-club') return HANGRY_CLUB_VENDOR;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   }
 }
 
@@ -359,6 +401,32 @@ export async function getMenuItemsByVendor(vendorId: number) {
         };
       });
     }
+
+    if (vendorId === 24) {
+      return FOOD_POINT_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
+
+    if (vendorId === 25) {
+      return HANGRY_CLUB_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
     return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable);
   } catch (e) {
     if (vendorId === 21) {
@@ -389,6 +457,32 @@ export async function getMenuItemsByVendor(vendorId: number) {
 
     if (vendorId === 23) {
       return SURAJ_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
+
+    if (vendorId === 24) {
+      return FOOD_POINT_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
+
+    if (vendorId === 25) {
+      return HANGRY_CLUB_MENU_ITEMS.map(item => {
         const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
         return {
           ...item,
@@ -608,6 +702,8 @@ export async function getAllMenuItemsForSearch() {
   const { FOOD_CAVE_MENU_ITEMS, FOOD_CAVE_VENDOR } = await import('./food-cave-data');
   const { APNA_FAST_FOOD_MENU_ITEMS, APNA_FAST_FOOD_VENDOR } = await import('./apna-fast-food-data');
   const { SURAJ_MENU_ITEMS, SURAJ_VENDOR } = await import('./suraj-restaurant-data');
+  const { FOOD_POINT_MENU_ITEMS, FOOD_POINT_VENDOR } = await import('./food-point-data');
+  const { HANGRY_CLUB_MENU_ITEMS, HANGRY_CLUB_VENDOR } = await import('./hangry-club-data');
   const { MOCK_CATEGORIES } = await import('./mock-data');
 
   const foodCaveList = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
@@ -673,7 +769,55 @@ export async function getAllMenuItemsForSearch() {
     };
   });
 
-  return fairInterleaveByVendor([...foodCaveList, ...apnaList, ...surajList]);
+  const foodPointList = FOOD_POINT_MENU_ITEMS.map((item: any) => {
+    const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: (item as any).image || null,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable,
+      tags: item.tags || [],
+      vendorName: FOOD_POINT_VENDOR.name,
+      vendorSlug: FOOD_POINT_VENDOR.slug,
+      vendorPhone: FOOD_POINT_VENDOR.phone,
+      vendorWhatsApp: FOOD_POINT_VENDOR.whatsapp,
+      categoryId: item.categoryId,
+      categoryName: cat?.name || 'General',
+      categorySlug: cat?.slug || 'general',
+    };
+  });
+
+  const hangryClubList = HANGRY_CLUB_MENU_ITEMS.map((item: any) => {
+    const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: (item as any).image || null,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable,
+      tags: item.tags || [],
+      vendorName: HANGRY_CLUB_VENDOR.name,
+      vendorSlug: HANGRY_CLUB_VENDOR.slug,
+      vendorPhone: HANGRY_CLUB_VENDOR.phone,
+      vendorWhatsApp: HANGRY_CLUB_VENDOR.whatsapp,
+      categoryId: item.categoryId,
+      categoryName: cat?.name || 'General',
+      categorySlug: cat?.slug || 'general',
+    };
+  });
+
+  return fairInterleaveByVendor([
+    ...foodCaveList, 
+    ...apnaList, 
+    ...surajList,
+    ...foodPointList,
+    ...hangryClubList
+  ]);
 }
 
 
