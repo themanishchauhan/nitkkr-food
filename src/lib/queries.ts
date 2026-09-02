@@ -6,6 +6,7 @@ import { APNA_FAST_FOOD_VENDOR, APNA_FAST_FOOD_MENU_ITEMS } from './apna-fast-fo
 import { SURAJ_VENDOR, SURAJ_MENU_ITEMS } from './suraj-restaurant-data';
 import { FOOD_POINT_VENDOR, FOOD_POINT_MENU_ITEMS } from './food-point-data';
 import { HANGRY_CLUB_VENDOR, HANGRY_CLUB_MENU_ITEMS } from './hangry-club-data';
+import { RAHUL_FAST_FOOD_VENDOR, RAHUL_FAST_FOOD_MENU_ITEMS } from './rahul-fast-food-data';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -113,7 +114,8 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       APNA_FAST_FOOD_VENDOR, 
       SURAJ_VENDOR,
       FOOD_POINT_VENDOR,
-      HANGRY_CLUB_VENDOR
+      HANGRY_CLUB_VENDOR,
+      RAHUL_FAST_FOOD_VENDOR
     ];
     for (const vendor of vendorsToSeed) {
       const check = await d1.prepare(`SELECT id FROM vendors WHERE slug = ? OR id = ? LIMIT 1`)
@@ -155,7 +157,8 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       ...APNA_FAST_FOOD_MENU_ITEMS, 
       ...SURAJ_MENU_ITEMS,
       ...FOOD_POINT_MENU_ITEMS,
-      ...HANGRY_CLUB_MENU_ITEMS
+      ...HANGRY_CLUB_MENU_ITEMS,
+      ...RAHUL_FAST_FOOD_MENU_ITEMS
     ];
     const statements: any[] = [];
     for (const item of allDishes) {
@@ -286,20 +289,31 @@ export async function getVendorBySlug(slug: string) {
       return HANGRY_CLUB_VENDOR;
     }
 
+    if (slug === 'rahul-fast-food' || slug === 'rahul') {
+      const db = getDb();
+      const result = await db.select()
+        .from(schema.vendors)
+        .where(and(eq(schema.vendors.slug, 'rahul-fast-food'), eq(schema.vendors.isActive, true)))
+        .limit(1);
+      if (result && result[0]) return result[0];
+      return RAHUL_FAST_FOOD_VENDOR;
+    }
+
     const db = getDb();
     const result = await db.select()
       .from(schema.vendors)
       .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
     if (result && result[0]) return result[0];
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   } catch (e) {
     if (slug === 'food-cave') return FOOD_CAVE_VENDOR;
     if (slug === 'apna-fast-food' || slug === 'apna-fresh-fast-food') return APNA_FAST_FOOD_VENDOR;
     if (slug === 'suraj-restaurant' || slug === 'suraj') return SURAJ_VENDOR;
     if (slug === 'food-point') return FOOD_POINT_VENDOR;
     if (slug === 'the-hangry-club' || slug === 'hangry-club') return HANGRY_CLUB_VENDOR;
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    if (slug === 'rahul-fast-food' || slug === 'rahul') return RAHUL_FAST_FOOD_VENDOR;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   }
 }
 
