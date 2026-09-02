@@ -441,6 +441,19 @@ export async function getMenuItemsByVendor(vendorId: number) {
         };
       });
     }
+
+    if (vendorId === 26) {
+      return RAHUL_FAST_FOOD_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
     return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable);
   } catch (e) {
     if (vendorId === 21) {
@@ -497,6 +510,19 @@ export async function getMenuItemsByVendor(vendorId: number) {
 
     if (vendorId === 25) {
       return HANGRY_CLUB_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
+
+    if (vendorId === 26) {
+      return RAHUL_FAST_FOOD_MENU_ITEMS.map(item => {
         const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
         return {
           ...item,
@@ -718,6 +744,7 @@ export async function getAllMenuItemsForSearch() {
   const { SURAJ_MENU_ITEMS, SURAJ_VENDOR } = await import('./suraj-restaurant-data');
   const { FOOD_POINT_MENU_ITEMS, FOOD_POINT_VENDOR } = await import('./food-point-data');
   const { HANGRY_CLUB_MENU_ITEMS, HANGRY_CLUB_VENDOR } = await import('./hangry-club-data');
+  const { RAHUL_FAST_FOOD_MENU_ITEMS, RAHUL_FAST_FOOD_VENDOR } = await import('./rahul-fast-food-data');
   const { MOCK_CATEGORIES } = await import('./mock-data');
 
   const foodCaveList = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
@@ -825,12 +852,34 @@ export async function getAllMenuItemsForSearch() {
     };
   });
 
+  const rahulList = RAHUL_FAST_FOOD_MENU_ITEMS.map((item: any) => {
+    const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: (item as any).image || null,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable,
+      tags: item.tags || [],
+      vendorName: RAHUL_FAST_FOOD_VENDOR.name,
+      vendorSlug: RAHUL_FAST_FOOD_VENDOR.slug,
+      vendorPhone: RAHUL_FAST_FOOD_VENDOR.phone,
+      vendorWhatsApp: RAHUL_FAST_FOOD_VENDOR.whatsapp,
+      categoryId: item.categoryId,
+      categoryName: cat?.name || 'General',
+      categorySlug: cat?.slug || 'general',
+    };
+  });
+
   return fairInterleaveByVendor([
     ...foodCaveList, 
     ...apnaList, 
     ...surajList,
     ...foodPointList,
-    ...hangryClubList
+    ...hangryClubList,
+    ...rahulList
   ]);
 }
 
