@@ -121,6 +121,42 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     // 5. Keyword & Typo-Tolerant Search
+    function fairInterleave(items: any[]): any[] {
+      if (!items || items.length <= 1) return items;
+      const vendorBuckets: Record<string, any[]> = {};
+      const vendorKeys: string[] = [];
+      for (const item of items) {
+        const key = item.vendorSlug || item.vendorName || String(item.vendorId) || 'unknown';
+        if (!vendorBuckets[key]) {
+          vendorBuckets[key] = [];
+          vendorKeys.push(key);
+        }
+        vendorBuckets[key].push(item);
+      }
+      for (const key of vendorKeys) {
+        const bucket = vendorBuckets[key];
+        for (let i = bucket.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [bucket[i], bucket[j]] = [bucket[j], bucket[i]];
+        }
+      }
+      for (let i = vendorKeys.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [vendorKeys[i], vendorKeys[j]] = [vendorKeys[j], vendorKeys[i]];
+      }
+      const result: any[] = [];
+      let added = true;
+      while (added) {
+        added = false;
+        for (const key of vendorKeys) {
+          if (vendorBuckets[key] && vendorBuckets[key].length > 0) {
+            result.push(vendorBuckets[key].shift());
+            added = true;
+          }
+        }
+      }
+      return result;
+    }
 
     if (query) {
       const rawQuery = query.toLowerCase().trim();
@@ -160,6 +196,8 @@ export const GET: APIRoute = async ({ request }) => {
         .filter(Boolean)
         .sort((a: any, b: any) => b.score - a.score)
         .map((entry: any) => entry.item);
+    } else {
+      filtered = fairInterleave(filtered);
     }
 
     const total = filtered.length;

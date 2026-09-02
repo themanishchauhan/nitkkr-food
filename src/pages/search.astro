@@ -95,6 +95,54 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
       return false;
     }
 
+    function fairInterleaveByVendor(items) {
+      if (!items || items.length <= 1) return items;
+      var vendorBuckets = {};
+      var vendorKeys = [];
+      for (var i = 0; i < items.length; i++) {
+        var itm = items[i];
+        var key = itm.vendorSlug || itm.vendorName || String(itm.vendorId) || 'unknown';
+        if (!vendorBuckets[key]) {
+          vendorBuckets[key] = [];
+          vendorKeys.push(key);
+        }
+        vendorBuckets[key].push(itm);
+      }
+
+      // Shuffle individual vendor buckets
+      for (var k = 0; k < vendorKeys.length; k++) {
+        var bucket = vendorBuckets[vendorKeys[k]];
+        for (var idx = bucket.length - 1; idx > 0; idx--) {
+          var rand = Math.floor(Math.random() * (idx + 1));
+          var temp = bucket[idx];
+          bucket[idx] = bucket[rand];
+          bucket[rand] = temp;
+        }
+      }
+
+      // Shuffle vendor order for fair first-place rotation
+      for (var vIdx = vendorKeys.length - 1; vIdx > 0; vIdx--) {
+        var vRand = Math.floor(Math.random() * (vIdx + 1));
+        var vTemp = vendorKeys[vIdx];
+        vendorKeys[vIdx] = vendorKeys[vRand];
+        vendorKeys[vRand] = vTemp;
+      }
+
+      var result = [];
+      var added = true;
+      while (added) {
+        added = false;
+        for (var j = 0; j < vendorKeys.length; j++) {
+          var vKey = vendorKeys[j];
+          if (vendorBuckets[vKey] && vendorBuckets[vKey].length > 0) {
+            result.push(vendorBuckets[vKey].shift());
+            added = true;
+          }
+        }
+      }
+      return result;
+    }
+
     window.searchPage = function() {
       return {
         activeTab: (initialTab === 'stalls' || initialTab === 'vendors') ? 'vendors' : 'dishes',
@@ -107,7 +155,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         displayLimit: 20,
         expandedVendors: {},
         allVendors: Array.isArray(initialVendors) ? initialVendors : [],
-        allItems: Array.isArray(initialItems) ? initialItems : [],
+        allItems: Array.isArray(initialItems) ? fairInterleaveByVendor(initialItems) : [],
         selectedItem: null,
         showDetailModal: false,
         formatCount(count) {
@@ -177,7 +225,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 const data = await res.json();
                 const items = data.hits || data.results || [];
                 if (items.length > 0) {
-                  this.allItems = items;
+                  this.allItems = fairInterleaveByVendor(items);
                 }
               }
             } catch (e) {}
@@ -351,7 +399,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
           // 5. Keyword & Typo-Tolerant Search
           if (!this.query.trim()) {
-            return list;
+            return fairInterleaveByVendor(list);
           }
 
           var rawQuery = this.query.toLowerCase().trim();
