@@ -36,26 +36,26 @@ export const GET: APIRoute = async ({ request, url }) => {
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
       .leftJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id));
 
+    const { ensureRealDatabasePopulated } = await import('../../../../lib/queries');
+    await ensureRealDatabasePopulated();
+
     let items = vendorIdParam && !isNaN(parseInt(vendorIdParam, 10))
       ? await baseQuery.where(eq(schema.menuItems.vendorId, parseInt(vendorIdParam, 10))).orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name))
       : await baseQuery.orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
 
-    if (!items || items.length === 0) {
-      const { ensureRealDatabasePopulated } = await import('../../../../lib/queries');
-      await ensureRealDatabasePopulated();
-      items = vendorIdParam && !isNaN(parseInt(vendorIdParam, 10))
-        ? await baseQuery.where(eq(schema.menuItems.vendorId, parseInt(vendorIdParam, 10))).orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name))
-        : await baseQuery.orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
-    }
+    const { MOCK_MENU_ITEMS, MOCK_CATEGORIES, MOCK_VENDORS } = await import('../../../../lib/mock-data');
 
-    if (!items || items.length === 0) {
-      const { FOOD_CAVE_MENU_ITEMS } = await import('../../../../lib/food-cave-data');
-      const { MOCK_CATEGORIES } = await import('../../../../lib/mock-data');
-      items = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
+    if (!items || items.length === 0 || (!vendorIdParam && items.length < MOCK_MENU_ITEMS.length)) {
+      let fallbackList = MOCK_MENU_ITEMS;
+      if (vendorIdParam && !isNaN(parseInt(vendorIdParam, 10))) {
+        fallbackList = fallbackList.filter(m => m.vendorId === parseInt(vendorIdParam, 10));
+      }
+      items = fallbackList.map((item: any) => {
         const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+        const ven = MOCK_VENDORS.find((v: any) => v.id === item.vendorId);
         return {
           ...item,
-          vendorName: 'Food Cave Fast Food',
+          vendorName: ven?.name || 'Campus Vendor',
           categoryName: cat?.name || 'General'
         };
       }) as any;
@@ -66,13 +66,13 @@ export const GET: APIRoute = async ({ request, url }) => {
     });
   } catch (error) {
     console.error('List menu items error:', error);
-    const { FOOD_CAVE_MENU_ITEMS } = await import('../../../../lib/food-cave-data');
-    const { MOCK_CATEGORIES } = await import('../../../../lib/mock-data');
-    const items = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
+    const { MOCK_MENU_ITEMS, MOCK_CATEGORIES, MOCK_VENDORS } = await import('../../../../lib/mock-data');
+    const items = MOCK_MENU_ITEMS.map((item: any) => {
       const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+      const ven = MOCK_VENDORS.find((v: any) => v.id === item.vendorId);
       return {
         ...item,
-        vendorName: 'Food Cave Fast Food',
+        vendorName: ven?.name || 'Campus Vendor',
         categoryName: cat?.name || 'General'
       };
     });

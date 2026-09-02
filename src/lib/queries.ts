@@ -13,7 +13,7 @@ let hasCheckedD1Seed = false;
 
 export async function ensureRealDatabasePopulated(d1Raw?: any) {
   const d1 = d1Raw || getRawD1Binding();
-  if (!d1 || typeof d1.prepare !== 'function' || hasCheckedD1Seed) return;
+  if (!d1 || typeof d1.prepare !== 'function') return;
 
   try {
     // 0. Ensure all production tables exist with proper schema
