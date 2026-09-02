@@ -4,6 +4,7 @@ import { SURAJ_VENDOR, SURAJ_MENU_ITEMS } from './suraj-restaurant-data';
 import { FOOD_POINT_VENDOR, FOOD_POINT_MENU_ITEMS } from './food-point-data';
 import { HANGRY_CLUB_VENDOR, HANGRY_CLUB_MENU_ITEMS } from './hangry-club-data';
 import { RAHUL_FAST_FOOD_VENDOR, RAHUL_FAST_FOOD_MENU_ITEMS } from './rahul-fast-food-data';
+import { EAT_AND_FUN_VENDOR, EAT_AND_FUN_MENU_ITEMS } from './eat-and-fun-data';
 
 export { 
   FOOD_CAVE_VENDOR, 
@@ -17,7 +18,9 @@ export {
   HANGRY_CLUB_VENDOR,
   HANGRY_CLUB_MENU_ITEMS,
   RAHUL_FAST_FOOD_VENDOR,
-  RAHUL_FAST_FOOD_MENU_ITEMS
+  RAHUL_FAST_FOOD_MENU_ITEMS,
+  EAT_AND_FUN_VENDOR,
+  EAT_AND_FUN_MENU_ITEMS
 };
 
 export const MOCK_CATEGORIES = [
@@ -37,7 +40,8 @@ export const MOCK_VENDORS = [
   SURAJ_VENDOR,
   FOOD_POINT_VENDOR,
   HANGRY_CLUB_VENDOR,
-  RAHUL_FAST_FOOD_VENDOR
+  RAHUL_FAST_FOOD_VENDOR,
+  EAT_AND_FUN_VENDOR
 ];
 
 export const MOCK_MENU_ITEMS = [
@@ -46,7 +50,8 @@ export const MOCK_MENU_ITEMS = [
   ...SURAJ_MENU_ITEMS,
   ...FOOD_POINT_MENU_ITEMS,
   ...HANGRY_CLUB_MENU_ITEMS,
-  ...RAHUL_FAST_FOOD_MENU_ITEMS
+  ...RAHUL_FAST_FOOD_MENU_ITEMS,
+  ...EAT_AND_FUN_MENU_ITEMS
 ];
 
 export const MOCK_REVIEWS = [

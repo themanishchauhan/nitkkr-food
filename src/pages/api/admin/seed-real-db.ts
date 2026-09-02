@@ -6,6 +6,7 @@ import { SURAJ_VENDOR, SURAJ_MENU_ITEMS } from '../../../lib/suraj-restaurant-da
 import { FOOD_POINT_VENDOR, FOOD_POINT_MENU_ITEMS } from '../../../lib/food-point-data';
 import { HANGRY_CLUB_VENDOR, HANGRY_CLUB_MENU_ITEMS } from '../../../lib/hangry-club-data';
 import { RAHUL_FAST_FOOD_VENDOR, RAHUL_FAST_FOOD_MENU_ITEMS } from '../../../lib/rahul-fast-food-data';
+import { EAT_AND_FUN_VENDOR, EAT_AND_FUN_MENU_ITEMS } from '../../../lib/eat-and-fun-data';
 import { MOCK_CATEGORIES } from '../../../lib/mock-data';
 
 export const prerender = false;
@@ -37,7 +38,8 @@ export const POST: APIRoute = async ({ locals }) => {
       SURAJ_VENDOR,
       FOOD_POINT_VENDOR,
       HANGRY_CLUB_VENDOR,
-      RAHUL_FAST_FOOD_VENDOR
+      RAHUL_FAST_FOOD_VENDOR,
+      EAT_AND_FUN_VENDOR
     ];
     for (const vendor of vendorsToSeed) {
       await d1.prepare(`
@@ -66,10 +68,11 @@ export const POST: APIRoute = async ({ locals }) => {
     const allMenuItems = [
       ...FOOD_CAVE_MENU_ITEMS, 
       ...APNA_FAST_FOOD_MENU_ITEMS, 
-      ...SURAJ_MENU_ITEMS,
+      ...SURAJ_MENU_ITEMS, 
       ...FOOD_POINT_MENU_ITEMS,
       ...HANGRY_CLUB_MENU_ITEMS,
-      ...RAHUL_FAST_FOOD_MENU_ITEMS
+      ...RAHUL_FAST_FOOD_MENU_ITEMS,
+      ...EAT_AND_FUN_MENU_ITEMS
     ];
     const statements: any[] = [];
     for (const item of allMenuItems) {
