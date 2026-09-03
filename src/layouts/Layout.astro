@@ -254,7 +254,7 @@ const isVendorPage = currentPath.startsWith('/v/');
             <li><a href="/terms" class="hover:text-nitkkr-orange transition-colors">📜 Terms of Service</a></li>
             <li><a href="/privacy" class="hover:text-nitkkr-orange transition-colors">🔒 Privacy Policy</a></li>
             <li><a href="/contact" class="hover:text-nitkkr-orange transition-colors">📍 Drop Your Food Outlet</a></li>
-            <li><a href="/contact" class="hover:text-nitkkr-orange transition-colors">💡 Have a Suggestion?</a></li>
+            <li><a href="mailto:m.chauhan@zohomail.in?subject=Suggestion%20-%20Orandus&body=Hey%20Orandus%20team%2C%0A%0AI%20have%20a%20suggestion%3A%0A%0A" class="hover:text-nitkkr-orange transition-colors">💡 Have a Suggestion?</a></li>
             {customFooterPages.filter(p => p.category !== 'Explore').map((p: any) => (
               <li><a href={`/p/${p.slug}`} class="hover:text-nitkkr-orange transition-colors">{p.icon || '📄'} {p.title}</a></li>
             ))}
