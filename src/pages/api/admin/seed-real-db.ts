@@ -8,6 +8,7 @@ import { HANGRY_CLUB_VENDOR, HANGRY_CLUB_MENU_ITEMS } from '../../../lib/hangry-
 import { RAHUL_FAST_FOOD_VENDOR, RAHUL_FAST_FOOD_MENU_ITEMS } from '../../../lib/rahul-fast-food-data';
 import { EAT_AND_FUN_VENDOR, EAT_AND_FUN_MENU_ITEMS } from '../../../lib/eat-and-fun-data';
 import { CHEF_ON_FOOD_JUNCTION_VENDOR, CHEF_ON_FOOD_JUNCTION_MENU_ITEMS } from '../../../lib/chef-on-food-junction-data';
+import { BAKERS_BITE_KKR_VENDOR, BAKERS_BITE_KKR_MENU_ITEMS } from '../../../lib/bakers-bite-kkr-data';
 import { MOCK_CATEGORIES } from '../../../lib/mock-data';
 
 export const prerender = false;
@@ -41,7 +42,8 @@ export const POST: APIRoute = async ({ locals }) => {
       HANGRY_CLUB_VENDOR,
       RAHUL_FAST_FOOD_VENDOR,
       EAT_AND_FUN_VENDOR,
-      CHEF_ON_FOOD_JUNCTION_VENDOR
+      CHEF_ON_FOOD_JUNCTION_VENDOR,
+      BAKERS_BITE_KKR_VENDOR
     ];
     for (const vendor of vendorsToSeed) {
       await d1.prepare(`
@@ -75,7 +77,8 @@ export const POST: APIRoute = async ({ locals }) => {
       ...HANGRY_CLUB_MENU_ITEMS,
       ...RAHUL_FAST_FOOD_MENU_ITEMS,
       ...EAT_AND_FUN_MENU_ITEMS,
-      ...CHEF_ON_FOOD_JUNCTION_MENU_ITEMS
+      ...CHEF_ON_FOOD_JUNCTION_MENU_ITEMS,
+      ...BAKERS_BITE_KKR_MENU_ITEMS
     ];
     const statements: any[] = [];
     for (const item of allMenuItems) {
