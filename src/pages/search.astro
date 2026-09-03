@@ -67,10 +67,15 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
       return matrix[b.length][a.length];
     }
 
+    var STOP_WORDS = new Set(['in', 'on', 'at', 'to', 'of', 'for', 'with', 'a', 'an', 'the', 'and', 'or', 'is', 'by', 'as']);
+
     function isFuzzyTokenMatch(queryToken, targetWords, fullText) {
+      if (!queryToken) return false;
+
+      // 1. Direct substring in full text (e.g. "chowmein" in item text)
       if (fullText.indexOf(queryToken) !== -1) return true;
 
-      // Check singular / plural
+      // 2. Singular / plural variants
       if (queryToken.endsWith('s') && fullText.indexOf(queryToken.slice(0, -1)) !== -1) return true;
       if (queryToken.endsWith('es') && fullText.indexOf(queryToken.slice(0, -2)) !== -1) return true;
 
@@ -78,15 +83,27 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
       for (var k = 0; k < targetWords.length; k++) {
         var word = targetWords[k];
-        if (!word) continue;
+        if (!word || word.length < 2 || STOP_WORDS.has(word)) continue;
 
-        if (word.indexOf(queryToken) !== -1 || queryToken.indexOf(word) !== -1) return true;
+        // Exact match
+        if (word === queryToken) return true;
 
+        // Target word contains the query token (e.g. searching "chow" matches word "chowmein")
+        if (word.indexOf(queryToken) !== -1) return true;
+
+        // Query token starts with target word only if target word is sufficiently long (at least 4 chars and 75% of query length)
+        if (queryToken.length >= 4 && word.length >= 4 && word.length >= queryToken.length * 0.75) {
+          if (queryToken.indexOf(word) === 0) return true;
+        }
+
+        // Phonetic matching
         var normWord = normalizePhonetics(word);
-        if (normWord.indexOf(normQuery) !== -1 || normQuery.indexOf(normWord) !== -1) return true;
+        if (normWord === normQuery) return true;
+        if (normWord.indexOf(normQuery) !== -1) return true;
 
-        if (queryToken.length >= 4 && Math.abs(queryToken.length - word.length) <= 2) {
-          var maxAllowedDist = queryToken.length > 5 ? 2 : 1;
+        // Levenshtein fuzzy distance for typos (e.g., "chwomin" -> "chowmein")
+        if (queryToken.length >= 4 && word.length >= 4 && Math.abs(queryToken.length - word.length) <= 2) {
+          var maxAllowedDist = queryToken.length >= 6 ? 2 : 1;
           if (levenshteinDist(queryToken, word) <= maxAllowedDist) return true;
           if (levenshteinDist(normQuery, normWord) <= maxAllowedDist) return true;
         }
@@ -215,17 +232,53 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           this.selectedItem = item;
           this.showDetailModal = true;
         },
-        switchTab(tab) {
-          this.activeTab = tab;
+        syncUrl() {
           try {
             var url = new URL(window.location.href);
-            if (tab === 'vendors') {
+            if (this.query && this.query.trim()) {
+              url.searchParams.set('q', this.query.trim());
+            } else {
+              url.searchParams.delete('q');
+            }
+
+            if (this.activeCat && this.activeCat !== 'all') {
+              url.searchParams.set('category', this.activeCat);
+            } else {
+              url.searchParams.delete('category');
+            }
+
+            if (this.vibeTag && this.vibeTag !== 'all') {
+              url.searchParams.set('tag', this.vibeTag);
+            } else {
+              url.searchParams.delete('tag');
+            }
+
+            if (this.priceBracket && this.priceBracket !== 'all') {
+              url.searchParams.set('maxPrice', this.priceBracket);
+            } else {
+              url.searchParams.delete('maxPrice');
+            }
+
+            if (this.vegFilter && this.vegFilter !== 'all') {
+              url.searchParams.set('isVeg', this.vegFilter);
+            } else {
+              url.searchParams.delete('isVeg');
+            }
+
+            if (this.activeTab === 'vendors') {
               url.searchParams.set('tab', 'vendors');
             } else {
               url.searchParams.delete('tab');
             }
-            window.history.replaceState(null, '', url.toString());
+
+            var cleanUrl = url.pathname + (url.search ? url.search : '');
+            window.history.replaceState(null, '', cleanUrl);
           } catch (e) {}
+        },
+
+        switchTab(tab) {
+          this.activeTab = tab;
+          this.syncUrl();
         },
 
         getItemDiet(item) {
@@ -261,6 +314,21 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         },
 
         async init() {
+          var self = this;
+          var debounceTimer = null;
+          if (this.$watch) {
+            this.$watch('query', function() {
+              clearTimeout(debounceTimer);
+              debounceTimer = setTimeout(function() {
+                self.syncUrl();
+              }, 150);
+            });
+            this.$watch('activeCat', function() { self.syncUrl(); });
+            this.$watch('vibeTag', function() { self.syncUrl(); });
+            this.$watch('priceBracket', function() { self.syncUrl(); });
+            this.$watch('vegFilter', function() { self.syncUrl(); });
+          }
+
           window.addEventListener('review-updated', (e) => {
             const { menuItemId, rating } = e.detail || {};
             if (!menuItemId) return;
@@ -585,6 +653,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           this.priceBracket = 'all';
           this.vegFilter = 'all';
           this.displayLimit = 20;
+          this.syncUrl();
         },
 
         get groupedDishesByVendor() {
@@ -627,12 +696,26 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             x-model="query"
             @keydown.enter="$el.blur()"
             @search="$el.blur()"
-            placeholder="Search food vendors (Food Cave) or dishes (paratha, noodles, maggi)..."
-            class="w-full px-5 py-4 pr-12 text-lg bg-white border-2 border-bistro-200 rounded-2xl
+            placeholder="Search food spots (Food Cave) or dishes (paratha, noodles, maggi)..."
+            class="w-full px-5 py-4 pr-20 text-lg bg-white border-2 border-bistro-200 rounded-2xl
                    hover:border-bistro-400 focus:border-bistro-500 focus:outline-none focus:ring-4 focus:ring-bistro-500/10
                    shadow-sm transition-all duration-200"
             enterkeyhint="search"
           />
+
+          <!-- Clear Query Button (shows when query is present) -->
+          <button
+            type="button"
+            x-show="query"
+            @click="query = ''; syncUrl();"
+            class="absolute right-12 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            aria-label="Clear search"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
           <button
             type="button"
             @click="document.querySelector('input[type=search]')?.blur()"

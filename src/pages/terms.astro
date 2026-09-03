@@ -7,7 +7,6 @@ const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 const customTerms = settingsObj.terms_custom_text || '';
-
 ---
 
 <Layout title="Terms & Conditions - Orandus" description="Terms and conditions for using Orandus.">
@@ -15,7 +14,7 @@ const customTerms = settingsObj.terms_custom_text || '';
     <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 border border-amber-200/80 shadow-sm space-y-6">
       <div>
         <h1 class="font-display text-2xl sm:text-3xl font-bold text-nitkkr-dark">📜 Terms & Conditions</h1>
-        <p class="text-xs text-slate-500 mt-1">Last updated: August 2026</p>
+        <p class="text-xs text-slate-500 mt-1">Last updated: September 2026</p>
       </div>
 
       {customTerms ? (
@@ -26,29 +25,86 @@ const customTerms = settingsObj.terms_custom_text || '';
 
       <div class="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
         <div>
-          <h2 class="font-bold text-base text-slate-900 mb-1">1. Platform Nature</h2>
-          <p>Orandus operates as an on-demand digital directory and services platform connecting users with local food spots, vendors, and on-demand campus services. We provide menu information, vendor timings, and direct WhatsApp/Phone ordering connections.</p>
+          <h2 class="font-bold text-base text-slate-900 mb-1">1. What Orandus Actually Is</h2>
+          <p>Orandus is a food discovery platform — we help you find food spots, check menus, see prices, and contact vendors directly. That's it.</p>
+          <p class="mt-2">We're <strong>not</strong> a delivery app, not a restaurant, not a payment processor. We don't cook, we don't deliver, we don't take orders, we don't process payments. Zero commissions. Zero markups. Zero middleman drama.</p>
         </div>
 
         <div>
-          <h2 class="font-bold text-base text-slate-900 mb-1">2. Orders & Transactions</h2>
-          <p>All food preparation, packaging, pricing, delivery, and payment transactions happen directly between the customer and the respective independent vendor. Orandus does not process unauthorized payments or charge hidden commission on direct orders.</p>
+          <h2 class="font-bold text-base text-slate-900 mb-1">2. Your Transaction = Your Business</h2>
+          <p>When you order food, you're dealing directly with the vendor. Price, quantity, payment, delivery, pickup, prep time, cancellations, refunds, replacements, complaints, food quality — that's 100% between you and them.</p>
+          <p class="mt-2">Orandus just introduced you. We're not a party to your transaction. We don't guarantee the vendor accepts your order, has the item, delivers on time, or that the food tastes good.</p>
         </div>
 
         <div>
-          <h2 class="font-bold text-base text-slate-900 mb-1">3. Menu Accuracy & Availability</h2>
-          <p>While vendor owners strive to keep dish availability and prices up-to-date, real-time availability may vary during peak hostel hours. Please confirm exact dish availability directly with the vendor owner via WhatsApp or Call.</p>
-        </div>
-
-
-        <div>
-          <h2 class="font-bold text-base text-slate-900 mb-1">4. Community Reviews & Guidelines</h2>
-          <p>Student reviews must be authentic and respectful. Abusive, spam, or defamatory content will be moderated and removed by the campus admin team.</p>
+          <h2 class="font-bold text-base text-slate-900 mb-1">3. Menu Info = Best Effort, Not a Guarantee</h2>
+          <p>We try to keep menus, prices, and hours accurate. But vendors change stuff without telling us. Prices go up, items sell out, timings shift, spots close temporarily.</p>
+          <p class="mt-2">Always double-check with the vendor before you trek across campus or place an order. Orandus shows what we know — not a promise.</p>
         </div>
 
         <div>
-          <h2 class="font-bold text-base text-slate-900 mb-1">5. Contact Us</h2>
-          <p>For questions or feedback regarding platform terms, reach out via our <a href="/contact" class="text-nitkkr-orange font-bold hover:underline">Contact page</a>.</p>
+          <h2 class="font-bold text-base text-slate-900 mb-1">4. Reviews: Keep It Real, Keep It Respectful</h2>
+          <p>Reviews are public. Other students see your display name and what you wrote.</p>
+          <ul class="list-disc list-inside mt-2 space-y-1">
+            <li>Be honest — fake reviews help no one</li>
+            <li>Be respectful — abusive, spammy, or defamatory content gets removed</li>
+            <li>Don't put personal info (phone, address, etc.) in reviews</li>
+          </ul>
+          <p class="mt-2">We moderate. If it crosses the line, it's gone.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">5. Your Content, Your Responsibility</h2>
+          <p>If you submit a review, feedback, or correction, you own it. You're responsible for what you post. Don't submit anything illegal, offensive, or that violates someone's rights.</p>
+          <p class="mt-2">By submitting, you give us permission to display, store, and moderate it on the platform.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">6. Want Your Review Removed?</h2>
+          <p>No problem. Hit up our <a href="/contact" class="text-nitkkr-orange font-bold hover:underline">Contact page</a> and tell us which one. We'll sort it.</p>
+          <p class="mt-1 text-sm text-slate-500">We may keep minimal records to prevent abuse or resolve disputes.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">7. Vendor Info on Orandus</h2>
+          <p>We display vendor names, menus, prices, photos, categories, locations, hours, contact info, and descriptions. Some comes directly from vendors, some from public sources, some we verify ourselves.</p>
+          <p class="mt-2">If you're a vendor and something's wrong — <a href="/contact" class="text-nitkkr-orange font-bold hover:underline">tell us</a>. We'll verify and fix it.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">8. External Links = Not Our Circus</h2>
+          <p>Orandus links to WhatsApp, phone dialer, maps, Instagram, vendor sites. Once you tap out, their rules apply. We don't control their privacy, security, content, or availability.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">9. No Account, No Passwords (For Now)</h2>
+          <p>You don't need an account to browse. No login, no password database for regular users. If that changes, we'll update this.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">10. We Might Add Features Later</h2>
+          <p>Vendor dashboards, saved spots, ordering tools, personalized recommendations — if we add stuff that changes how things work, we'll update these terms first.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">11. Site Might Go Down Sometimes</h2>
+          <p>Maintenance, tech issues, hosting problems, security incidents — stuff happens. We don't guarantee 24/7 uptime.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">12. We Can Update These Terms</h2>
+          <p>When services, tech, or laws change, we'll update this page and the "Last updated" date. If it's a big change, we'll give you a heads up.</p>
+          <p class="mt-1 text-sm text-slate-500">Keep checking back occasionally.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">13. The TL;DR</h2>
+          <p>Orandus helps you discover food. It doesn't become the seller. The vendor is responsible for their food/service. You're responsible for your decisions.</p>
+        </div>
+
+        <div>
+          <h2 class="font-bold text-base text-slate-900 mb-1">14. Contact Us</h2>
+          <p>Questions about these terms? <a href="/contact" class="text-nitkkr-orange font-bold hover:underline">Drop us a line</a>.</p>
         </div>
       </div>
     </div>
