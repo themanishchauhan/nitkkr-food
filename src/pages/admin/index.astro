@@ -24,7 +24,7 @@ const initialSettingsObj = initialSettingsList.reduce((acc: any, s: any) => { if
       reviews: Array.isArray(initialReviews) ? initialReviews : [],
       settings: {
         homepage_title: initialSettingsObj.homepage_title || 'Hungry? We got you. 🍜',
-        homepage_tagline: initialSettingsObj.homepage_tagline || 'Explore campus eateries & food vendors around NIT Kurukshetra',
+        homepage_tagline: initialSettingsObj.homepage_tagline || 'Explore campus food spots around NIT Kurukshetra',
         announcement_banner_enabled: initialSettingsObj.announcement_banner_enabled || 'false',
         announcement_banner_text: initialSettingsObj.announcement_banner_text || '',
         announcement_banner_type: initialSettingsObj.announcement_banner_type || 'info',
@@ -515,7 +515,7 @@ const initialSettingsObj = initialSettingsList.reduce((acc: any, s: any) => { if
                       <span class="w-2.5 h-2.5 rounded-full" :class="vendor.isActive ? 'bg-emerald-500' : 'bg-rose-500'"></span>
                       <h5 class="font-bold text-xs text-nitkkr-dark truncate" x-text="vendor.name"></h5>
                     </div>
-                    <p class="text-[11px] text-nitkkr-gray truncate mt-0.5" x-text="vendor.address || 'Campus Eatery'"></p>
+                    <p class="text-[11px] text-nitkkr-gray truncate mt-0.5" x-text="vendor.address || 'Campus Food Spot'"></p>
                     <span class="text-[10px] font-mono text-nitkkr-gray font-semibold" x-text="vendor.opensAt + ' - ' + vendor.closesAt"></span>
                   </div>
 

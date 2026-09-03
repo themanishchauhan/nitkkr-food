@@ -192,7 +192,9 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         activeCat: initialCategory || 'all',
         vibeTag: initialTag || 'all',
         priceBracket: initialMaxPrice ? (initialMaxPrice === '50' ? 'under-50' : (initialMaxPrice === '100' ? '50-100' : (initialMaxPrice === '150' ? '100-150' : (initialMaxPrice === '150+' ? 'above-150' : initialMaxPrice)))) : 'all',
-        vegFilter: initialIsVeg === 'true' ? 'veg' : ((initialIsVeg === 'false' || initialIsVeg === 'nonveg' || initialIsVeg === 'non-veg') ? 'nonveg' : 'all'),
+        vegFilter: (initialIsVeg === 'true' || initialIsVeg === 'veg') ? 'veg' :
+                   (initialIsVeg === 'egg' || initialIsVeg === 'eggs') ? 'egg' :
+                   ((initialIsVeg === 'false' || initialIsVeg === 'nonveg' || initialIsVeg === 'non-veg') ? 'nonveg' : 'all'),
         displayLimit: 20,
         expandedVendors: {},
         allVendors: Array.isArray(initialVendors) ? fairShuffleVendors(initialVendors) : [],
@@ -224,6 +226,24 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             }
             window.history.replaceState(null, '', url.toString());
           } catch (e) {}
+        },
+
+        getItemDiet(item) {
+          if (!item) return 'veg';
+          var name = (item.name || '').toLowerCase();
+          var desc = (item.description || '').toLowerCase();
+          var rawTags = Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? [item.tags] : []);
+          var tagsText = rawTags.join(' ').toLowerCase();
+          var full = name + ' ' + desc + ' ' + tagsText;
+
+          var isMeat = /chicken|mutton|fish|prawn|kebab|kabab|keema|meat|tangri|kalmi|seekh|basa/i.test(full);
+          var hasEgg = /\b(egg|eggs|anda|omelet|omelette|bhurji|french toast|boiled egg)\b/i.test(full);
+
+          if (hasEgg && !isMeat) return 'egg';
+          if (isMeat || item.isVeg === false || item.isVeg === 0) {
+            return isMeat ? 'nonveg' : (hasEgg ? 'egg' : 'nonveg');
+          }
+          return 'veg';
         },
 
         getTelHref(phone) {
@@ -480,11 +500,13 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             });
           }
 
-          // 4. Diet Filter
+          // 4. Diet Filter (3 Sections: Veg, Non-Veg, Eggs)
           if (this.vegFilter === 'veg') {
-            list = list.filter(function(i) { return i.isVeg === true || i.isVeg === 1; });
+            list = list.filter(function(i) { return self.getItemDiet(i) === 'veg'; });
+          } else if (this.vegFilter === 'egg' || this.vegFilter === 'eggs') {
+            list = list.filter(function(i) { return self.getItemDiet(i) === 'egg'; });
           } else if (this.vegFilter === 'nonveg' || this.vegFilter === 'non-veg') {
-            list = list.filter(function(i) { return !i.isVeg; });
+            list = list.filter(function(i) { return self.getItemDiet(i) === 'nonveg'; });
           }
 
           // 5. Keyword & Typo-Tolerant Search
@@ -571,7 +593,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           var list = this.filteredItems;
           for (var k = 0; k < list.length; k++) {
             var itm = list[k];
-            var vName = itm.vendorName || 'Campus Eatery';
+            var vName = itm.vendorName || 'Campus Food Spot';
             if (!map[vName]) {
               map[vName] = {
                 name: vName,
@@ -643,12 +665,12 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             class="flex-1 py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <span>🏪</span>
-            <span>Campus Vendors</span>
+            <span>Food Spots</span>
             <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="activeTab === 'vendors' ? 'bg-white/20 text-white' : 'bg-bistro-100 text-bistro-600'" x-text="formatCount(filteredVendors.length)"></span>
           </button>
         </div>
 
-        <!-- Filter Controls for Dishes tab (Restored previous design, eateries section removed) -->
+        <!-- Filter Controls for Dishes tab -->
         <div x-show="activeTab === 'dishes'" class="mt-3 space-y-2.5">
           
           <!-- 1. Gen-Z Cravings & Lifestyle Vibe Bar -->
@@ -772,21 +794,32 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               </button>
             </div>
 
-            <!-- Veg / Non-Veg Toggle -->
-            <div class="flex items-center gap-1">
+            <!-- 3 Dietary Preference Sections: Veg, Non-Veg, Eggs (Subtle, refined colors) -->
+            <div class="flex items-center gap-1 flex-wrap">
               <button
                 type="button"
                 @click="vegFilter = (vegFilter === 'veg' ? 'all' : 'veg'); displayLimit = 20;"
-                :class="vegFilter === 'veg' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-white text-emerald-700 border border-emerald-300 hover:bg-emerald-50 font-semibold'"
-                class="px-2.5 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs"
+                :class="vegFilter === 'veg' ? 'bg-emerald-700 text-white shadow-xs font-bold' : 'bg-emerald-50/80 text-emerald-800 border border-emerald-300/80 hover:bg-emerald-100 font-semibold'"
+                class="px-2.5 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs active:scale-95"
+                title="Filter Pure Veg dishes"
               >
-                <span>🌱</span> Veg Only
+                <span>🌱</span> Veg
+              </button>
+              <button
+                type="button"
+                @click="vegFilter = (vegFilter === 'egg' ? 'all' : 'egg'); displayLimit = 20;"
+                :class="vegFilter === 'egg' ? 'bg-amber-600 text-white shadow-xs font-bold' : 'bg-amber-50/80 text-amber-900 border border-amber-300/80 hover:bg-amber-100 font-semibold'"
+                class="px-2.5 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs active:scale-95"
+                title="Filter dishes with Egg"
+              >
+                <span>🥚</span> Eggs
               </button>
               <button
                 type="button"
                 @click="vegFilter = (vegFilter === 'nonveg' ? 'all' : 'nonveg'); displayLimit = 20;"
-                :class="vegFilter === 'nonveg' ? 'bg-rose-600 text-white shadow-xs font-bold' : 'bg-white text-rose-700 border border-rose-300 hover:bg-rose-50 font-semibold'"
-                class="px-2.5 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs"
+                :class="vegFilter === 'nonveg' ? 'bg-rose-700 text-white shadow-xs font-bold' : 'bg-rose-50/80 text-rose-800 border border-rose-300/80 hover:bg-rose-100 font-semibold'"
+                class="px-2.5 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs active:scale-95"
+                title="Filter Non-Veg dishes"
               >
                 <span>🍗</span> Non-Veg
               </button>
@@ -797,7 +830,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         <!-- 3. Result counter and reset button -->
         <p class="mt-2.5 text-xs font-semibold text-nitkkr-gray flex items-center justify-between px-0.5">
           <span x-show="activeTab === 'dishes'" x-text="`Found ${formatCount(filteredItems.length)} dish${filteredItems.length === 1 ? '' : 'es'}`"></span>
-          <span x-show="activeTab === 'vendors'" x-text="`Found ${formatCount(filteredVendors.length)} campus vendor${filteredVendors.length === 1 ? '' : 's'}`"></span>
+          <span x-show="activeTab === 'vendors'" x-text="`Found ${formatCount(filteredVendors.length)} food spot${filteredVendors.length === 1 ? '' : 's'}`"></span>
           <button
             x-show="query || activeCat !== 'all' || vibeTag !== 'all' || priceBracket !== 'all' || vegFilter !== 'all'"
             @click="resetAllFilters()"
@@ -836,36 +869,59 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
       )}
 
       <!-- ================= 🏪 VENDORS VIEW ================= -->
-      <div x-show="activeTab === 'vendors'" class="space-y-4" role="list">
+      <div x-show="activeTab === 'vendors'" class="space-y-3.5" role="list">
         <template x-for="vendor in filteredVendors" :key="vendor.id">
-          <div class="bg-white p-4 rounded-2xl border border-bistro-200 hover:border-bistro-400 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-4 min-w-0">
-              <img
-                :src="vendor.image || '/placeholder-vendor.svg'"
-                alt=""
-                class="w-16 h-16 rounded-xl object-cover flex-shrink-0"
-                loading="lazy"
-              />
+          <div class="bg-white p-4 sm:p-4.5 rounded-2xl border border-slate-200/90 hover:border-amber-300 shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group">
+            <div class="flex items-center gap-3.5 min-w-0">
+              <div class="relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100 shadow-2xs">
+                <img
+                  :src="vendor.image || '/placeholder-vendor.svg'"
+                  alt=""
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
+              </div>
               <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                  <h3 class="font-bold text-nitkkr-dark text-base truncate" x-text="vendor.name"></h3>
-                  <span
-                    :class="isVendorOpen(vendor.opensAt, vendor.closesAt) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
-                    class="px-2 py-0.5 text-[10px] font-bold rounded-full whitespace-nowrap"
-                    x-text="isVendorOpen(vendor.opensAt, vendor.closesAt) ? '🟢 OPEN' : '🔴 CLOSED'"
-                  ></span>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="font-display font-bold text-slate-900 text-base truncate group-hover:text-amber-600 transition-colors" x-text="vendor.name"></h3>
+                  
+                  <!-- Subtle Status Pill (Soft Emerald for Open, Soft Muted Slate/Rose for Closed) -->
+                  <template x-if="isVendorOpen(vendor.opensAt, vendor.closesAt)">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
+                      <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <span>Open Now</span>
+                    </span>
+                  </template>
+                  <template x-if="!isVendorOpen(vendor.opensAt, vendor.closesAt)">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200/80">
+                      <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                      <span>Closed</span>
+                    </span>
+                  </template>
                 </div>
-                <p class="text-xs text-nitkkr-gray mt-0.5 flex items-center gap-1">
-                  <span>📍</span>
+
+                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
                   <span class="truncate" x-text="vendor.address || 'NITKKR Campus'"></span>
                 </p>
-                <p class="text-[11px] text-nitkkr-gray mt-0.5">
-                  <span class="font-semibold text-nitkkr-dark">Hours:</span>
+
+                <p class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+                  <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="font-medium text-slate-600">Hours:</span>
                   <span x-text="(vendor.opensAt || '09:00') + ' – ' + (vendor.closesAt || '23:00')"></span>
                 </p>
+
                 <template x-if="query.trim() && getVendorMatchCount(vendor.id) > 0">
-                  <div class="mt-1">
-                    <span class="text-[10px] font-extrabold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                  <div class="mt-1.5">
+                    <span class="text-[10px] font-bold text-amber-800 bg-amber-50/80 border border-amber-200/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
                       <span>✨</span>
                       <span x-text="formatCount(getVendorMatchCount(vendor.id)) + ' matching items'"></span>
                     </span>
@@ -874,32 +930,43 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               </div>
             </div>
 
-
-            <div class="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-nitkkr-cream">
+            <!-- Action Buttons (Polished, Modern, Zero Distracting Arrows) -->
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
               <a
                 :href="getTelHref(vendor.phone)"
-                class="px-3 py-2 bg-bistro-100 hover:bg-bistro-200 text-bistro-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
+                class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
                 aria-label="Call vendor"
               >
-                <span>📞</span> Call
+                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                <span>Call</span>
               </a>
+
               <template x-if="showWhatsApp">
                 <a
                   :href="getWhatsAppHref(vendor.whatsapp || vendor.phone)"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
+                  class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer active:scale-95"
                   aria-label="WhatsApp vendor"
                 >
-                  <span>💬</span> WhatsApp
+                  <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+                  </svg>
+                  <span>WhatsApp</span>
                 </a>
               </template>
 
+              <!-- View Menu Button (Clean, no distracting text arrow, sleek menu icon) -->
               <a
                 :href="`/v/${vendor.slug}`"
-                class="px-4 py-2 bg-bistro-500 hover:bg-bistro-600 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+                class="px-4 py-2 bg-gradient-to-r from-amber-500 to-nitkkr-orange hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
               >
-                View Menu →
+                <svg class="w-3.5 h-3.5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <span>View Menu</span>
               </a>
             </div>
 
@@ -908,8 +975,8 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
         <div x-show="filteredVendors.length === 0" class="text-center py-16 text-nitkkr-gray bg-white rounded-2xl border border-bistro-200 p-8">
           <p class="text-3xl mb-2">🏪</p>
-          <p class="text-lg font-bold text-nitkkr-dark">No food vendors found</p>
-          <p class="text-xs text-nitkkr-gray mt-1">Try searching for a different vendor name or location.</p>
+          <p class="text-lg font-bold text-nitkkr-dark">No food spots found</p>
+          <p class="text-xs text-nitkkr-gray mt-1">Try searching for a different food spot name or location.</p>
         </div>
       </div>
 
@@ -929,9 +996,12 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             </div>
             <a
               :href="`/v/${matchingVendor.slug}`"
-              class="px-3 py-1.5 bg-bistro-500 text-white text-xs font-bold rounded-xl whitespace-nowrap hover:bg-bistro-600 transition-colors"
+              class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-nitkkr-orange hover:from-amber-600 hover:to-orange-700 text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 active:scale-95"
             >
-              Open Vendor Menu →
+              <svg class="w-3.5 h-3.5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span>View Full Menu</span>
             </a>
           </div>
         </template>
@@ -957,19 +1027,31 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               <!-- Middle: Veg/Non-Veg icon + Dish Name + Vendor & Category & Rating -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5 min-w-0">
+                  <!-- Veg / Egg / Non-Veg Indicator -->
                   <span
                     class="w-3.5 h-3.5 rounded-xs border flex items-center justify-center flex-shrink-0"
-                    :class="item.isVeg ? 'border-emerald-600 bg-emerald-50' : 'border-rose-600 bg-rose-50'"
-                    :title="item.isVeg ? 'Pure Veg' : 'Non-Veg'"
+                    :class="{
+                      'border-emerald-600 bg-emerald-50': getItemDiet(item) === 'veg',
+                      'border-amber-500 bg-amber-50': getItemDiet(item) === 'egg',
+                      'border-rose-600 bg-rose-50': getItemDiet(item) === 'nonveg'
+                    }"
+                    :title="getItemDiet(item) === 'veg' ? 'Pure Veg' : (getItemDiet(item) === 'egg' ? 'Contains Egg' : 'Non-Veg')"
                   >
-                    <span class="w-1.5 h-1.5 rounded-full" :class="item.isVeg ? 'bg-emerald-600' : 'bg-rose-600'"></span>
+                    <span
+                      class="w-1.5 h-1.5 rounded-full"
+                      :class="{
+                        'bg-emerald-600': getItemDiet(item) === 'veg',
+                        'bg-amber-500': getItemDiet(item) === 'egg',
+                        'bg-rose-600': getItemDiet(item) === 'nonveg'
+                      }"
+                    ></span>
                   </span>
 
                   <h3 class="font-bold text-sm sm:text-base text-slate-900 truncate group-hover:text-bistro-600 transition-colors" x-text="item.name"></h3>
                 </div>
 
                 <div class="flex items-center gap-1.5 mt-0.5 text-xs text-slate-400 truncate">
-                  <span class="font-medium text-slate-700 truncate bg-slate-100 px-1.5 py-0.5 rounded-md" x-text="item.vendorName || 'Campus Eatery'"></span>
+                  <span class="font-medium text-slate-700 truncate bg-slate-100 px-1.5 py-0.5 rounded-md" x-text="item.vendorName || 'Campus Food Spot'"></span>
                   <span class="text-slate-300">•</span>
                   <span class="truncate" x-text="item.categoryName || 'Campus Fast Food'"></span>
                   <template x-if="item.avgRating && item.reviewCount > 0">
@@ -1073,9 +1155,13 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
               <span
                 class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-md"
-                :class="selectedItem.isVeg ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
+                :class="{
+                  'bg-emerald-600 text-white': getItemDiet(selectedItem) === 'veg',
+                  'bg-amber-500 text-white': getItemDiet(selectedItem) === 'egg',
+                  'bg-rose-600 text-white': getItemDiet(selectedItem) === 'nonveg'
+                }"
               >
-                <span x-text="selectedItem.isVeg ? '🌱 Pure Veg' : '🍗 Non-Veg'"></span>
+                <span x-text="getItemDiet(selectedItem) === 'veg' ? '🌱 Pure Veg' : (getItemDiet(selectedItem) === 'egg' ? '🥚 Contains Egg' : '🍗 Non-Veg')"></span>
               </span>
 
               <span class="text-2xl font-black text-white drop-shadow-md" x-text="'₹' + Number(selectedItem.price).toFixed(0)"></span>

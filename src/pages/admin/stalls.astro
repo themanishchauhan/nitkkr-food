@@ -223,13 +223,13 @@ const initialCategories = await getCategories();
           <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-[11px] font-bold mb-2">
-                <span>🏪</span> Campus Vendors & Eateries
+                <span>🏪</span> Campus Food Spots
               </div>
               <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-nitkkr-dark">
-                Campus Vendors Manager
+                Campus Food Spots Manager
               </h1>
               <p class="text-xs sm:text-sm text-nitkkr-gray mt-1">
-                Add eateries, edit WhatsApp numbers, set opening hours, and control vendor availability.
+                Add food spots, edit WhatsApp numbers, set opening hours, and control vendor availability.
               </p>
             </div>
 
@@ -276,7 +276,7 @@ const initialCategories = await getCategories();
                     <span x-show="v.isFeatured" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">Featured</span>
                   </div>
 
-                  <p class="text-xs text-nitkkr-gray line-clamp-1" x-text="v.address || 'Campus Eatery'"></p>
+                  <p class="text-xs text-nitkkr-gray line-clamp-1" x-text="v.address || 'Campus Food Spot'"></p>
                   
                   <div class="mt-3 space-y-1 text-xs text-slate-600 bg-nitkkr-cream/40 p-3 rounded-2xl border border-nitkkr-orange/15">
                     <p class="font-mono text-[11px]">🕒 <span x-text="v.opensAt + ' - ' + v.closesAt"></span></p>

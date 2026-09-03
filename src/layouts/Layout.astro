@@ -181,9 +181,13 @@ const isVendorPage = currentPath.startsWith('/v/');
   {!isHomePage && !isVendorPage && (
     <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-amber-200/50 shadow-2xs py-2.5 px-4 transition-all">
       <div class="max-w-3xl mx-auto flex items-center justify-between gap-3">
-        <a href="/" class="flex items-center gap-2 font-display font-bold text-sm text-slate-900 hover:text-nitkkr-orange transition-colors">
-          <span class="text-base font-extrabold text-nitkkr-orange">←</span>
-          <span>🍜 Orandus</span>
+        <a href="/" class="flex items-center gap-2 font-display font-bold text-sm text-slate-900 hover:text-nitkkr-orange transition-colors group">
+          <span class="w-6 h-6 rounded-lg bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center text-amber-700 transition-colors shadow-2xs">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+            </svg>
+          </span>
+          <span>Orandus</span>
         </a>
         <div class="flex items-center gap-2">
           {currentPath !== '/search' && (

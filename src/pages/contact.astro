@@ -14,12 +14,12 @@ const instagram = settingsObj.company_instagram || settingsObj.instagram_url || 
 const whatsappUrl = cleanWhatsAppHref(phone, 'Hi Orandus Team! I have an inquiry.');
 ---
 
-<Layout title="Contact & Vendor Support - Orandus" description="Get in touch with the Orandus team or request to list your vendor eatery.">
+<Layout title="Contact & Vendor Support - Orandus" description="Get in touch with the Orandus team or request to list your food spot.">
   <section class="min-h-screen bg-nitkkr-cream py-12 px-4">
     <div class="max-w-2xl mx-auto space-y-6">
       <div class="text-center space-y-2">
         <h1 class="font-display text-3xl sm:text-4xl font-bold text-nitkkr-dark">📞 Connect & Support</h1>
-        <p class="text-xs sm:text-sm text-slate-600">Have feedback, want to report an issue, or list your food vendor / eatery?</p>
+        <p class="text-xs sm:text-sm text-slate-600">Have feedback, want to report an issue, or list your food spot?</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -77,10 +77,10 @@ const whatsappUrl = cleanWhatsAppHref(phone, 'Hi Orandus Team! I have an inquiry
       <!-- Vendor Onboarding Form Card -->
       <div class="bg-white rounded-3xl p-6 sm:p-8 border border-amber-200/80 shadow-xs space-y-4">
         <h2 class="font-display font-bold text-lg text-slate-900 flex items-center gap-2">
-          <span>🏪</span> List Your Food Vendor / Eatery
+          <span>🏪</span> List Your Food Spot
         </h2>
         <p class="text-xs text-slate-600 leading-relaxed">
-          Are you running an eatery near NIT Kurukshetra campus (Gate 1, Gate 2, DB Hall, or Market)? Send us your vendor name and phone number to get listed!
+          Are you running a food spot near NIT Kurukshetra campus (Gate 1, Gate 2, DB Hall, or Market)? Send us your food spot name and phone number to get listed!
         </p>
 
         <form
@@ -90,7 +90,7 @@ const whatsappUrl = cleanWhatsAppHref(phone, 'Hi Orandus Team! I have an inquiry
           class="space-y-3 pt-2"
         >
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Vendor / Eatery Name</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Food Spot Name</label>
             <input type="text" name="text" placeholder="e.g. Sharma Fast Food & Chai" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
           </div>
           <button

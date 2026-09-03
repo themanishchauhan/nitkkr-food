@@ -112,6 +112,24 @@ const {
         this.showDetailModal = true;
       },
 
+      getItemDiet(item) {
+        if (!item) return 'veg';
+        var name = (item.name || '').toLowerCase();
+        var desc = (item.description || '').toLowerCase();
+        var rawTags = Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? [item.tags] : []);
+        var tagsText = rawTags.join(' ').toLowerCase();
+        var full = name + ' ' + desc + ' ' + tagsText;
+
+        var isMeat = /chicken|mutton|fish|prawn|kebab|kabab|keema|meat|tangri|kalmi|seekh|basa/i.test(full);
+        var hasEgg = /\b(egg|eggs|anda|omelet|omelette|bhurji|french toast|boiled egg)\b/i.test(full);
+
+        if (hasEgg && !isMeat) return 'egg';
+        if (isMeat || item.isVeg === false || item.isVeg === 0) {
+          return isMeat ? 'nonveg' : (hasEgg ? 'egg' : 'nonveg');
+        }
+        return 'veg';
+      },
+
       async shareVendor() {
         const activeUrl = (typeof window !== 'undefined' && window.location.href) ? window.location.href : (shareUrlVal || '');
         if (navigator.share) {
@@ -196,13 +214,24 @@ const {
         <!-- Middle: Veg/Non-Veg icon + Dish Name + Subtitle -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5 min-w-0">
-            <!-- Veg / Non-Veg Indicator -->
+            <!-- Veg / Egg / Non-Veg Indicator -->
             <span
               class="w-3.5 h-3.5 rounded-xs border flex items-center justify-center flex-shrink-0"
-              :class="item.isVeg ? 'border-emerald-600 bg-emerald-50' : 'border-rose-600 bg-rose-50'"
-              :title="item.isVeg ? 'Pure Veg' : 'Non-Veg'"
+              :class="{
+                'border-emerald-600 bg-emerald-50': getItemDiet(item) === 'veg',
+                'border-amber-500 bg-amber-50': getItemDiet(item) === 'egg',
+                'border-rose-600 bg-rose-50': getItemDiet(item) === 'nonveg'
+              }"
+              :title="getItemDiet(item) === 'veg' ? 'Pure Veg' : (getItemDiet(item) === 'egg' ? 'Contains Egg' : 'Non-Veg')"
             >
-              <span class="w-1.5 h-1.5 rounded-full" :class="item.isVeg ? 'bg-emerald-600' : 'bg-rose-600'"></span>
+              <span
+                class="w-1.5 h-1.5 rounded-full"
+                :class="{
+                  'bg-emerald-600': getItemDiet(item) === 'veg',
+                  'bg-amber-500': getItemDiet(item) === 'egg',
+                  'bg-rose-600': getItemDiet(item) === 'nonveg'
+                }"
+              ></span>
             </span>
 
             <h3 class="font-bold text-sm sm:text-base text-slate-900 truncate group-hover:text-nitkkr-orange transition-colors" x-text="item.name"></h3>
@@ -289,9 +318,13 @@ const {
           <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
             <span
               class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-md"
-              :class="selectedItem.isVeg ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'"
+              :class="{
+                'bg-emerald-600 text-white': getItemDiet(selectedItem) === 'veg',
+                'bg-amber-500 text-white': getItemDiet(selectedItem) === 'egg',
+                'bg-rose-600 text-white': getItemDiet(selectedItem) === 'nonveg'
+              }"
             >
-              <span x-text="selectedItem.isVeg ? '🌱 Pure Veg' : '🍗 Non-Veg'"></span>
+              <span x-text="getItemDiet(selectedItem) === 'veg' ? '🌱 Pure Veg' : (getItemDiet(selectedItem) === 'egg' ? '🥚 Contains Egg' : '🍗 Non-Veg')"></span>
             </span>
 
             <span class="text-2xl font-black text-white drop-shadow-md" x-text="'₹' + Number(selectedItem.price).toFixed(0)"></span>
