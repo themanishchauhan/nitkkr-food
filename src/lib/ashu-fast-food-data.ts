@@ -1,0 +1,528 @@
+export const ASHU_FAST_FOOD_VENDOR = {
+  id: 30,
+  name: 'Ashu Fast Food',
+  slug: 'ashu-fast-food',
+  phone: '9992843061',
+  whatsapp: '9992843061',
+  address: 'Near NIT Kurukshetra, Kurukshetra',
+  latitude: '29.9670',
+  longitude: '76.8814',
+  opensAt: '10:00',
+  closesAt: '02:00',
+  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel', 'Boys Hostel', 'Hostel Delivery'],
+  image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=800&auto=format&fit=crop&q=80',
+  isActive: true,
+  isFeatured: true,
+  displayOrder: 10,
+  createdAt: new Date()
+};
+
+export const ASHU_FAST_FOOD_MENU_ITEMS = [
+  // ================= 🫓 PARANTHA (Category 8 - Chai & Snacks / Category 4) =================
+  {
+    id: 3101,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Aaloo Pyaz Parantha',
+    description: 'Hot crispy tawa paratha stuffed with spiced mashed potatoes and onions',
+    price: '30.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['paratha', 'aaloo pyaz', 'breakfast', 'under-50', 'bestseller'],
+    displayOrder: 1
+  },
+  {
+    id: 3102,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Plain Parantha',
+    description: 'Crispy layered whole wheat tawa paratha brushed with butter',
+    price: '20.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['paratha', 'plain paratha', 'under-50'],
+    displayOrder: 2
+  },
+  {
+    id: 3103,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Gobhi Parantha',
+    description: 'Grated spiced cauliflower stuffed golden tawa paratha',
+    price: '40.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['paratha', 'gobhi paratha', 'under-50'],
+    displayOrder: 3
+  },
+  {
+    id: 3104,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Paneer Parantha',
+    description: 'Generously stuffed fresh crumbled cottage cheese paratha with herbs',
+    price: '50.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['paratha', 'paneer paratha', 'protein', 'under-50', 'bestseller'],
+    displayOrder: 4
+  },
+  {
+    id: 3105,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Paneer Pyaz Parantha',
+    description: 'Crispy paratha filled with spiced paneer, onions, and green chilies',
+    price: '40.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['paratha', 'paneer pyaz', 'under-50'],
+    displayOrder: 5
+  },
+  {
+    id: 3106,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Muli Parantha',
+    description: 'Shredded radish and carom seeds (ajwain) stuffed desi paratha',
+    price: '30.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['paratha', 'muli paratha', 'under-50'],
+    displayOrder: 6
+  },
+  {
+    id: 3107,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Sattu Parantha',
+    description: 'Bihari style roasted gram flour (sattu) stuffed flavorful paratha',
+    price: '40.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['paratha', 'sattu', 'sattu paratha', 'healthy', 'protein', 'under-50', 'bestseller'],
+    displayOrder: 7
+  },
+  {
+    id: 3108,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Egg Parantha',
+    description: 'Layered paratha stuffed with double egg bhurji and chopped onions',
+    price: '50.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['paratha', 'egg paratha', 'egg', 'eggs', 'protein', 'under-50'],
+    displayOrder: 8
+  },
+  {
+    id: 3109,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Chicken Parantha',
+    description: 'Stuffed paratha loaded with spiced minced chicken filling',
+    price: '80.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['paratha', 'chicken paratha', 'chicken', 'nonveg', 'protein', 'bestseller'],
+    displayOrder: 9
+  },
+
+  // ================= 🍟 PAKODA & SNACKS (Category 8) =================
+  {
+    id: 3110,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Mix Veg Pakoda',
+    description: 'Crispy assorted vegetable fritters fried golden with gram flour and chaat masala',
+    price: '50.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['pakoda', 'mix veg pakoda', 'snack', 'under-50'],
+    displayOrder: 10
+  },
+  {
+    id: 3111,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Aaloo Pakoda',
+    description: 'Crispy spiced potato slice fritters served with tangy chutney',
+    price: '40.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['pakoda', 'aaloo pakoda', 'snack', 'under-50'],
+    displayOrder: 11
+  },
+  {
+    id: 3112,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Aaloo Pyaz Pakoda',
+    description: 'Crunchy potato and onion pakodas seasoned with ajwain and green chilies',
+    price: '50.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['pakoda', 'aaloo pyaz pakoda', 'snack', 'under-50'],
+    displayOrder: 12
+  },
+  {
+    id: 3113,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Egg Pakoda',
+    description: 'Boiled eggs dipped in spiced besan batter and deep-fried to crisp perfection',
+    price: '60.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['pakoda', 'egg pakoda', 'egg', 'eggs', 'protein'],
+    displayOrder: 13
+  },
+  {
+    id: 3114,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Chicken Pakoda',
+    description: 'Crispy juicy marinated chicken pieces fried with aromatic spices',
+    price: '120.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['chicken pakoda', 'chicken', 'nonveg', 'crispy', 'bestseller'],
+    displayOrder: 14
+  },
+
+  // ================= 🍜 MAGGI (Category 1 - Fast Food) =================
+  {
+    id: 3115,
+    vendorId: 30,
+    categoryId: 1,
+    name: 'Plain Maggi',
+    description: 'Classic 2-minute masala Maggi cooked with signature spices',
+    price: '30.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['maggi', 'plain maggi', 'under-50'],
+    displayOrder: 15
+  },
+  {
+    id: 3116,
+    vendorId: 30,
+    categoryId: 1,
+    name: 'Veg Maggi',
+    description: 'Masala Maggi tossed with chopped onions, tomatoes, and green peas',
+    price: '40.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['maggi', 'veg maggi', 'under-50'],
+    displayOrder: 16
+  },
+  {
+    id: 3117,
+    vendorId: 30,
+    categoryId: 1,
+    name: 'Egg Maggi',
+    description: 'Hot masala Maggi scrambled with farm fresh eggs',
+    price: '50.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['maggi', 'egg maggi', 'egg', 'eggs', 'protein', 'under-50'],
+    displayOrder: 17
+  },
+
+  // ================= 🫓 ROTI (Category 4 - North Indian) =================
+  {
+    id: 3118,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Plain Roti',
+    description: 'Fresh homestyle whole wheat tawa phulka',
+    price: '10.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['roti', 'phulka', 'tiffin', 'under-50'],
+    displayOrder: 18
+  },
+  {
+    id: 3119,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Butter Roti',
+    description: 'Hot tawa roti brushed with fresh butter',
+    price: '12.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['roti', 'butter roti', 'under-50'],
+    displayOrder: 19
+  },
+
+  // ================= 🌯 ROLLS (Category 7 - Rolls & Wraps) =================
+  {
+    id: 3120,
+    vendorId: 30,
+    categoryId: 7,
+    name: 'Egg Roll',
+    description: 'Crispy flaky paratha wrapped with double egg, onions, and sauces',
+    price: '50.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['roll', 'egg roll', 'egg', 'eggs', 'under-50', 'bestseller'],
+    displayOrder: 20
+  },
+  {
+    id: 3121,
+    vendorId: 30,
+    categoryId: 7,
+    name: 'Veg Roll',
+    description: 'Golden roll filled with seasoned mixed vegetables and chutneys',
+    price: '40.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['roll', 'veg roll', 'under-50'],
+    displayOrder: 21
+  },
+  {
+    id: 3122,
+    vendorId: 30,
+    categoryId: 7,
+    name: 'Paneer Roll',
+    description: 'Loaded roll with spiced cottage cheese cubes, onions, and mint chutney',
+    price: '60.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['roll', 'paneer roll', 'protein'],
+    displayOrder: 22
+  },
+  {
+    id: 3123,
+    vendorId: 30,
+    categoryId: 7,
+    name: 'Chicken Roll',
+    description: 'Flaky paratha loaded with juicy spiced roasted chicken chunks',
+    price: '70.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['roll', 'chicken roll', 'chicken', 'nonveg', 'bestseller'],
+    displayOrder: 23
+  },
+
+  // ================= 🍗 CHICKEN (Category 4 - North Indian) =================
+  {
+    id: 3124,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Butter Chicken',
+    description: 'Tender chicken pieces simmered in rich creamy tomato and butter gravy',
+    price: '180.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['chicken', 'butter chicken', 'nonveg', 'curry', 'bestseller'],
+    displayOrder: 24
+  },
+  {
+    id: 3125,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Kadhai Chicken',
+    description: 'Wok-cooked chicken with bell peppers, onions, and crushed whole spices',
+    price: '180.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['chicken', 'kadhai chicken', 'nonveg'],
+    displayOrder: 25
+  },
+  {
+    id: 3126,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Chilli Chicken',
+    description: 'Indo-Chinese style crispy chicken tossed with green chilies and soy sauce',
+    price: '160.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['chicken', 'chilli chicken', 'chinese', 'nonveg'],
+    displayOrder: 26
+  },
+  {
+    id: 3127,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Ghar Jaisa Chicken',
+    description: 'Homestyle light, comforting and flavorful chicken curry just like home',
+    price: '150.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['chicken', 'ghar jaisa chicken', 'homestyle', 'tiffin', 'nonveg', 'bestseller'],
+    displayOrder: 27
+  },
+
+  // ================= 🍚 RICE & BIRYANI (Category 4) =================
+  {
+    id: 3128,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Plain Rice',
+    description: 'Steamed long grain basmati rice',
+    price: '60.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['rice', 'plain rice'],
+    displayOrder: 28
+  },
+  {
+    id: 3129,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Veg Rice (Veg Pulao)',
+    description: 'Basmati rice tossed with fresh garden vegetables and cumin',
+    price: '80.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['rice', 'veg rice', 'pulao'],
+    displayOrder: 29
+  },
+  {
+    id: 3130,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Egg Rice',
+    description: 'Wok-tossed basmati rice scrambled with double eggs and spices',
+    price: '100.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['rice', 'egg rice', 'egg', 'eggs', 'protein'],
+    displayOrder: 30
+  },
+  {
+    id: 3131,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Egg Biryani',
+    description: 'Fragrant dum biryani layered with spiced boiled eggs and mint',
+    price: '120.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['biryani', 'egg biryani', 'egg', 'eggs', 'protein'],
+    displayOrder: 31
+  },
+  {
+    id: 3132,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Chicken Biryani',
+    description: 'Authentic spiced chicken biryani with flavorful saffron rice and tender chicken',
+    price: '200.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['biryani', 'chicken biryani', 'chicken', 'nonveg', 'bestseller'],
+    displayOrder: 32
+  },
+
+  // ================= 🍛 BREAKFAST & OTHER ITEMS =================
+  {
+    id: 3133,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Special Poha',
+    description: 'Indori-style flattened rice tempered with mustard, peanuts, onions and sev',
+    price: '50.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['poha', 'breakfast', 'healthy', 'under-50', 'bestseller'],
+    displayOrder: 33
+  },
+  {
+    id: 3134,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Litti Chokha',
+    description: 'Traditional baked whole wheat sattu littis served with spicy roasted brinjal-tomato chokha',
+    price: '20.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['litti chokha', 'bihari', 'desi', 'under-50', 'bestseller'],
+    displayOrder: 34
+  },
+  {
+    id: 3135,
+    vendorId: 30,
+    categoryId: 1,
+    name: 'Finger Chips (French Fries)',
+    description: 'Crispy golden salted potato finger chips',
+    price: '80.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['finger chips', 'french fries', 'snack'],
+    displayOrder: 35
+  },
+  {
+    id: 3136,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Chole Kulche',
+    description: 'Tangy spiced Amritsari chole served with soft butter kulchas',
+    price: '40.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['chole kulche', 'street food', 'under-50', 'bestseller'],
+    displayOrder: 36
+  },
+  {
+    id: 3137,
+    vendorId: 30,
+    categoryId: 8,
+    name: 'Kadak Chai (Tea)',
+    description: 'Hot brewed ginger and cardamom milk tea',
+    price: '15.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['tea', 'chai', 'beverage', 'under-50'],
+    displayOrder: 37
+  },
+  {
+    id: 3138,
+    vendorId: 30,
+    categoryId: 7,
+    name: 'Boiled Eggs (2 Pcs)',
+    description: 'Two farm fresh boiled eggs served with black pepper and chaat masala',
+    price: '20.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['boiled egg', 'egg', 'eggs', 'protein', 'under-50'],
+    displayOrder: 38
+  },
+  {
+    id: 3139,
+    vendorId: 30,
+    categoryId: 7,
+    name: 'Egg Bhurji',
+    description: 'Double egg spiced scramble tossed with onions, tomatoes and green chilies',
+    price: '40.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['egg bhurji', 'egg', 'eggs', 'protein', 'under-50'],
+    displayOrder: 39
+  },
+  {
+    id: 3140,
+    vendorId: 30,
+    categoryId: 7,
+    name: 'Egg Omelet',
+    description: 'Fluffy double egg masala omelet cooked on tawa with chopped coriander',
+    price: '40.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['omelet', 'egg omelet', 'egg', 'eggs', 'under-50'],
+    displayOrder: 40
+  },
+  {
+    id: 3141,
+    vendorId: 30,
+    categoryId: 4,
+    name: 'Egg Curry',
+    description: 'Boiled eggs simmered in rich homestyle onion-tomato gravy',
+    price: '130.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['egg curry', 'curry', 'egg', 'eggs', 'protein', 'bestseller'],
+    displayOrder: 41
+  }
+];
