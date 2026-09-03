@@ -214,22 +214,12 @@ export async function getActiveVendors() {
       .where(eq(schema.vendors.isActive, true))
       .orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
     if (result && result.length > 0) {
-      // Ensure essential campus stalls exist in result
+      // Ensure all 7 campus stalls exist in result without ordering bias
       let combined = [...result];
-      if (!combined.some((v: any) => v.slug === 'food-cave' || v.id === 21)) {
-        combined.unshift(FOOD_CAVE_VENDOR);
-      }
-      if (!combined.some((v: any) => v.slug === 'apna-fast-food' || v.id === 22)) {
-        combined.push(APNA_FAST_FOOD_VENDOR);
-      }
-      if (!combined.some((v: any) => v.slug === 'suraj-restaurant' || v.id === 23)) {
-        combined.push(SURAJ_VENDOR);
-      }
-      if (!combined.some((v: any) => v.slug === 'food-point' || v.id === 24)) {
-        combined.push(FOOD_POINT_VENDOR);
-      }
-      if (!combined.some((v: any) => v.slug === 'the-hangry-club' || v.id === 25)) {
-        combined.push(HANGRY_CLUB_VENDOR);
+      for (const mv of MOCK_VENDORS) {
+        if (!combined.some((v: any) => v.slug === mv.slug || v.id === mv.id)) {
+          combined.push(mv);
+        }
       }
       return combined;
     }
@@ -341,10 +331,6 @@ export async function getFeaturedVendors(limit = 5) {
       .orderBy(asc(schema.vendors.displayOrder))
       .limit(limit);
     if (result && result.length > 0) {
-      const hasFoodCave = result.some((v: any) => v.slug === 'food-cave' || v.id === 21);
-      if (!hasFoodCave) {
-        return [FOOD_CAVE_VENDOR, ...result].slice(0, limit);
-      }
       return result;
     }
     return MOCK_VENDORS.filter(v => v.isActive && v.isFeatured).slice(0, limit);

@@ -143,6 +143,48 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
       return result;
     }
 
+    function fairShuffleVendors(vendors) {
+      if (!vendors || vendors.length <= 1) return vendors;
+      var arr = vendors.slice();
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+      }
+      return arr;
+    }
+
+    function fairInterleaveRankedEntries(entries) {
+      if (!entries || entries.length === 0) return [];
+      if (entries.length === 1) return [entries[0].item];
+
+      // Sort scores descending
+      entries.sort(function(a, b) { return b.score - a.score; });
+
+      // Group matching items into score tiers so equal-relevance items get interleaved fairly
+      var scoreBands = {};
+      var scores = [];
+      for (var i = 0; i < entries.length; i++) {
+        var sc = entries[i].score;
+        if (!scoreBands[sc]) {
+          scoreBands[sc] = [];
+          scores.push(sc);
+        }
+        scoreBands[sc].push(entries[i].item);
+      }
+
+      var finalResult = [];
+      for (var k = 0; k < scores.length; k++) {
+        var band = scoreBands[scores[k]];
+        var interleavedBand = fairInterleaveByVendor(band);
+        for (var m = 0; m < interleavedBand.length; m++) {
+          finalResult.push(interleavedBand[m]);
+        }
+      }
+      return finalResult;
+    }
+
     window.searchPage = function() {
       return {
         activeTab: (initialTab === 'stalls' || initialTab === 'vendors') ? 'vendors' : 'dishes',
@@ -154,7 +196,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         vendorFilter: 'all',
         displayLimit: 20,
         expandedVendors: {},
-        allVendors: Array.isArray(initialVendors) ? initialVendors : [],
+        allVendors: Array.isArray(initialVendors) ? fairShuffleVendors(initialVendors) : [],
         allItems: Array.isArray(initialItems) ? fairInterleaveByVendor(initialItems) : [],
         selectedItem: null,
         showDetailModal: false,
@@ -405,7 +447,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           var rawQuery = this.query.toLowerCase().trim();
           var tokens = rawQuery.split(/\s+/).filter(Boolean);
 
-          return list
+          var matchingEntries = list
             .map(function(item) {
               var nameLower = (item.name || '').toLowerCase();
               var descLower = (item.description || '').toLowerCase();
@@ -437,9 +479,9 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
               return { item: item, score: score };
             })
-            .filter(Boolean)
-            .sort(function(a, b) { return b.score - a.score; })
-            .map(function(entry) { return entry.item; });
+            .filter(Boolean);
+
+          return fairInterleaveRankedEntries(matchingEntries);
         },
 
         get visibleItems() {

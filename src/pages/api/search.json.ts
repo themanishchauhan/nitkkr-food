@@ -193,9 +193,28 @@ export const GET: APIRoute = async ({ request }) => {
 
           return { item, score };
         })
-        .filter(Boolean)
-        .sort((a: any, b: any) => b.score - a.score)
-        .map((entry: any) => entry.item);
+        .filter(Boolean);
+
+      // Group matching items into score tiers so equal-relevance items get interleaved fairly
+      (filtered as any).sort((a: any, b: any) => b.score - a.score);
+      const scoreBands: Record<number, any[]> = {};
+      const scores: number[] = [];
+      for (const entry of (filtered as any[])) {
+        if (!scoreBands[entry.score]) {
+          scoreBands[entry.score] = [];
+          scores.push(entry.score);
+        }
+        scoreBands[entry.score].push(entry.item);
+      }
+
+      const finalRanked: any[] = [];
+      for (const sc of scores) {
+        const bandItems = fairInterleave(scoreBands[sc]);
+        for (const itm of bandItems) {
+          finalRanked.push(itm);
+        }
+      }
+      filtered = finalRanked;
     } else {
       filtered = fairInterleave(filtered);
     }
