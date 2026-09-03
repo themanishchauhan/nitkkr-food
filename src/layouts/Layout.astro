@@ -249,7 +249,7 @@ const isVendorPage = currentPath.startsWith('/v/');
           <ul class="space-y-1.5 text-slate-600">
             <li><a href="/terms" class="hover:text-nitkkr-orange transition-colors">📜 Terms of Service</a></li>
             <li><a href="/privacy" class="hover:text-nitkkr-orange transition-colors">🔒 Privacy Policy</a></li>
-            <li><a href="/contact" class="hover:text-nitkkr-orange transition-colors">🏪 List Your Vendor</a></li>
+            <li><a href="/contact" class="hover:text-nitkkr-orange transition-colors">📍 Drop Your Food Outlet</a></li>
             {customFooterPages.filter(p => p.category !== 'Explore').map((p: any) => (
               <li><a href={`/p/${p.slug}`} class="hover:text-nitkkr-orange transition-colors">{p.icon || '📄'} {p.title}</a></li>
             ))}

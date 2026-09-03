@@ -1,5 +1,5 @@
 /**
- * NITKKR Food - Centralized Utility Functions
+ * Orandus - Centralized Utility Functions
  * Unified across SSR, Client, API, and UI components
  */
 

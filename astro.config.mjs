@@ -46,8 +46,8 @@ export default defineConfig({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'robots.txt'],
         manifest: {
-          name: 'NITKKR Food',
-          short_name: 'NITKKR Food',
+          name: 'Orandus',
+          short_name: 'Orandus',
           description: 'Find food around NIT Kurukshetra instantly',
           theme_color: '#FF6B35',
           background_color: '#FFF8F0',
