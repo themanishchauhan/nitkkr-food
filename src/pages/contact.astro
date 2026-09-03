@@ -1,107 +1,140 @@
 ---
 export const prerender = false;
 import Layout from '../layouts/Layout.astro';
-import { getAllSiteSettings } from '../lib/queries';
 import { cleanWhatsAppHref } from '../lib/utils';
 
-const settings = await getAllSiteSettings();
-const settingsList = Array.isArray(settings) ? settings : [];
-const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
-
-const email = settingsObj.company_support_email || settingsObj.contact_email || 'support@orandus.in';
-const phone = settingsObj.company_support_phone || settingsObj.support_whatsapp || '9896475885';
-const instagram = settingsObj.company_instagram || settingsObj.instagram_url || '';
-const whatsappUrl = cleanWhatsAppHref(phone, 'Hi Orandus Team! I have an inquiry.');
+const whatsappPhone = '8901026416';
+const email = 'm.chauhan@zohomail.in';
+const whatsappUrl = cleanWhatsAppHref(whatsappPhone, 'Hi Orandus Team! ');
+const mailtoUrl = `mailto:${email}?subject=Feedback%20-%20Orandus&body=Hey%20Orandus%20team%2C%0A%0AI%20wanted%20to%20share%20some%20feedback%3A%0A%0A`;
 ---
 
-<Layout title="Contact & Vendor Support - Orandus" description="Get in touch with the Orandus team or request to list your food spot.">
+<Layout title="Connect & Support - Orandus" description="Get in touch with the Orandus team, share feedback, or list your food spot.">
   <section class="min-h-screen bg-nitkkr-cream py-12 px-4">
-    <div class="max-w-2xl mx-auto space-y-6">
+    <div class="max-w-xl mx-auto space-y-6">
+      
+      <!-- Header -->
       <div class="text-center space-y-2">
         <h1 class="font-display text-3xl sm:text-4xl font-bold text-nitkkr-dark">📞 Connect & Support</h1>
-        <p class="text-xs sm:text-sm text-slate-600">Have feedback, want to report an issue, or list your food spot?</p>
+        <p class="text-sm text-slate-600">Found a bug? Want a feature? Running a food spot? Just want to say hi?</p>
       </div>
 
+      <!-- Quick Actions: Student Feedback First -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="bg-white rounded-3xl p-6 border border-amber-200/80 shadow-xs flex flex-col justify-between">
-          <div>
-            <span class="text-3xl mb-2 block">💬</span>
-            <h3 class="font-bold text-base text-slate-900">WhatsApp Support</h3>
-            <p class="text-xs text-slate-500 mt-1">Chat directly with the campus admin team for quick help.</p>
-          </div>
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="mt-4 inline-flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs"
-          >
-            <span>💬 Message on WhatsApp</span>
-          </a>
-        </div>
+        <!-- WhatsApp -->
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs flex flex-col items-center text-center hover:shadow-md hover:border-nitkkr-orange/50 transition-all"
+        >
+          <span class="text-4xl mb-2">💬</span>
+          <h3 class="font-bold text-base text-slate-900">WhatsApp</h3>
+          <p class="text-xs text-slate-500 mt-1">Fastest way to reach us</p>
+          <span class="mt-3 px-3 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">Tap to Chat</span>
+        </a>
 
-        <div class="bg-white rounded-3xl p-6 border border-amber-200/80 shadow-xs flex flex-col justify-between">
+        <!-- Email -->
+        <a
+          href={mailtoUrl}
+          class="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs flex flex-col items-center text-center hover:shadow-md hover:border-nitkkr-orange/50 transition-all"
+        >
+          <span class="text-4xl mb-2">📧</span>
+          <h3 class="font-bold text-base text-slate-900">Email</h3>
+          <p class="text-xs text-slate-500 mt-1">For detailed feedback or collabs</p>
+          <span class="mt-3 px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-full">Opens Mail App</span>
+        </a>
+      </div>
+
+      <!-- Instagram (optional, subtle) -->
+      <div class="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-amber-500/10 rounded-2xl p-4 border border-pink-200/60 flex items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📸</span>
           <div>
-            <span class="text-3xl mb-2 block">📧</span>
-            <h3 class="font-bold text-base text-slate-900">Email Inquiries</h3>
-            <p class="text-xs text-slate-500 mt-1">For partnerships, student team collabs, or feedback.</p>
+            <p class="font-bold text-slate-900">Follow @orandus.in</p>
+            <p class="text-slate-500">New spots, deals & campus food updates</p>
           </div>
-          <a
-            href={`mailto:${email}`}
-            class="mt-4 inline-flex items-center justify-center gap-2 w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all shadow-xs"
-          >
-            <span>✉️ Send Email</span>
-          </a>
+        </div>
+        <a
+          href="https://instagram.com/orandus.in"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl whitespace-nowrap transition-all shadow-xs"
+        >
+          Follow →
+        </a>
+      </div>
+
+      <!-- Divider -->
+      <div class="relative">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-slate-200/60"></div>
+        </div>
+        <div class="relative flex justify-center text-xs">
+          <span class="bg-nitkkr-cream px-3 text-slate-400 font-semibold">Food Spot Owners</span>
         </div>
       </div>
 
-      {instagram && (
-        <div class="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-amber-500/10 rounded-2xl p-4 border border-pink-200/60 flex items-center justify-between gap-3 text-xs">
-          <div class="flex items-center gap-2">
-            <span class="text-xl">📸</span>
-            <div>
-              <p class="font-bold text-slate-900">Follow Campus Food Updates</p>
-              <p class="text-slate-500">Discover new stalls, student deals & food reviews</p>
-            </div>
-          </div>
-          <a
-            href={instagram.startsWith('http') ? instagram : `https://instagram.com/${instagram.replace('@', '')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl whitespace-nowrap transition-all shadow-xs"
-          >
-            Instagram →
-          </a>
-        </div>
-      )}
-
-      <!-- Vendor Onboarding Form Card -->
-      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-amber-200/80 shadow-xs space-y-4">
+      <!-- Vendor Listing Form -->
+      <div class="bg-white rounded-2xl p-6 sm:p-8 border border-amber-200/80 shadow-xs space-y-4">
         <h2 class="font-display font-bold text-lg text-slate-900 flex items-center gap-2">
           <span>🏪</span> List Your Food Spot
         </h2>
-        <p class="text-xs text-slate-600 leading-relaxed">
-          Are you running a food spot near NIT Kurukshetra campus (Gate 1, Gate 2, DB Hall, or Market)? Send us your food spot name and phone number to get listed!
+        <p class="text-sm text-slate-600 leading-relaxed">
+          Run a food spot near campus — Gate 1, Gate 2, DB Hall, or Market? Drop your details and we'll add it for free.
         </p>
 
         <form
-          action={`https://wa.me/${phone.replace(/[^0-9]/g, '')}`}
+          action={`https://wa.me/91${whatsappPhone}`}
           method="GET"
           target="_blank"
-          class="space-y-3 pt-2"
+          class="space-y-4 pt-2"
         >
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Food Spot Name</label>
-            <input type="text" name="text" placeholder="e.g. Sharma Fast Food & Chai" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-nitkkr-orange" />
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Food Spot Name</label>
+            <input 
+              type="text" 
+              name="text" 
+              placeholder="e.g. Sharma Fast Food & Chai" 
+              required 
+              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20"
+            />
           </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Your WhatsApp Number</label>
+            <input 
+              type="tel" 
+              name="text" 
+              placeholder="e.g. 98765 43210" 
+              required 
+              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Location / Area (Optional)</label>
+            <input 
+              type="text" 
+              name="text" 
+              placeholder="e.g. Near Gate 2, DB Hall Market" 
+              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20"
+            />
+          </div>
+
           <button
             type="submit"
-            class="w-full py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
+            class="w-full py-3.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
           >
-            Submit Vendor Listing via WhatsApp →
+            <span>💬</span> Send on WhatsApp
           </button>
         </form>
+
+        <p class="text-xs text-slate-400 text-center">
+          Opens WhatsApp with a pre-filled message. Just hit send.
+        </p>
       </div>
+
     </div>
   </section>
 </Layout>
-
