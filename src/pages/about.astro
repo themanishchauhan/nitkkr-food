@@ -10,7 +10,7 @@ const brandName = settingsObj.site_title || settingsObj.brand_name || 'Orandus';
 const customAbout = settingsObj.about_custom_text || '';
 ---
 
-<Layout title={`About Us - ${brandName}`} description={`Learn why we are building ${brandName} to make student life easier and support local businesses around campus.`}>
+<Layout title={`About Us - ${brandName}`} description={`Learn why we built ${brandName} to make student life easier and support local food spots.`}>
   <section class="min-h-screen bg-nitkkr-cream/60 py-10 sm:py-14 px-4">
     <div class="max-w-3xl mx-auto space-y-8">
       
@@ -27,7 +27,7 @@ const customAbout = settingsObj.about_custom_text || '';
       <!-- Hero Header -->
       <div class="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-2xs space-y-4">
         <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-[11px] font-bold text-amber-900 uppercase tracking-wider">
-          <span>🌱</span> Our Story & Mission
+          <span>🌱</span> Our Story
         </div>
         
         <h1 class="font-display text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
@@ -36,19 +36,19 @@ const customAbout = settingsObj.about_custom_text || '';
 
         <div class="space-y-4 text-sm sm:text-base text-slate-700 leading-relaxed pt-2">
           <p>
-            We started with a simple observation: around every college, there are dozens of small businesses and local services that students use every day—but finding them isn't always easy.
+            We started with a simple observation: around every campus, there are tons of food spots students use daily — but finding them is a pain.
           </p>
           <p>
-            Food stalls have great menus but no proper online presence. Local services rely on WhatsApp or word of mouth. Students often have to ask friends, search through old messages, or walk around to find out what's available.
+            Food spots have great menus but zero online presence. Everything runs on WhatsApp or word of mouth. You end up asking friends, digging through old chats, or walking around hoping something's open.
           </p>
           <p class="font-semibold text-slate-900">
-            We believe it shouldn't be this complicated.
+            That's honestly ridiculous.
           </p>
           <p>
-            <strong class="text-nitkkr-orange font-bold">{brandName}</strong> is being built as a simple digital place where students can discover what's available around their campus—from food and everyday services to local shops, deals, events, and more.
+            <strong class="text-nitkkr-orange font-bold">{brandName}</strong> exists to fix that. One simple place to discover food spots, check menus, see real prices, and contact vendors direct. No apps to download, no accounts to create, no commissions.
           </p>
           <div class="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 text-amber-950 text-xs sm:text-sm font-medium">
-            ✨ <strong>Our first step is simple:</strong> bring useful local information together in one fast, easy-to-use platform.
+            ✨ <strong>Step one:</strong> bring useful local info together in one fast, easy-to-use platform.
           </div>
         </div>
       </div>
@@ -60,88 +60,98 @@ const customAbout = settingsObj.about_custom_text || '';
         </div>
       )}
 
-      <!-- Pillars / Key Principles Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- What We Stand For -->
+      <div class="space-y-4">
+        <h2 class="font-display font-bold text-lg text-slate-900">What We Stand For</h2>
         
-        <!-- Pillar 1: Built for Students -->
-        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xs space-y-3">
-          <div class="w-10 h-10 rounded-2xl bg-amber-100/70 border border-amber-200 flex items-center justify-center text-lg">
-            🎓
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- 1: Built for Students -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100/70 border border-amber-200 flex items-center justify-center text-lg">
+              🎓
+            </div>
+            <h3 class="font-display font-bold text-base text-slate-900">Built for students</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              No complicated apps. No 5-minute onboarding. Open, find what you need, get on with your day.
+            </p>
+            <div class="pt-2 flex flex-wrap gap-2 text-xs font-bold text-nitkkr-orange">
+              <span>⚡ Fast</span>
+              <span>•</span>
+              <span>✨ Simple</span>
+              <span>•</span>
+              <span>🎯 Actually useful</span>
+            </div>
           </div>
-          <h2 class="font-display font-extrabold text-lg text-slate-900">Built for students</h2>
-          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            We don't want to create another complicated app that takes five minutes to figure out.
-          </p>
-          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            We want something students can open, find what they need, and get on with their day.
-          </p>
-          <div class="pt-2 flex items-center gap-2 text-xs font-bold text-nitkkr-orange">
-            <span>⚡ Fast</span>
-            <span>•</span>
-            <span>✨ Simple</span>
-            <span>•</span>
-            <span>🎯 Useful</span>
+
+          <!-- 2: Supporting Local Food Spots -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100/70 border border-emerald-200 flex items-center justify-center text-lg">
+              🏪
+            </div>
+            <h3 class="font-display font-bold text-base text-slate-900">Supporting local food spots</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              Most spots students rely on are small — run on WhatsApp, cash, word of mouth. No time, money, or tech skills for websites.
+            </p>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              We help them get discovered without the hassle. We handle the menus and info so they don't have to.
+            </p>
+            <p class="text-xs text-slate-500 italic pt-1">
+              Long term: give spots their own tools to manage menus, offers, and student interactions.
+            </p>
+          </div>
+
+          <!-- 3: Start Small, Think Big -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-100/70 border border-indigo-200 flex items-center justify-center text-lg">
+              🚀
+            </div>
+            <h3 class="font-display font-bold text-base text-slate-900">Start small, think big</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              One campus first — that's where we get it. But the vision is bigger: a network where students easily discover food, services, opportunities around them.
+            </p>
+            <p class="text-xs font-bold text-indigo-700 pt-1">
+              📍 One campus at a time.
+            </p>
+          </div>
+
+          <!-- 4: Simple Over Complex -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-100/70 border border-rose-200 flex items-center justify-center text-lg">
+              💡
+            </div>
+            <h3 class="font-display font-bold text-base text-slate-900">Simple > Complex</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              Not every food spot needs fancy tech. Sometimes a clean menu, accurate prices, a phone number, and an easy way to find them changes everything.
+            </p>
+            <p class="text-xs font-bold text-slate-800 pt-1">
+              🤝 That's what we're building.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- The Team (Brief) -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
+        <h2 class="font-display font-bold text-lg text-slate-900 mb-4">Who's Behind This</h2>
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center text-2xl">
+            👨‍💻
+          </div>
+          <div>
+            <p class="font-bold text-slate-900">Manish Chauhan</p>
+            <p class="text-sm text-slate-600">Founder & Builder — NIT Kurukshetra alum</p>
+            <p class="text-xs text-slate-500 mt-1">Built this because I was that student asking "what's for dinner?"</p>
           </div>
         </div>
-
-        <!-- Pillar 2: Supporting local businesses -->
-        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xs space-y-3">
-          <div class="w-10 h-10 rounded-2xl bg-emerald-100/70 border border-emerald-200 flex items-center justify-center text-lg">
-            🏪
-          </div>
-          <h2 class="font-display font-extrabold text-lg text-slate-900">Supporting local businesses</h2>
-          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            Many of the businesses students depend on are small, informal, and run through phone calls or WhatsApp. They may not have the time, money, or technical knowledge to build websites or manage complicated software.
-          </p>
-          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            We want to help them get discovered without making things complicated.
-          </p>
-          <p class="text-[11px] text-slate-500 italic pt-1">
-            At the beginning, we take care of putting their information and menus online. As the platform grows, we plan to give businesses better tools to manage their own presence, offers, menus, and customer interactions.
-          </p>
-        </div>
-
-        <!-- Pillar 3: Starting small, building bigger -->
-        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xs space-y-3">
-          <div class="w-10 h-10 rounded-2xl bg-indigo-100/70 border border-indigo-200 flex items-center justify-center text-lg">
-            🚀
-          </div>
-          <h2 class="font-display font-extrabold text-lg text-slate-900">Starting small, building bigger</h2>
-          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            We're starting around a college because that's where the problem is easiest to understand and solve.
-          </p>
-          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            But the long-term vision is much bigger: build a network where students can easily discover the businesses, services, and opportunities around them—starting with one campus and gradually expanding to more campuses and communities.
-          </p>
-          <p class="text-xs font-bold text-indigo-700">
-            📍 One campus at a time.
-          </p>
-        </div>
-
-        <!-- Pillar 4: Our principle -->
-        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xs space-y-3">
-          <div class="w-10 h-10 rounded-2xl bg-rose-100/70 border border-rose-200 flex items-center justify-center text-lg">
-            💡
-          </div>
-          <h2 class="font-display font-extrabold text-lg text-slate-900">Our principle</h2>
-          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            We don't believe every local business needs complicated technology.
-          </p>
-          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            Sometimes, a simple menu, accurate information, a phone number, and an easy way to find them can make a huge difference.
-          </p>
-          <p class="text-xs font-bold text-slate-800 pt-1">
-            🤝 We're building around that idea.
-          </p>
-        </div>
-
       </div>
 
       <!-- Quick Action Bar -->
       <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="space-y-1 text-center sm:text-left">
           <h3 class="font-display font-extrabold text-lg sm:text-xl">Ready to explore campus food?</h3>
-          <p class="text-xs text-white/90">Find dishes, food spots, and direct phone / WhatsApp numbers.</p>
+          <p class="text-xs text-white/90">Find dishes, food spots, and direct WhatsApp numbers.</p>
         </div>
         <div class="flex items-center gap-2">
           <a

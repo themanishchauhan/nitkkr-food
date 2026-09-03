@@ -7,8 +7,8 @@ interface Props {
   ogUrl?: string;
 }
 const {
-  title = 'Orandus - Campus Food & On-Demand Services',
-  description = 'Explore campus food, live menus, and on-demand delivery with Orandus',
+  title = 'Orandus - Food Spots & Services',
+  description = 'Explore food spots, live menus, and student deals with Orandus',
   ogImage = '/og-default.jpg',
   ogUrl = Astro.url.href,
 } = Astro.props;
@@ -219,7 +219,7 @@ const isVendorPage = currentPath.startsWith('/v/');
             <span>🍜</span> Orandus
           </a>
           <p class="text-slate-500 leading-relaxed text-[11px]">
-            {siteSettingsObj.footer_tagline || 'Instant menu search & direct WhatsApp ordering for campus and city food & services.'}
+            {siteSettingsObj.footer_tagline || 'Instant menu search for food spots and local services.'}
           </p>
         </div>
 
@@ -228,7 +228,7 @@ const isVendorPage = currentPath.startsWith('/v/');
           <span class="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">Explore</span>
           <ul class="space-y-1.5 text-slate-600">
             <li><a href="/search" class="hover:text-nitkkr-orange transition-colors">🔍 Search Food</a></li>
-            <li><a href="/search?tab=vendors" class="hover:text-nitkkr-orange transition-colors">🏪 Campus Food Spots</a></li>
+            <li><a href="/search?tab=vendors" class="hover:text-nitkkr-orange transition-colors">🏪 Food Spots</a></li>
             <li>
               <button
                 type="button"
@@ -265,7 +265,7 @@ const isVendorPage = currentPath.startsWith('/v/');
 
 
       <div class="pt-6 border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-400 text-center sm:text-left">
-        <p>© {new Date().getFullYear()} {siteSettingsObj.company_name || 'Orandus'} • {siteSettingsObj.footer_copyright || siteSettingsObj.footer_copyright_text || 'On-Demand Campus Food & Services'}</p>
+        <p>© {new Date().getFullYear()} {siteSettingsObj.company_name || 'Orandus'} • {siteSettingsObj.footer_copyright || siteSettingsObj.footer_copyright_text || 'Food Spots & Services Directory'}</p>
         <p class="text-slate-400">{siteSettingsObj.footer_custom_note || 'Zero Commissions • Direct Vendor Connect'}</p>
       </div>
 

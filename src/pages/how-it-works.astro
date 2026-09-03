@@ -8,50 +8,48 @@ const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 
 const isWhatsAppEnabled = settingsObj.whatsapp_ordering_enabled === 'true' && settingsObj.show_whatsapp_button !== 'false';
-const step3Title = settingsObj.how_it_works_step3_title || (isWhatsAppEnabled ? '3. 1-Tap WhatsApp Order' : '3. Call or Visit Counter');
+const step3Title = settingsObj.how_it_works_step3_title || (isWhatsAppEnabled ? '3. 1-Tap WhatsApp Order' : '3. Call or Visit');
 const step3Desc = settingsObj.how_it_works_step3_desc || (isWhatsAppEnabled 
-  ? 'Tap "Order on WhatsApp" to send a pre-filled greeting directly to the vendor owner. Zero commissions, zero middleman markups!' 
-  : 'Call the vendor directly to check availability or walk up to their campus counter with exact dishes and prices ready. Zero commissions, zero markups!');
+  ? 'Tap "Order on WhatsApp" to send a pre-filled message directly to the food spot. Zero commissions, zero middleman markups!' 
+  : 'Call the food spot directly to check availability or walk up with exact dishes and prices ready. Zero commissions, zero markups!');
 const step3Icon = isWhatsAppEnabled ? '💬' : '📞';
 ---
 
-<Layout title="How It Works - Orandus" description="Step-by-step guide on how to search menus, check student prices, and connect with campus vendors on Orandus.">
+<Layout title="How It Works - Orandus" description="Step-by-step guide on how to search menus, check prices, and connect with food spots on Orandus.">
   <section class="min-h-screen bg-nitkkr-cream py-12 px-4">
     <div class="max-w-3xl mx-auto space-y-8">
       <div class="text-center space-y-2">
         <h1 class="font-display text-3xl sm:text-4xl font-bold text-nitkkr-dark">📖 How Orandus Works</h1>
-        <p class="text-xs sm:text-sm text-slate-600">The fastest way to discover and connect with campus food in 3 simple steps.</p>
+        <p class="text-sm text-slate-600">The fastest way to discover and connect with campus food in 3 simple steps.</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white rounded-3xl p-6 border border-amber-200/80 shadow-xs text-center space-y-3">
+        <div class="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs text-center space-y-3">
           <span class="text-4xl block">🔍</span>
           <h3 class="font-display font-bold text-base text-slate-900">1. Search & Filter</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">Search for dishes (e.g. momos, parathas, shakes) or filter by <strong>High Protein 🏋️‍♂️</strong>, <strong>Late Night 🌙</strong>, or <strong>Under ₹50 💸</strong>.</p>
+          <p class="text-sm text-slate-600 leading-relaxed">Search dishes (momos, parathas, shakes) or filter by <strong>High Protein 🏋️‍♂️</strong>, <strong>Late Night 🌙</strong>, <strong>Under ₹50 💸</strong>.</p>
         </div>
 
-        <div class="bg-white rounded-3xl p-6 border border-amber-200/80 shadow-xs text-center space-y-3">
+        <div class="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs text-center space-y-3">
           <span class="text-4xl block">⭐</span>
           <h3 class="font-display font-bold text-base text-slate-900">2. Check Menus & Reviews</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">View real prices, veg/non-veg tags, vendor timings, and authentic reviews from fellow NIT Kurukshetra students.</p>
+          <p class="text-sm text-slate-600 leading-relaxed">Real prices, veg/non-veg tags, timings, and honest reviews from students who actually ate there.</p>
         </div>
 
-        <div class="bg-white rounded-3xl p-6 border border-amber-200/80 shadow-xs text-center space-y-3">
+        <div class="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs text-center space-y-3">
           <span class="text-4xl block">{step3Icon}</span>
           <h3 class="font-display font-bold text-base text-slate-900">{step3Title}</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">{step3Desc}</p>
+          <p class="text-sm text-slate-600 leading-relaxed">{step3Desc}</p>
         </div>
       </div>
 
       <div class="bg-gradient-to-r from-amber-500 to-nitkkr-orange rounded-3xl p-8 text-white text-center space-y-4 shadow-md">
-        <h3 class="font-display text-xl sm:text-2xl font-bold">Are you a Campus Vendor Owner?</h3>
-        <p class="text-xs sm:text-sm text-white/90 max-w-lg mx-auto">Get your food spot and dishes listed in front of thousands of hungry students every day for free.</p>
-        <a href="/contact" class="inline-block px-6 py-3 bg-white text-nitkkr-orange font-bold text-xs rounded-xl hover:bg-amber-50 active:scale-95 transition-all shadow-sm">
-          List Your Food Spot Today
+        <h3 class="font-display text-xl sm:text-2xl font-bold">Run a Food Spot?</h3>
+        <p class="text-sm text-white/90 max-w-lg mx-auto">Get your spot and dishes in front of thousands of hungry students daily. Free listing, zero commissions.</p>
+        <a href="/contact" class="inline-block px-6 py-3 bg-white text-nitkkr-orange font-bold text-sm rounded-xl hover:bg-amber-50 active:scale-95 transition-all shadow-sm">
+          List Your Food Spot
         </a>
       </div>
     </div>
   </section>
 </Layout>
-
-

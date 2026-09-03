@@ -1,7 +1,7 @@
 {
-  "name": "Orandus - On-Demand Campus Food & Services",
+  "name": "Orandus - Food Spots & Services",
   "short_name": "Orandus",
-  "description": "Direct WhatsApp ordering, live menus & campus delivery with Orandus",
+  "description": "Live menus, food spots directory & local campus discovery with Orandus",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFF8F0",
