@@ -305,6 +305,53 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           }
         },
 
+        isItemVendorOpen(item) {
+          if (!item) return false;
+
+          // 1. Direct vendor timing on item
+          if (item.vendorOpensAt && item.vendorClosesAt) {
+            return this.isVendorOpen(item.vendorOpensAt, item.vendorClosesAt);
+          }
+
+          // 2. Canonical campus vendor timings by slug
+          var slug = (item.vendorSlug || '').toLowerCase();
+          if (slug.includes('food-point')) return this.isVendorOpen('12:00', '02:00');
+          if (slug.includes('rahul')) return this.isVendorOpen('12:00', '02:00');
+          if (slug.includes('hangry')) return this.isVendorOpen('12:30', '22:30');
+          if (slug.includes('eat-and-fun') || slug.includes('eat and fun')) return this.isVendorOpen('10:00', '22:00');
+          if (slug.includes('suraj')) return this.isVendorOpen('10:00', '23:00');
+          if (slug.includes('apna')) return this.isVendorOpen('09:00', '23:00');
+          if (slug.includes('food-cave') || slug.includes('food cave')) return this.isVendorOpen('09:00', '23:30');
+
+          // 3. Canonical campus vendor timings by name
+          var name = (item.vendorName || '').toLowerCase();
+          if (name.includes('food point')) return this.isVendorOpen('12:00', '02:00');
+          if (name.includes('rahul')) return this.isVendorOpen('12:00', '02:00');
+          if (name.includes('hangry')) return this.isVendorOpen('12:30', '22:30');
+          if (name.includes('eat and fun') || name.includes('eat & fun')) return this.isVendorOpen('10:00', '22:00');
+          if (name.includes('suraj')) return this.isVendorOpen('10:00', '23:00');
+          if (name.includes('apna')) return this.isVendorOpen('09:00', '23:00');
+          if (name.includes('food cave')) return this.isVendorOpen('09:00', '23:30');
+
+          // 4. Lookup from allVendors
+          for (var i = 0; i < this.allVendors.length; i++) {
+            var v = this.allVendors[i];
+            if ((item.vendorId && (v.id === item.vendorId || v.id === item.stallId)) ||
+                (v.slug && v.slug.toLowerCase() === slug) ||
+                (v.name && v.name.toLowerCase() === name)) {
+              return this.isVendorOpen(v.opensAt, v.closesAt);
+            }
+          }
+
+          return false;
+        },
+
+        get openItemsCount() {
+          var self = this;
+          return this.allItems.filter(function(i) {
+            return self.isItemVendorOpen(i);
+          }).length;
+        },
 
         getVendorMatchCount(vendorId) {
           if (!vendorId) return 0;
@@ -314,6 +361,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         },
 
         get filteredVendors() {
+          var self = this;
           var matchingItemVendorIds = new Set();
           var matchedItems = this.filteredItems;
           for (var j = 0; j < matchedItems.length; j++) {
@@ -328,7 +376,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             var rawQuery = this.query.toLowerCase().trim();
             var tokens = rawQuery.split(/\s+/).filter(Boolean);
 
-            return vList.filter(function(v) {
+            vList = vList.filter(function(v) {
               var nameLower = (v.name || '').toLowerCase();
               var addrLower = (v.address || '').toLowerCase();
               var descLower = (v.description || '').toLowerCase();
@@ -345,7 +393,12 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             });
           }
 
-          return vList;
+          // In vendor view, sort open vendors first so students see open vendors on top
+          return vList.slice().sort(function(a, b) {
+            var aOpen = self.isVendorOpen(a.opensAt, a.closesAt) ? 1 : 0;
+            var bOpen = self.isVendorOpen(b.opensAt, b.closesAt) ? 1 : 0;
+            return bOpen - aOpen;
+          });
         },
 
 
@@ -356,7 +409,13 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         },
 
         get filteredItems() {
+          var self = this;
           var list = this.allItems;
+
+          // 0. STRICT FILTER: Exclude menu items of vendors who are closed right now
+          list = list.filter(function(i) {
+            return self.isItemVendorOpen(i);
+          });
 
           // 1. Category Filter
           if (this.activeCat && this.activeCat !== 'all') {
@@ -613,7 +672,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                   :class="vendorFilter === 'all' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-400 font-semibold'"
                   class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer text-xs"
                 >
-                  All Eateries (<span x-text="formatCount(allItems.length)"></span>)
+                  All Eateries (<span x-text="formatCount(openItemsCount)"></span>)
                 </button>
                 <template x-for="v in activeVendorsInSearch" :key="v.name">
                   <button

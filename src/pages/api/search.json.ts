@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getAllMenuItemsForSearch } from '../../lib/queries';
+import { getAllMenuItemsForSearch, isVendorOpenNow } from '../../lib/queries';
 
 export const prerender = false;
 
@@ -81,7 +81,8 @@ export const GET: APIRoute = async ({ request }) => {
     const hitsPerPage = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 50);
 
     const allItems = await getAllMenuItemsForSearch();
-    let filtered = allItems;
+    // Exclude menu items of vendors who are closed right now
+    let filtered = allItems.filter((i: any) => isVendorOpenNow(i.vendorOpensAt, i.vendorClosesAt));
 
     // 1. Category Filter
     if (category && category !== 'all') {
