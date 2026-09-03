@@ -10,6 +10,7 @@ import { EAT_AND_FUN_VENDOR, EAT_AND_FUN_MENU_ITEMS } from '../../../lib/eat-and
 import { CHEF_ON_FOOD_JUNCTION_VENDOR, CHEF_ON_FOOD_JUNCTION_MENU_ITEMS } from '../../../lib/chef-on-food-junction-data';
 import { BAKERS_BITE_KKR_VENDOR, BAKERS_BITE_KKR_MENU_ITEMS } from '../../../lib/bakers-bite-kkr-data';
 import { ASHU_FAST_FOOD_VENDOR, ASHU_FAST_FOOD_MENU_ITEMS } from '../../../lib/ashu-fast-food-data';
+import { THE_SPICE_CHAMBER_VENDOR, THE_SPICE_CHAMBER_MENU_ITEMS } from '../../../lib/the-spice-chamber-data';
 import { MOCK_CATEGORIES } from '../../../lib/mock-data';
 
 export const prerender = false;
@@ -45,7 +46,8 @@ export const POST: APIRoute = async ({ locals }) => {
       EAT_AND_FUN_VENDOR,
       CHEF_ON_FOOD_JUNCTION_VENDOR,
       BAKERS_BITE_KKR_VENDOR,
-      ASHU_FAST_FOOD_VENDOR
+      ASHU_FAST_FOOD_VENDOR,
+      THE_SPICE_CHAMBER_VENDOR
     ];
     for (const vendor of vendorsToSeed) {
       await d1.prepare(`
@@ -81,7 +83,8 @@ export const POST: APIRoute = async ({ locals }) => {
       ...EAT_AND_FUN_MENU_ITEMS,
       ...CHEF_ON_FOOD_JUNCTION_MENU_ITEMS,
       ...BAKERS_BITE_KKR_MENU_ITEMS,
-      ...ASHU_FAST_FOOD_MENU_ITEMS
+      ...ASHU_FAST_FOOD_MENU_ITEMS,
+      ...THE_SPICE_CHAMBER_MENU_ITEMS
     ];
     const statements: any[] = [];
     for (const item of allMenuItems) {

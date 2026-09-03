@@ -11,6 +11,7 @@ import { EAT_AND_FUN_VENDOR, EAT_AND_FUN_MENU_ITEMS } from './eat-and-fun-data';
 import { CHEF_ON_FOOD_JUNCTION_VENDOR, CHEF_ON_FOOD_JUNCTION_MENU_ITEMS } from './chef-on-food-junction-data';
 import { BAKERS_BITE_KKR_VENDOR, BAKERS_BITE_KKR_MENU_ITEMS } from './bakers-bite-kkr-data';
 import { ASHU_FAST_FOOD_VENDOR, ASHU_FAST_FOOD_MENU_ITEMS } from './ashu-fast-food-data';
+import { THE_SPICE_CHAMBER_VENDOR, THE_SPICE_CHAMBER_MENU_ITEMS } from './the-spice-chamber-data';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -123,7 +124,8 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       EAT_AND_FUN_VENDOR,
       CHEF_ON_FOOD_JUNCTION_VENDOR,
       BAKERS_BITE_KKR_VENDOR,
-      ASHU_FAST_FOOD_VENDOR
+      ASHU_FAST_FOOD_VENDOR,
+      THE_SPICE_CHAMBER_VENDOR
     ];
     for (const vendor of vendorsToSeed) {
       const check = await d1.prepare(`SELECT id FROM vendors WHERE slug = ? OR id = ? LIMIT 1`)
@@ -167,10 +169,11 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       ...FOOD_POINT_MENU_ITEMS, 
       ...HANGRY_CLUB_MENU_ITEMS, 
       ...RAHUL_FAST_FOOD_MENU_ITEMS, 
-      ...EAT_AND_FUN_MENU_ITEMS,
-      ...CHEF_ON_FOOD_JUNCTION_MENU_ITEMS,
-      ...BAKERS_BITE_KKR_MENU_ITEMS,
-      ...ASHU_FAST_FOOD_MENU_ITEMS
+      ...EAT_AND_FUN_MENU_ITEMS, 
+      ...CHEF_ON_FOOD_JUNCTION_MENU_ITEMS, 
+      ...BAKERS_BITE_KKR_MENU_ITEMS, 
+      ...ASHU_FAST_FOOD_MENU_ITEMS,
+      ...THE_SPICE_CHAMBER_MENU_ITEMS
     ];
     const statements: any[] = [];
     for (const item of allDishes) {
@@ -341,13 +344,23 @@ export async function getVendorBySlug(slug: string) {
       return ASHU_FAST_FOOD_VENDOR;
     }
 
+    if (slug === 'the-spice-chamber' || slug === 'spice-chamber' || slug === 'tsc') {
+      const db = getDb();
+      const result = await db.select()
+        .from(schema.vendors)
+        .where(and(eq(schema.vendors.slug, 'the-spice-chamber'), eq(schema.vendors.isActive, true)))
+        .limit(1);
+      if (result && result[0]) return result[0];
+      return THE_SPICE_CHAMBER_VENDOR;
+    }
+
     const db = getDb();
     const result = await db.select()
       .from(schema.vendors)
       .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
     if (result && result[0]) return result[0];
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('spice') && v.slug === 'the-spice-chamber') || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   } catch (e) {
     if (slug === 'food-cave') return FOOD_CAVE_VENDOR;
     if (slug === 'apna-fast-food' || slug === 'apna-fresh-fast-food') return APNA_FAST_FOOD_VENDOR;
@@ -359,7 +372,8 @@ export async function getVendorBySlug(slug: string) {
     if (slug === 'chef-on-food-junction' || slug === 'chef-on') return CHEF_ON_FOOD_JUNCTION_VENDOR;
     if (slug === 'bakers-bite-kkr' || slug === 'bakers-bite') return BAKERS_BITE_KKR_VENDOR;
     if (slug === 'ashu-fast-food' || slug === 'ashu') return ASHU_FAST_FOOD_VENDOR;
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    if (slug === 'the-spice-chamber' || slug === 'spice-chamber' || slug === 'tsc') return THE_SPICE_CHAMBER_VENDOR;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('spice') && v.slug === 'the-spice-chamber') || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   }
 }
 
@@ -548,6 +562,19 @@ export async function getMenuItemsByVendor(vendorId: number) {
         };
       });
     }
+
+    if (vendorId === 31) {
+      return THE_SPICE_CHAMBER_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
     return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable);
   } catch (e) {
     if (vendorId === 21) {
@@ -669,6 +696,19 @@ export async function getMenuItemsByVendor(vendorId: number) {
 
     if (vendorId === 30) {
       return ASHU_FAST_FOOD_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
+
+    if (vendorId === 31) {
+      return THE_SPICE_CHAMBER_MENU_ITEMS.map(item => {
         const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
         return {
           ...item,
@@ -901,6 +941,7 @@ export async function getAllMenuItemsForSearch() {
   const { CHEF_ON_FOOD_JUNCTION_MENU_ITEMS, CHEF_ON_FOOD_JUNCTION_VENDOR } = await import('./chef-on-food-junction-data');
   const { BAKERS_BITE_KKR_MENU_ITEMS, BAKERS_BITE_KKR_VENDOR } = await import('./bakers-bite-kkr-data');
   const { ASHU_FAST_FOOD_MENU_ITEMS, ASHU_FAST_FOOD_VENDOR } = await import('./ashu-fast-food-data');
+  const { THE_SPICE_CHAMBER_MENU_ITEMS, THE_SPICE_CHAMBER_VENDOR } = await import('./the-spice-chamber-data');
   const { MOCK_CATEGORIES } = await import('./mock-data');
 
   const foodCaveList = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
@@ -1143,6 +1184,30 @@ export async function getAllMenuItemsForSearch() {
     };
   });
 
+  const spiceChamberList = THE_SPICE_CHAMBER_MENU_ITEMS.map((item: any) => {
+    const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: (item as any).image || null,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable,
+      tags: item.tags || [],
+      vendorId: THE_SPICE_CHAMBER_VENDOR.id,
+      vendorName: THE_SPICE_CHAMBER_VENDOR.name,
+      vendorSlug: THE_SPICE_CHAMBER_VENDOR.slug,
+      vendorPhone: THE_SPICE_CHAMBER_VENDOR.phone,
+      vendorWhatsApp: THE_SPICE_CHAMBER_VENDOR.whatsapp,
+      vendorOpensAt: THE_SPICE_CHAMBER_VENDOR.opensAt,
+      vendorClosesAt: THE_SPICE_CHAMBER_VENDOR.closesAt,
+      categoryId: item.categoryId,
+      categoryName: cat?.name || 'General',
+      categorySlug: cat?.slug || 'general',
+    };
+  });
+
   return fairInterleaveByVendor([
     ...foodCaveList, 
     ...apnaList, 
@@ -1153,7 +1218,8 @@ export async function getAllMenuItemsForSearch() {
     ...eatAndFunList,
     ...chefOnList,
     ...bakersBiteList,
-    ...ashuList
+    ...ashuList,
+    ...spiceChamberList
   ]);
 }
 
