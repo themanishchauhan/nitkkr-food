@@ -7,8 +7,8 @@ interface Props {
   ogUrl?: string;
 }
 const {
-  title = 'NITKKR Food',
-  description = 'Find food around NIT Kurukshetra instantly',
+  title = 'Orandus - Campus Food & On-Demand Services',
+  description = 'Explore campus food, live menus, and on-demand delivery with Orandus',
   ogImage = '/og-default.jpg',
   ogUrl = Astro.url.href,
 } = Astro.props;
@@ -47,7 +47,15 @@ const isVendorPage = currentPath.startsWith('/v/');
   <meta name="theme-color" content="#E87D2E" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+  <!-- 🍎 Apple iOS PWA & Home Screen Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Orandus" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -127,7 +135,7 @@ const isVendorPage = currentPath.startsWith('/v/');
       <div class="flex items-center gap-2 min-w-0">
         <span class="text-base sm:text-lg flex-shrink-0 animate-bounce">📲</span>
         <p class="font-medium truncate">
-          <strong class="font-bold">Install NITKKR Food:</strong> Instant menu access & faster WhatsApp orders!
+          <strong class="font-bold">Install Orandus:</strong> Instant menu access & faster WhatsApp orders!
         </p>
       </div>
 
@@ -168,13 +176,14 @@ const isVendorPage = currentPath.startsWith('/v/');
     </div>
   </div>
 
+
   <!-- 🌟 Sticky Micro-Header for Inner Subpages -->
   {!isHomePage && !isVendorPage && (
     <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-amber-200/50 shadow-2xs py-2.5 px-4 transition-all">
       <div class="max-w-3xl mx-auto flex items-center justify-between gap-3">
         <a href="/" class="flex items-center gap-2 font-display font-bold text-sm text-slate-900 hover:text-nitkkr-orange transition-colors">
           <span class="text-base font-extrabold text-nitkkr-orange">←</span>
-          <span>🍜 NITKKR Food</span>
+          <span>🍜 Orandus</span>
         </a>
         <div class="flex items-center gap-2">
           {currentPath !== '/search' && (
@@ -203,10 +212,10 @@ const isVendorPage = currentPath.startsWith('/v/');
         <!-- Col 1: Brand -->
         <div class="col-span-2 sm:col-span-1 space-y-2">
           <a href="/" class="font-display font-bold text-base text-nitkkr-dark flex items-center gap-1.5">
-            <span>🍜</span> NITKKR Food
+            <span>🍜</span> Orandus
           </a>
           <p class="text-slate-500 leading-relaxed text-[11px]">
-            {siteSettingsObj.footer_tagline || 'Instant menu search & direct WhatsApp ordering for NIT Kurukshetra campus.'}
+            {siteSettingsObj.footer_tagline || 'Instant menu search & direct WhatsApp ordering for campus and city food & services.'}
           </p>
         </div>
 
@@ -251,7 +260,7 @@ const isVendorPage = currentPath.startsWith('/v/');
 
 
       <div class="pt-6 border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-400 text-center sm:text-left">
-        <p>© {new Date().getFullYear()} {siteSettingsObj.company_name || 'NITKKR Food'} • {siteSettingsObj.footer_copyright || siteSettingsObj.footer_copyright_text || 'Built with ❤️ for NIT Kurukshetra students'}</p>
+        <p>© {new Date().getFullYear()} {siteSettingsObj.company_name || 'Orandus'} • {siteSettingsObj.footer_copyright || siteSettingsObj.footer_copyright_text || 'On-Demand Campus Food & Services'}</p>
         <p class="text-slate-400">{siteSettingsObj.footer_custom_note || 'Zero Commissions • Direct Vendor Connect'}</p>
       </div>
 

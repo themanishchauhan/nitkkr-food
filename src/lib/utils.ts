@@ -106,7 +106,7 @@ export function cleanTelHref(phone: string | null | undefined, defaultPhone = '9
 /**
  * Sanitize WhatsApp chat link with optional pre-filled text
  */
-export function cleanWhatsAppHref(phone: string | null | undefined, text = 'Hi, I want to order from NITKKR Food', defaultPhone = '9896475885'): string {
+export function cleanWhatsAppHref(phone: string | null | undefined, text = 'Hi, I want to order from Orandus', defaultPhone = '9896475885'): string {
   const digits = (phone || '').replace(/\D/g, '');
   const clean10 = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
   const num = clean10 || defaultPhone;

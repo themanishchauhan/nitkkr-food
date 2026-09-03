@@ -1,13 +1,19 @@
 {
-  "name": "NITKKR Food - Campus Food Discovery",
-  "short_name": "NITKKR Food",
-  "description": "Direct WhatsApp ordering & live menus for NIT Kurukshetra campus stalls",
+  "name": "Orandus - On-Demand Campus Food & Services",
+  "short_name": "Orandus",
+  "description": "Direct WhatsApp ordering, live menus & campus delivery with Orandus",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFF8F0",
-  "theme_color": "#FF6B35",
+  "theme_color": "#E87D2E",
   "orientation": "portrait-primary",
   "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",

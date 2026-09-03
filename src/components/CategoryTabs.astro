@@ -21,8 +21,8 @@ const {
   showWhatsApp = false,
   whatsAppLabel = 'Order on WhatsApp',
   shareUrl = '',
-  shareTitle = 'NITKKR Food',
-  shareText = 'Check out this menu on NITKKR Food'
+  shareTitle = 'Orandus',
+  shareText = 'Check out this menu on Orandus'
 } = Astro.props;
 ---
 
@@ -117,8 +117,8 @@ const {
         if (navigator.share) {
           try {
             await navigator.share({
-              title: shareTitleVal || 'NITKKR Food',
-              text: shareTextVal || 'Check out this menu on NITKKR Food',
+              title: shareTitleVal || 'Orandus',
+              text: shareTextVal || 'Check out this menu on Orandus',
               url: activeUrl
             });
           } catch (e) {}

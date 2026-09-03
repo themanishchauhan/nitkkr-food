@@ -21,8 +21,8 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 ---
 
 <Layout
-  title={initialQuery ? `Search: ${initialQuery} - NITKKR Food` : 'Search Food & Vendors - NITKKR Food'}
-  description="Search dishes and food vendors across NIT Kurukshetra campus"
+  title={initialQuery ? `Search: ${initialQuery} - Orandus` : 'Search Food & Vendors - Orandus'}
+  description="Search dishes and food vendors across campus and city on Orandus"
 >
 
   <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTag, initialTab, showWhatsApp, initialVendors, initialItems }}>
@@ -193,7 +193,6 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         vibeTag: initialTag || 'all',
         priceBracket: initialMaxPrice ? (initialMaxPrice === '50' ? 'under-50' : (initialMaxPrice === '100' ? '50-100' : (initialMaxPrice === '150' ? '100-150' : (initialMaxPrice === '150+' ? 'above-150' : initialMaxPrice)))) : 'all',
         vegFilter: initialIsVeg === 'true' ? 'veg' : ((initialIsVeg === 'false' || initialIsVeg === 'nonveg' || initialIsVeg === 'non-veg') ? 'nonveg' : 'all'),
-        vendorFilter: 'all',
         displayLimit: 20,
         expandedVendors: {},
         allVendors: Array.isArray(initialVendors) ? fairShuffleVendors(initialVendors) : [],
@@ -488,16 +487,6 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             list = list.filter(function(i) { return !i.isVeg; });
           }
 
-          // 4.5. Eatery / Vendor Filter
-          if (this.vendorFilter && this.vendorFilter !== 'all') {
-            var vFilter = this.vendorFilter.toLowerCase();
-            list = list.filter(function(i) {
-              var vSlug = (i.vendorSlug || '').toLowerCase();
-              var vName = (i.vendorName || '').toLowerCase();
-              return vSlug === vFilter || vName === vFilter || String(i.vendorId) === vFilter;
-            });
-          }
-
           // 5. Keyword & Typo-Tolerant Search
           if (!this.query.trim()) {
             return fairInterleaveByVendor(list);
@@ -547,25 +536,33 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           return this.filteredItems.slice(0, this.displayLimit);
         },
 
-        get activeVendorsInSearch() {
-          var counts = {};
-          var list = this.filteredItems;
-          var vList = [];
-          for (var i = 0; i < list.length; i++) {
-            var itm = list[i];
-            var vName = itm.vendorName || 'Campus Eatery';
-            var vSlug = itm.vendorSlug || itm.vendorName || '';
-            if (!counts[vName]) {
-              counts[vName] = { name: vName, slug: vSlug, vendorId: itm.vendorId, count: 0 };
-              vList.push(counts[vName]);
-            }
-            counts[vName].count++;
-          }
-          return vList;
+        get hasActiveFilters() {
+          return Boolean(
+            (this.query && this.query.trim()) ||
+            (this.activeCat && this.activeCat !== 'all') ||
+            (this.vibeTag && this.vibeTag !== 'all') ||
+            (this.priceBracket && this.priceBracket !== 'all') ||
+            (this.vegFilter && this.vegFilter !== 'all')
+          );
         },
 
-        get isMultiVendor() {
-          return this.activeVendorsInSearch.length > 1 && this.vendorFilter === 'all';
+        get activeFilterCount() {
+          var count = 0;
+          if (this.query && this.query.trim()) count++;
+          if (this.activeCat && this.activeCat !== 'all') count++;
+          if (this.vibeTag && this.vibeTag !== 'all') count++;
+          if (this.priceBracket && this.priceBracket !== 'all') count++;
+          if (this.vegFilter && this.vegFilter !== 'all') count++;
+          return count;
+        },
+
+        resetAllFilters() {
+          this.query = '';
+          this.activeCat = 'all';
+          this.vibeTag = 'all';
+          this.priceBracket = 'all';
+          this.vegFilter = 'all';
+          this.displayLimit = 20;
         },
 
         get groupedDishesByVendor() {
@@ -601,13 +598,6 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
     <div class="max-w-2xl mx-auto px-4 py-8">
       <div class="mb-5">
-        <a href="/" class="inline-flex items-center gap-2 text-nitkkr-gray hover:text-bistro-600 transition-colors mb-4 text-sm font-medium">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Home
-        </a>
-
         <!-- Live Search Input -->
         <div class="relative w-full">
           <input
@@ -658,126 +648,84 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           </button>
         </div>
 
-        <!-- Filter Controls for Dishes tab (Restored & Cleaned Up) -->
-        <div x-show="activeTab === 'dishes'" class="mt-3 space-y-2.5">
+        <!-- Senior-UX Unified Filter Toolbar (Consolidated, Accessible, Zero Clutter) -->
+        <div x-show="activeTab === 'dishes'" class="mt-4 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-sm space-y-3">
           
-          <!-- 0. Multi-Vendor Fast Selector (when dishes come from multiple stalls) -->
-          <template x-if="activeVendorsInSearch.length > 1">
-            <div class="space-y-1">
-              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block px-0.5">🏪 Campus Eateries:</span>
-              <div class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-                <button
-                  type="button"
-                  @click="vendorFilter = 'all'; displayLimit = 20;"
-                  :class="vendorFilter === 'all' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-400 font-semibold'"
-                  class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer text-xs"
-                >
-                  All Eateries (<span x-text="formatCount(openItemsCount)"></span>)
-                </button>
-                <template x-for="v in activeVendorsInSearch" :key="v.name">
-                  <button
-                    type="button"
-                    @click="vendorFilter = (vendorFilter === v.slug ? 'all' : v.slug); displayLimit = 20;"
-                    :class="vendorFilter === v.slug ? 'bg-nitkkr-orange text-white border-nitkkr-orange font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-nitkkr-orange font-semibold'"
-                    class="px-2.5 py-1 rounded-xl border whitespace-nowrap transition-all cursor-pointer text-xs flex items-center gap-1"
-                  >
-                    <span>🏪</span>
-                    <span x-text="v.name"></span>
-                    <span class="text-[10px] opacity-80" x-text="`(${formatCount(v.count)})`"></span>
-                  </button>
-                </template>
-              </div>
+          <!-- Top Stats & Status Bar: Live Kitchen Status + Active Filter Clear -->
+          <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="flex h-2.5 w-2.5 relative" aria-hidden="true">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <span class="text-xs font-bold text-slate-800" x-text="`Found ${formatCount(filteredItems.length)} dishes ready to order`"></span>
             </div>
-          </template>
 
-          <!-- 1. Gen-Z Cravings & Lifestyle Vibe Bar -->
-          <div class="space-y-1">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block px-0.5">🔥 Student Cravings & Vibes:</span>
-            <div class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs" role="group" aria-label="Filter by vibe">
-              <button
-                type="button"
-                @click="vibeTag = 'all'; displayLimit = 20;"
-                :class="vibeTag === 'all' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-amber-400 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer text-xs"
-              >
-                All Vibes
-              </button>
-              <button
-                type="button"
-                @click="vibeTag = (vibeTag === 'protein' ? 'all' : 'protein'); displayLimit = 20;"
-                :class="vibeTag === 'protein' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-amber-200 hover:bg-amber-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
-              >
-                <span>🏋️‍♂️</span> High Protein
-              </button>
-              <button
-                type="button"
-                @click="vibeTag = (vibeTag === 'late-night' ? 'all' : 'late-night'); displayLimit = 20;"
-                :class="vibeTag === 'late-night' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-indigo-200 hover:bg-indigo-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
-              >
-                <span>🌙</span> Late Night 2AM
-              </button>
-              <button
-                type="button"
-                @click="vibeTag = (vibeTag === 'spicy' ? 'all' : 'spicy'); displayLimit = 20;"
-                :class="vibeTag === 'spicy' ? 'bg-rose-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-rose-200 hover:bg-rose-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
-              >
-                <span>🔥</span> Spicy & Crispy
-              </button>
-              <button
-                type="button"
-                @click="vibeTag = (vibeTag === 'cheese' ? 'all' : 'cheese'); displayLimit = 20;"
-                :class="vibeTag === 'cheese' ? 'bg-yellow-500 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-yellow-200 hover:bg-yellow-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
-              >
-                <span>🧀</span> Cheesy Loaded
-              </button>
-              <button
-                type="button"
-                @click="vibeTag = (vibeTag === 'shakes' ? 'all' : 'shakes'); displayLimit = 20;"
-                :class="vibeTag === 'shakes' ? 'bg-purple-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-purple-200 hover:bg-purple-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
-              >
-                <span>🧋</span> Thick Shakes
-              </button>
-              <button
-                type="button"
-                @click="vibeTag = (vibeTag === 'bestseller' ? 'all' : 'bestseller'); displayLimit = 20;"
-                :class="vibeTag === 'bestseller' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-emerald-200 hover:bg-emerald-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
-              >
-                <span>⭐</span> Top Rated
-              </button>
-              <button
-                type="button"
-                @click="vibeTag = (vibeTag === 'healthy' ? 'all' : 'healthy'); displayLimit = 20;"
-                :class="vibeTag === 'healthy' ? 'bg-teal-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-teal-200 hover:bg-teal-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
-              >
-                <span>🥑</span> Healthy & Fresh
-              </button>
-            </div>
+            <!-- Single-Tap Unified Reset Filter Badge -->
+            <button
+              type="button"
+              x-show="hasActiveFilters"
+              x-cloak
+              @click="resetAllFilters()"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 rounded-full text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-2xs"
+            >
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <span>Clear (<span x-text="activeFilterCount"></span>)</span>
+            </button>
           </div>
 
-          <!-- 2. Smart Distinct Price Brackets & Diet Bar -->
-          <div class="flex flex-wrap items-center justify-between gap-1.5 text-xs pt-1.5 border-t border-slate-200/60">
-            <div class="flex items-center gap-1 flex-wrap">
-              <span class="font-semibold text-slate-500 mr-1 text-[11px]">💰 Budget:</span>
+          <!-- Controls Grid: Diet Segment + Price/Budget Segment -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            
+            <!-- Diet Toggle (Segmented Control) -->
+            <div class="flex items-center gap-1.5" role="group" aria-label="Dietary preference">
+              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">Diet:</span>
+              <div class="inline-flex p-1 bg-slate-100/90 rounded-xl gap-1 text-xs w-full sm:w-auto justify-between sm:justify-start">
+                <button
+                  type="button"
+                  @click="vegFilter = 'all'; displayLimit = 20;"
+                  :class="vegFilter === 'all' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'"
+                  class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all cursor-pointer text-xs text-center"
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  @click="vegFilter = (vegFilter === 'veg' ? 'all' : 'veg'); displayLimit = 20;"
+                  :class="vegFilter === 'veg' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'text-slate-700 hover:text-emerald-700 font-medium'"
+                  class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-xs"
+                >
+                  <span class="w-2 h-2 rounded-full" :class="vegFilter === 'veg' ? 'bg-white' : 'bg-emerald-600'"></span>
+                  <span>Pure Veg</span>
+                </button>
+                <button
+                  type="button"
+                  @click="vegFilter = (vegFilter === 'nonveg' ? 'all' : 'nonveg'); displayLimit = 20;"
+                  :class="vegFilter === 'nonveg' ? 'bg-rose-600 text-white font-bold shadow-xs' : 'text-slate-700 hover:text-rose-700 font-medium'"
+                  class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-xs"
+                >
+                  <span class="w-2 h-2 rounded-full" :class="vegFilter === 'nonveg' ? 'bg-white' : 'bg-rose-600'"></span>
+                  <span>Non-Veg</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Budget Controls (Pill Bar) -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none" role="group" aria-label="Filter by price">
+              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex-shrink-0">Budget:</span>
               <button
                 type="button"
                 @click="priceBracket = 'all'; displayLimit = 20;"
-                :class="priceBracket === 'all' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                :class="priceBracket === 'all' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-400 font-medium'"
+                class="px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer"
               >
                 Any
               </button>
               <button
                 type="button"
                 @click="priceBracket = (priceBracket === 'under-50' ? 'all' : 'under-50'); displayLimit = 20;"
-                :class="priceBracket === 'under-50' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                :class="priceBracket === 'under-50' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:border-bistro-400 font-medium'"
+                class="px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer"
                 title="Pocket friendly: ₹10 - ₹50"
               >
                 ≤ ₹50
@@ -785,94 +733,138 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               <button
                 type="button"
                 @click="priceBracket = (priceBracket === '50-100' ? 'all' : '50-100'); displayLimit = 20;"
-                :class="priceBracket === '50-100' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                :class="priceBracket === '50-100' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:border-bistro-400 font-medium'"
+                class="px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer"
                 title="Quick Meals: ₹51 - ₹100"
               >
-                ₹50 – ₹100
+                ₹50–₹100
               </button>
               <button
                 type="button"
                 @click="priceBracket = (priceBracket === '100-150' ? 'all' : '100-150'); displayLimit = 20;"
-                :class="priceBracket === '100-150' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                :class="priceBracket === '100-150' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:border-bistro-400 font-medium'"
+                class="px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer"
                 title="Combos & Thalis: ₹101 - ₹150"
               >
-                ₹100 – ₹150
+                ₹100–₹150
               </button>
               <button
                 type="button"
                 @click="priceBracket = (priceBracket === 'above-150' ? 'all' : 'above-150'); displayLimit = 20;"
-                :class="priceBracket === 'above-150' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                :class="priceBracket === 'above-150' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:border-bistro-400 font-medium'"
+                class="px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer"
                 title="Platters & Treats: > ₹150"
               >
                 ₹150+
               </button>
             </div>
 
-            <!-- Veg / Non-Veg Toggle -->
-            <div class="flex items-center gap-1">
+          </div>
+
+          <!-- Categories Horizontal Scroll (with real food icons) -->
+          {categories.length > 0 && (
+            <div class="pt-2 border-t border-slate-100">
+              <div class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs" role="group" aria-label="Filter by category">
+                <button
+                  type="button"
+                  @click="activeCat = 'all'; displayLimit = 20;"
+                  :class="activeCat === 'all' ? 'bg-bistro-500 text-white shadow-xs font-bold' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
+                  class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex-shrink-0"
+                >
+                  All Categories
+                </button>
+                {categories.map((cat: any) => (
+                  <button
+                    type="button"
+                    @click={`activeCat = (activeCat === '${cat.slug}' ? 'all' : '${cat.slug}'); displayLimit = 20;`}
+                    :class={`activeCat === '${cat.slug}' ? 'bg-bistro-500 text-white shadow-xs font-bold' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'`}
+                    class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 flex-shrink-0"
+                  >
+                    <span aria-hidden="true">{cat.icon}</span>
+                    <span>{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <!-- Vibes & Student Cravings Bar -->
+          <div class="pt-2 border-t border-slate-100">
+            <div class="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none text-xs" role="group" aria-label="Filter by craving or vibe">
               <button
                 type="button"
-                @click="vegFilter = (vegFilter === 'veg' ? 'all' : 'veg'); displayLimit = 20;"
-                :class="vegFilter === 'veg' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-white text-emerald-700 border border-emerald-300 hover:bg-emerald-50 font-semibold'"
-                class="px-2.5 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs"
+                @click="vibeTag = 'all'; displayLimit = 20;"
+                :class="vibeTag === 'all' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-400 font-semibold'"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer text-xs flex-shrink-0"
               >
-                <span>🌱</span> Veg Only
+                All Vibes
               </button>
               <button
                 type="button"
-                @click="vegFilter = (vegFilter === 'nonveg' ? 'all' : 'nonveg'); displayLimit = 20;"
-                :class="vegFilter === 'nonveg' ? 'bg-rose-600 text-white shadow-xs font-bold' : 'bg-white text-rose-700 border border-rose-300 hover:bg-rose-50 font-semibold'"
-                class="px-2.5 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs"
+                @click="vibeTag = (vibeTag === 'protein' ? 'all' : 'protein'); displayLimit = 20;"
+                :class="vibeTag === 'protein' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-800 border border-amber-200 hover:bg-amber-50 font-semibold'"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs flex-shrink-0"
               >
-                <span>🍗</span> Non-Veg
+                <span>🏋️‍♂️</span> High Protein
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'late-night' ? 'all' : 'late-night'); displayLimit = 20;"
+                :class="vibeTag === 'late-night' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-800 border border-indigo-200 hover:bg-indigo-50 font-semibold'"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs flex-shrink-0"
+              >
+                <span>🌙</span> Late Night 2AM
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'spicy' ? 'all' : 'spicy'); displayLimit = 20;"
+                :class="vibeTag === 'spicy' ? 'bg-rose-600 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-800 border border-rose-200 hover:bg-rose-50 font-semibold'"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs flex-shrink-0"
+              >
+                <span>🔥</span> Spicy & Crispy
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'cheese' ? 'all' : 'cheese'); displayLimit = 20;"
+                :class="vibeTag === 'cheese' ? 'bg-yellow-500 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-800 border border-yellow-200 hover:bg-yellow-50 font-semibold'"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs flex-shrink-0"
+              >
+                <span>🧀</span> Cheesy Loaded
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'shakes' ? 'all' : 'shakes'); displayLimit = 20;"
+                :class="vibeTag === 'shakes' ? 'bg-purple-600 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-800 border border-purple-200 hover:bg-purple-50 font-semibold'"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs flex-shrink-0"
+              >
+                <span>🧋</span> Thick Shakes
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'bestseller' ? 'all' : 'bestseller'); displayLimit = 20;"
+                :class="vibeTag === 'bestseller' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-800 border border-emerald-200 hover:bg-emerald-50 font-semibold'"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs flex-shrink-0"
+              >
+                <span>⭐</span> Top Rated
+              </button>
+              <button
+                type="button"
+                @click="vibeTag = (vibeTag === 'healthy' ? 'all' : 'healthy'); displayLimit = 20;"
+                :class="vibeTag === 'healthy' ? 'bg-teal-600 text-white font-bold shadow-xs' : 'bg-slate-50 text-slate-800 border border-teal-200 hover:bg-teal-50 font-semibold'"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs flex-shrink-0"
+              >
+                <span>🥑</span> Healthy & Fresh
               </button>
             </div>
           </div>
+
         </div>
 
-        <!-- 3. Result counter and reset button -->
-        <p class="mt-2.5 text-xs font-semibold text-nitkkr-gray flex items-center justify-between px-0.5">
-          <span x-show="activeTab === 'dishes'" x-text="`Found ${formatCount(filteredItems.length)} dish${filteredItems.length === 1 ? '' : 'es'}`"></span>
-          <span x-show="activeTab === 'vendors'" x-text="`Found ${formatCount(filteredVendors.length)} campus vendor${filteredVendors.length === 1 ? '' : 's'}`"></span>
-          <button
-            x-show="query || activeCat !== 'all' || vibeTag !== 'all' || priceBracket !== 'all' || vegFilter !== 'all' || vendorFilter !== 'all'"
-            @click="query = ''; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;"
-            class="text-bistro-600 hover:underline font-bold cursor-pointer text-xs"
-          >
-            Reset Filters
-          </button>
+        <!-- Vendor View Counter -->
+        <p x-show="activeTab === 'vendors'" class="mt-2.5 text-xs font-semibold text-nitkkr-gray flex items-center justify-between px-0.5">
+          <span x-text="`Found ${formatCount(filteredVendors.length)} campus vendor${filteredVendors.length === 1 ? '' : 's'}`"></span>
         </p>
       </div>
-
-      <!-- 4. Category Filter Pills (for Dishes) -->
-      {categories.length > 0 && (
-        <div x-show="activeTab === 'dishes'" class="mb-4">
-          <div class="flex gap-1.5 overflow-x-auto pb-1 px-4 sm:px-0 scrollbar-none" role="group" aria-label="Filter by category">
-            <button
-              type="button"
-              @click="activeCat = 'all'; displayLimit = 20;"
-              :class="activeCat === 'all' ? 'bg-bistro-500 text-white shadow-xs font-bold' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-              class="px-3 py-1 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer"
-            >
-              All Categories
-            </button>
-            {categories.map((cat: any) => (
-              <button
-                type="button"
-                @click={`activeCat = (activeCat === '${cat.slug}' ? 'all' : '${cat.slug}'); displayLimit = 20;`}
-                :class={`activeCat === '${cat.slug}' ? 'bg-bistro-500 text-white shadow-xs font-bold' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'`}
-                class="px-3 py-1 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1"
-              >
-                <span aria-hidden="true">{cat.icon}</span>
-                <span>{cat.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <!-- ================= 🏪 VENDORS VIEW ================= -->
       <div x-show="activeTab === 'vendors'" class="space-y-4" role="list">
@@ -1050,16 +1042,16 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           <p class="text-base font-bold text-slate-900">No dishes found matching your filters</p>
           <p class="text-xs text-slate-500">Tap one of these popular campus cravings:</p>
           <div class="flex flex-wrap items-center justify-center gap-1.5 pt-1 max-w-sm mx-auto">
-            <button type="button" @click="query = 'maggi'; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🍜 Maggi</button>
-            <button type="button" @click="query = 'chai'; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">☕ Chai</button>
-            <button type="button" @click="query = 'chowmein'; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🥢 Chowmein</button>
-            <button type="button" @click="query = 'paneer'; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🧀 Paneer</button>
-            <button type="button" @click="query = 'shake'; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🥤 Cold Shake</button>
+            <button type="button" @click="resetAllFilters(); query = 'maggi';" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🍜 Maggi</button>
+            <button type="button" @click="resetAllFilters(); query = 'chai';" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">☕ Chai</button>
+            <button type="button" @click="resetAllFilters(); query = 'chowmein';" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🥢 Chowmein</button>
+            <button type="button" @click="resetAllFilters(); query = 'paneer';" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🧀 Paneer</button>
+            <button type="button" @click="resetAllFilters(); query = 'shake';" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-200 rounded-full text-xs font-semibold cursor-pointer transition-all">🥤 Cold Shake</button>
           </div>
           <div>
             <button
               type="button"
-              @click="query = ''; activeCat = 'all'; vibeTag = 'all'; priceBracket = 'all'; vegFilter = 'all'; vendorFilter = 'all'; displayLimit = 20;"
+              @click="resetAllFilters()"
               class="mt-2 px-4 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
             >
               Reset All Filters

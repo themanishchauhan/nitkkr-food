@@ -1,40 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
   <defs>
-    <linearGradient id="foodGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="orandusGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FF7A30" />
       <stop offset="50%" stop-color="#E87D2E" />
-      <stop offset="100%" stop-color="#D6651F" />
+      <stop offset="100%" stop-color="#D65514" />
     </linearGradient>
-    <linearGradient id="bowlGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#FFF3E8" />
-    </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#D6651F" flood-opacity="0.3" />
+    <filter id="orandusGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#8C2C00" flood-opacity="0.35" />
     </filter>
   </defs>
 
   <!-- Squircle Base -->
-  <rect width="128" height="128" rx="34" fill="url(#foodGrad)" filter="url(#shadow)" />
-  
-  <!-- Subtle Inner Border Glow -->
+  <rect width="128" height="128" rx="34" fill="url(#orandusGrad)" />
   <rect x="2" y="2" width="124" height="124" rx="32" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2" fill="none" />
 
-  <!-- Steam Waves -->
-  <path d="M44 38 C 42 32, 46 26, 44 20" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-opacity="0.9" fill="none" />
-  <path d="M64 36 C 62 28, 66 22, 64 16" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" fill="none" />
-  <path d="M84 38 C 82 32, 86 26, 84 20" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-opacity="0.9" fill="none" />
-
-  <!-- Steaming Food Bowl -->
-  <path d="M26 54 C 26 50, 30 48, 34 48 L 94 48 C 98 48, 102 50, 102 54 C 102 78, 85 96, 64 96 C 43 96, 26 78, 26 54 Z" fill="url(#bowlGrad)" />
-  
-  <!-- Bowl Base Stand -->
-  <path d="M46 96 L 82 96 C 85 96, 87 99, 85 102 L 81 108 C 80 110, 77 112, 74 112 L 54 112 C 51 112, 48 110, 47 108 L 43 102 C 41 99, 43 96, 46 96 Z" fill="#FFFFFF" fill-opacity="0.95" />
-
-  <!-- Chopsticks Accent -->
-  <line x1="88" y1="40" x2="38" y2="44" stroke="#D6651F" stroke-width="4" stroke-linecap="round" />
-  <line x1="90" y1="36" x2="42" y2="40" stroke="#E87D2E" stroke-width="3" stroke-linecap="round" />
-
-  <!-- Sparkle Accent -->
-  <path d="M100 24 Q 100 30 106 30 Q 100 30 100 36 Q 100 30 94 30 Q 100 30 100 24 Z" fill="#FFE082" />
+  <!-- Central "O" Emblem & Dynamic Orbit -->
+  <circle cx="64" cy="64" r="32" stroke="#FFFFFF" stroke-width="12" filter="url(#orandusGlow)" />
+  <!-- Center Accent Spark -->
+  <circle cx="64" cy="64" r="8" fill="#FFD700" />
+  <!-- Kinetic Fast Orbit / Swish -->
+  <path d="M 28 68 C 36 94 92 98 102 62" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-opacity="0.9" fill="none" />
 </svg>

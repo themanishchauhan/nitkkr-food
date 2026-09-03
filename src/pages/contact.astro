@@ -8,17 +8,16 @@ const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 
-const email = settingsObj.company_support_email || settingsObj.contact_email || 'admin@nitkkr-food.com';
+const email = settingsObj.company_support_email || settingsObj.contact_email || 'support@orandus.in';
 const phone = settingsObj.company_support_phone || settingsObj.support_whatsapp || '9896475885';
 const instagram = settingsObj.company_instagram || settingsObj.instagram_url || '';
-const whatsappUrl = cleanWhatsAppHref(phone, 'Hi NITKKR Food Team! I have an inquiry.');
+const whatsappUrl = cleanWhatsAppHref(phone, 'Hi Orandus Team! I have an inquiry.');
 ---
 
-<Layout title="Contact & Vendor Support - NITKKR Food" description="Get in touch with the NITKKR Food team or request to list your vendor eatery.">
+<Layout title="Contact & Vendor Support - Orandus" description="Get in touch with the Orandus team or request to list your vendor eatery.">
   <section class="min-h-screen bg-nitkkr-cream py-12 px-4">
     <div class="max-w-2xl mx-auto space-y-6">
       <div class="text-center space-y-2">
-        <a href="/" class="text-xs text-slate-500 hover:text-nitkkr-orange mb-1 inline-block font-semibold">← Back to Home</a>
         <h1 class="font-display text-3xl sm:text-4xl font-bold text-nitkkr-dark">📞 Connect & Support</h1>
         <p class="text-xs sm:text-sm text-slate-600">Have feedback, want to report an issue, or list your food vendor / eatery?</p>
       </div>

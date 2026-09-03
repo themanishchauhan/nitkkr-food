@@ -32,7 +32,7 @@ const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) 
 const adEnabled = settingsObj.ad_banner_enabled === 'true';
 const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && settingsObj.show_whatsapp_button !== 'false';
 const whatsAppLabel = settingsObj.whatsapp_button_label || 'Order on WhatsApp';
-const msgTemplate = (settingsObj.whatsapp_msg_template || `Hi ${vendor.name}! I'd like to check menu availability from NITKKR Food.`).replace('{vendor_name}', vendor.name);
+const msgTemplate = (settingsObj.whatsapp_msg_template || `Hi ${vendor.name}! I'd like to check menu availability from Orandus.`).replace('{vendor_name}', vendor.name);
 
 const formattedHours = formatOperatingHours(vendor.opensAt, vendor.closesAt);
 const vendorTelLink = cleanTelHref(vendor.phone);
@@ -52,12 +52,12 @@ if (Array.isArray(vendor.deliversTo)) {
 }
 
 const shareUrl = new URL(`/v/${vendor.slug}`, Astro.url.origin || Astro.site || 'https://nitkkr-food.manishchouhan770.workers.dev').href;
-const shareTitle = `${vendor.name} - NITKKR Food`;
-const shareText = `Check out ${vendor.name} on NITKKR Food - ${menuItems.length} dishes available, opens ${formattedHours}`;
+const shareTitle = `${vendor.name} - Orandus`;
+const shareText = `Check out ${vendor.name} on Orandus - ${menuItems.length} dishes available, opens ${formattedHours}`;
 ---
 
 <Layout
-  title={`${vendor.name} - NITKKR Food`}
+  title={`${vendor.name} - Orandus`}
   description={`${menuItems.length} items • ${formattedHours}${deliversToList.length > 0 ? ' • ' + deliversToList.join(', ') : ''}`}
   ogImage={vendor.image || '/og-default.jpg'}
   ogUrl={shareUrl}
