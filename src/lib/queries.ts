@@ -14,6 +14,7 @@ import { ASHU_FAST_FOOD_VENDOR, ASHU_FAST_FOOD_MENU_ITEMS } from './ashu-fast-fo
 import { THE_SPICE_CHAMBER_VENDOR, THE_SPICE_CHAMBER_MENU_ITEMS } from './the-spice-chamber-data';
 import { CAFE_AROMA_VENDOR, CAFE_AROMA_MENU_ITEMS } from './cafe-aroma-data';
 import { ANTY_JI_TEA_STALL_VENDOR, ANTY_JI_TEA_STALL_MENU_ITEMS } from './anty-ji-tea-stall-data';
+import { AMAN_FAST_FOOD_VENDOR, AMAN_FAST_FOOD_MENU_ITEMS } from './aman-fast-food-data';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -129,7 +130,8 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       ASHU_FAST_FOOD_VENDOR,
       THE_SPICE_CHAMBER_VENDOR,
       CAFE_AROMA_VENDOR,
-      ANTY_JI_TEA_STALL_VENDOR
+      ANTY_JI_TEA_STALL_VENDOR,
+      AMAN_FAST_FOOD_VENDOR
     ];
     for (const vendor of vendorsToSeed) {
       const check = await d1.prepare(`SELECT id FROM vendors WHERE slug = ? OR id = ? LIMIT 1`)
@@ -177,9 +179,10 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       ...CHEF_ON_FOOD_JUNCTION_MENU_ITEMS, 
       ...BAKERS_BITE_KKR_MENU_ITEMS, 
       ...ASHU_FAST_FOOD_MENU_ITEMS, 
-      ...THE_SPICE_CHAMBER_MENU_ITEMS,
-      ...CAFE_AROMA_MENU_ITEMS,
-      ...ANTY_JI_TEA_STALL_MENU_ITEMS
+      ...THE_SPICE_CHAMBER_MENU_ITEMS, 
+      ...CAFE_AROMA_MENU_ITEMS, 
+      ...ANTY_JI_TEA_STALL_MENU_ITEMS,
+      ...AMAN_FAST_FOOD_MENU_ITEMS
     ];
     const statements: any[] = [];
     for (const item of allDishes) {
@@ -360,7 +363,7 @@ export async function getVendorBySlug(slug: string) {
       return THE_SPICE_CHAMBER_VENDOR;
     }
 
-    if (slug === 'cafe-aroma' || slug === 'aroma' || slug === 'aman-fast-food') {
+    if (slug === 'cafe-aroma' || slug === 'aroma') {
       const db = getDb();
       const result = await db.select()
         .from(schema.vendors)
@@ -368,6 +371,16 @@ export async function getVendorBySlug(slug: string) {
         .limit(1);
       if (result && result[0]) return result[0];
       return CAFE_AROMA_VENDOR;
+    }
+
+    if (slug === 'aman-fast-food' || slug === 'aman') {
+      const db = getDb();
+      const result = await db.select()
+        .from(schema.vendors)
+        .where(and(eq(schema.vendors.slug, 'aman-fast-food'), eq(schema.vendors.isActive, true)))
+        .limit(1);
+      if (result && result[0]) return result[0];
+      return AMAN_FAST_FOOD_VENDOR;
     }
 
     if (slug === 'anty-ji-tea-stall' || slug === 'anty-ji' || slug === 'aunty-ji' || slug === 'anty-ji-stall') {
@@ -386,7 +399,7 @@ export async function getVendorBySlug(slug: string) {
       .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
     if (result && result[0]) return result[0];
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('anty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('aunty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('cafe') && v.slug === 'cafe-aroma') || (slug.startsWith('aroma') && v.slug === 'cafe-aroma') || (slug.startsWith('spice') && v.slug === 'the-spice-chamber') || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('aman') && v.slug === 'aman-fast-food') || (slug.startsWith('anty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('aunty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('cafe') && v.slug === 'cafe-aroma') || (slug.startsWith('aroma') && v.slug === 'cafe-aroma') || (slug.startsWith('spice') && v.slug === 'the-spice-chamber') || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   } catch (e) {
     if (slug === 'food-cave') return FOOD_CAVE_VENDOR;
     if (slug === 'apna-fast-food' || slug === 'apna-fresh-fast-food') return APNA_FAST_FOOD_VENDOR;
@@ -399,9 +412,10 @@ export async function getVendorBySlug(slug: string) {
     if (slug === 'bakers-bite-kkr' || slug === 'bakers-bite') return BAKERS_BITE_KKR_VENDOR;
     if (slug === 'ashu-fast-food' || slug === 'ashu') return ASHU_FAST_FOOD_VENDOR;
     if (slug === 'the-spice-chamber' || slug === 'spice-chamber' || slug === 'tsc') return THE_SPICE_CHAMBER_VENDOR;
-    if (slug === 'cafe-aroma' || slug === 'aroma' || slug === 'aman-fast-food') return CAFE_AROMA_VENDOR;
+    if (slug === 'cafe-aroma' || slug === 'aroma') return CAFE_AROMA_VENDOR;
+    if (slug === 'aman-fast-food' || slug === 'aman') return AMAN_FAST_FOOD_VENDOR;
     if (slug === 'anty-ji-tea-stall' || slug === 'anty-ji' || slug === 'aunty-ji' || slug === 'anty-ji-stall') return ANTY_JI_TEA_STALL_VENDOR;
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('anty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('aunty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('cafe') && v.slug === 'cafe-aroma') || (slug.startsWith('aroma') && v.slug === 'cafe-aroma') || (slug.startsWith('spice') && v.slug === 'the-spice-chamber') || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('aman') && v.slug === 'aman-fast-food') || (slug.startsWith('anty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('aunty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('cafe') && v.slug === 'cafe-aroma') || (slug.startsWith('aroma') && v.slug === 'cafe-aroma') || (slug.startsWith('spice') && v.slug === 'the-spice-chamber') || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   }
 }
 
@@ -629,6 +643,19 @@ export async function getMenuItemsByVendor(vendorId: number) {
         };
       });
     }
+
+    if (vendorId === 34) {
+      return AMAN_FAST_FOOD_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
     return MOCK_MENU_ITEMS.filter(m => m.vendorId === vendorId && m.isAvailable);
   } catch (e) {
     if (vendorId === 21) {
@@ -789,6 +816,19 @@ export async function getMenuItemsByVendor(vendorId: number) {
 
     if (vendorId === 33) {
       return ANTY_JI_TEA_STALL_MENU_ITEMS.map(item => {
+        const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
+        return {
+          ...item,
+          image: null,
+          categoryName: cat?.name || 'General',
+          categorySlug: cat?.slug || 'general',
+          categoryIcon: cat?.icon || '🍽️'
+        };
+      });
+    }
+
+    if (vendorId === 34) {
+      return AMAN_FAST_FOOD_MENU_ITEMS.map(item => {
         const cat = MOCK_CATEGORIES.find(c => c.id === item.categoryId);
         return {
           ...item,
@@ -1024,6 +1064,7 @@ export async function getAllMenuItemsForSearch() {
   const { THE_SPICE_CHAMBER_MENU_ITEMS, THE_SPICE_CHAMBER_VENDOR } = await import('./the-spice-chamber-data');
   const { CAFE_AROMA_MENU_ITEMS, CAFE_AROMA_VENDOR } = await import('./cafe-aroma-data');
   const { ANTY_JI_TEA_STALL_MENU_ITEMS, ANTY_JI_TEA_STALL_VENDOR } = await import('./anty-ji-tea-stall-data');
+  const { AMAN_FAST_FOOD_MENU_ITEMS, AMAN_FAST_FOOD_VENDOR } = await import('./aman-fast-food-data');
   const { MOCK_CATEGORIES } = await import('./mock-data');
 
   const foodCaveList = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
@@ -1338,6 +1379,30 @@ export async function getAllMenuItemsForSearch() {
     };
   });
 
+  const amanList = AMAN_FAST_FOOD_MENU_ITEMS.map((item: any) => {
+    const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: (item as any).image || null,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable,
+      tags: item.tags || [],
+      vendorId: AMAN_FAST_FOOD_VENDOR.id,
+      vendorName: AMAN_FAST_FOOD_VENDOR.name,
+      vendorSlug: AMAN_FAST_FOOD_VENDOR.slug,
+      vendorPhone: AMAN_FAST_FOOD_VENDOR.phone,
+      vendorWhatsApp: AMAN_FAST_FOOD_VENDOR.whatsapp,
+      vendorOpensAt: AMAN_FAST_FOOD_VENDOR.opensAt,
+      vendorClosesAt: AMAN_FAST_FOOD_VENDOR.closesAt,
+      categoryId: item.categoryId,
+      categoryName: cat?.name || 'General',
+      categorySlug: cat?.slug || 'general',
+    };
+  });
+
   return fairInterleaveByVendor([
     ...foodCaveList, 
     ...apnaList, 
@@ -1351,7 +1416,8 @@ export async function getAllMenuItemsForSearch() {
     ...ashuList,
     ...spiceChamberList,
     ...cafeAromaList,
-    ...antyJiList
+    ...antyJiList,
+    ...amanList
   ]);
 }
 

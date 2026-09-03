@@ -13,6 +13,7 @@ import { ASHU_FAST_FOOD_VENDOR, ASHU_FAST_FOOD_MENU_ITEMS } from '../../../lib/a
 import { THE_SPICE_CHAMBER_VENDOR, THE_SPICE_CHAMBER_MENU_ITEMS } from '../../../lib/the-spice-chamber-data';
 import { CAFE_AROMA_VENDOR, CAFE_AROMA_MENU_ITEMS } from '../../../lib/cafe-aroma-data';
 import { ANTY_JI_TEA_STALL_VENDOR, ANTY_JI_TEA_STALL_MENU_ITEMS } from '../../../lib/anty-ji-tea-stall-data';
+import { AMAN_FAST_FOOD_VENDOR, AMAN_FAST_FOOD_MENU_ITEMS } from '../../../lib/aman-fast-food-data';
 import { MOCK_CATEGORIES } from '../../../lib/mock-data';
 
 export const prerender = false;
@@ -51,7 +52,8 @@ export const POST: APIRoute = async ({ locals }) => {
       ASHU_FAST_FOOD_VENDOR,
       THE_SPICE_CHAMBER_VENDOR,
       CAFE_AROMA_VENDOR,
-      ANTY_JI_TEA_STALL_VENDOR
+      ANTY_JI_TEA_STALL_VENDOR,
+      AMAN_FAST_FOOD_VENDOR
     ];
     for (const vendor of vendorsToSeed) {
       await d1.prepare(`
@@ -90,7 +92,8 @@ export const POST: APIRoute = async ({ locals }) => {
       ...ASHU_FAST_FOOD_MENU_ITEMS,
       ...THE_SPICE_CHAMBER_MENU_ITEMS,
       ...CAFE_AROMA_MENU_ITEMS,
-      ...ANTY_JI_TEA_STALL_MENU_ITEMS
+      ...ANTY_JI_TEA_STALL_MENU_ITEMS,
+      ...AMAN_FAST_FOOD_MENU_ITEMS
     ];
     const statements: any[] = [];
     for (const item of allMenuItems) {
