@@ -7,8 +7,8 @@ interface Props {
   ogUrl?: string;
 }
 const {
-  title = 'Orandus - Food Spots & Services',
-  description = 'Explore food spots, live menus, and student deals with Orandus',
+  title = 'Orandus - Find Food. See the Menu.',
+  description = 'Discover campus food spots, menus, prices and locations in one place.',
   ogImage = '/og-default.jpg',
   ogUrl = Astro.url.href,
 } = Astro.props;
@@ -225,7 +225,7 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
             <span>🍜</span> Orandus
           </a>
           <p class="text-slate-500 leading-relaxed text-[11px]">
-            {siteSettingsObj.footer_tagline || 'Instant menu search for food spots and local services.'}
+            {siteSettingsObj.footer_tagline || 'Discover campus food spots, menus, prices and locations in one place.'}
           </p>
         </div>
 
@@ -271,7 +271,7 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
 
 
       <div class="pt-6 border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-400 text-center sm:text-left">
-        <p>© {new Date().getFullYear()} {siteSettingsObj.company_name || 'Orandus'} • {siteSettingsObj.footer_copyright || siteSettingsObj.footer_copyright_text || 'Food Spots & Services Directory'}</p>
+        <p>© {new Date().getFullYear()} {siteSettingsObj.company_name || 'Orandus'} • {siteSettingsObj.footer_copyright || siteSettingsObj.footer_copyright_text || 'Find Food. See the Menu.'}</p>
         <p class="text-slate-400">{siteSettingsObj.footer_custom_note || 'Fast menus • Local food • Simple discovery'}</p>
       </div>
 

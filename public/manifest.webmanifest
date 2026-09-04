@@ -1,7 +1,7 @@
 {
-  "name": "Orandus - Food Spots & Services",
+  "name": "Orandus - Find Food. See the Menu.",
   "short_name": "Orandus",
-  "description": "Live menus, food spots directory & local campus discovery with Orandus",
+  "description": "Discover campus food spots, menus, prices and locations in one place.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFF8F0",

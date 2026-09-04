@@ -23,8 +23,8 @@ const initialSettingsObj = initialSettingsList.reduce((acc: any, s: any) => { if
       menuItems: Array.isArray(initialMenuItems) ? initialMenuItems : [],
       reviews: Array.isArray(initialReviews) ? initialReviews : [],
       settings: {
-        homepage_title: initialSettingsObj.homepage_title || 'Hungry? We got you. 🍜',
-        homepage_tagline: initialSettingsObj.homepage_tagline || 'Explore campus food spots around NIT Kurukshetra',
+        homepage_title: initialSettingsObj.homepage_title || 'Find Food. See the Menu.',
+        homepage_tagline: initialSettingsObj.homepage_tagline || 'Discover campus food spots, menus, prices and locations in one place.',
         announcement_banner_enabled: initialSettingsObj.announcement_banner_enabled || 'false',
         announcement_banner_text: initialSettingsObj.announcement_banner_text || '',
         announcement_banner_type: initialSettingsObj.announcement_banner_type || 'info',
@@ -429,7 +429,7 @@ const initialSettingsObj = initialSettingsList.reduce((acc: any, s: any) => { if
                   type="text"
                   x-model="settings.homepage_title"
                   class="w-full px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
-                  placeholder="e.g. Hungry? We got you. 🍜"
+                  placeholder="e.g. Find Food. See the Menu."
                 />
               </div>
 
@@ -440,7 +440,7 @@ const initialSettingsObj = initialSettingsList.reduce((acc: any, s: any) => { if
                   type="text"
                   x-model="settings.homepage_tagline"
                   class="w-full px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
-                  placeholder="e.g. Search 20+ food vendors around NITKKR"
+                  placeholder="e.g. Discover campus food spots, menus, prices and locations in one place."
                 />
               </div>
 
