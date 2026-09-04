@@ -367,6 +367,12 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
                 <label class="text-xs font-bold text-nitkkr-dark block mb-1">Meta Description (SEO & WhatsApp previews)</label>
                 <textarea x-model="settings.meta_description" rows="2" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden leading-relaxed"></textarea>
               </div>
+
+              <div>
+                <label class="text-xs font-bold text-nitkkr-dark block mb-1">📊 Cloudflare Web Analytics Token</label>
+                <input type="text" x-model="settings.cloudflare_analytics_token" placeholder="e.g. 7c91e0a29b4b45579997ce93ba2c72b8" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-mono text-nitkkr-dark focus:outline-hidden" />
+                <p class="text-[11px] text-slate-500 mt-1">Get this free token from Cloudflare Dashboard ➔ Analytics & Logs ➔ Web Analytics ➔ Add Site.</p>
+              </div>
             </div>
           </div>
 

@@ -37,6 +37,7 @@ try {
 const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isHomePage = currentPath === '/';
 const isVendorPage = currentPath.startsWith('/v/');
+const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string) || '';
 ---
 
 <!doctype html>
@@ -72,6 +73,11 @@ const isVendorPage = currentPath.startsWith('/v/');
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
   <meta name="twitter:image" content={resolvedOgImage} />
+
+  <!-- 📊 Cloudflare Web Analytics (Privacy-First & Cookie-less) -->
+  {cfAnalyticsToken && (
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={`{"token": "${cfAnalyticsToken}"}`}></script>
+  )}
 </head>
 
 <body class="font-body bg-nitkkr-cream text-nitkkr-dark min-h-screen flex flex-col antialiased">
