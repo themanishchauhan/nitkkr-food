@@ -20,6 +20,17 @@ import { YUMMY_TUMMY_FOODS_VENDOR, YUMMY_TUMMY_FOODS_MENU_ITEMS } from './yummy-
 const isDev = process.env.NODE_ENV !== 'production';
 
 let hasCheckedD1Seed = false;
+let hasEnsuredPhotoColumn = false;
+
+export async function ensurePhotoUrlColumn(d1Raw?: any) {
+  if (hasEnsuredPhotoColumn) return;
+  const d1 = d1Raw || getRawD1Binding();
+  if (!d1 || typeof d1.prepare !== 'function') return;
+  try {
+    await d1.prepare(`ALTER TABLE reviews ADD COLUMN photo_url TEXT`).run();
+  } catch (e) {}
+  hasEnsuredPhotoColumn = true;
+}
 
 export async function ensureRealDatabasePopulated(d1Raw?: any) {
   const d1 = d1Raw || getRawD1Binding();
@@ -990,15 +1001,32 @@ export async function getAllMenuItemsForSearch() {
       .where(and(eq(schema.menuItems.isAvailable, true), eq(schema.vendors.isActive, true)));
 
     if (items && items.length > 0) {
-      const allReviews = await db.select({
-        id: schema.reviews.id,
-        menuItemId: schema.reviews.menuItemId,
-        rating: schema.reviews.rating,
-        studentName: schema.reviews.studentName,
-        comment: schema.reviews.comment,
-        photoUrl: schema.reviews.photoUrl,
-        createdAt: schema.reviews.createdAt
-      }).from(schema.reviews);
+      ensurePhotoUrlColumn().catch(() => {});
+      let allReviews: any[] = [];
+      try {
+        allReviews = await db.select({
+          id: schema.reviews.id,
+          menuItemId: schema.reviews.menuItemId,
+          rating: schema.reviews.rating,
+          studentName: schema.reviews.studentName,
+          comment: schema.reviews.comment,
+          photoUrl: schema.reviews.photoUrl,
+          createdAt: schema.reviews.createdAt
+        }).from(schema.reviews);
+      } catch (colErr) {
+        try {
+          allReviews = await db.select({
+            id: schema.reviews.id,
+            menuItemId: schema.reviews.menuItemId,
+            rating: schema.reviews.rating,
+            studentName: schema.reviews.studentName,
+            comment: schema.reviews.comment,
+            createdAt: schema.reviews.createdAt
+          }).from(schema.reviews);
+        } catch (fallbackErr) {
+          allReviews = [];
+        }
+      }
 
       const reviewStatsMap: Record<number, { count: number; avgRating: string; reviews: any[] }> = {};
       for (const r of (allReviews || [])) {
@@ -1056,15 +1084,32 @@ export async function getAllMenuItemsForSearch() {
       .where(and(eq(schema.menuItems.isAvailable, true), eq(schema.vendors.isActive, true)));
 
     if (items && items.length > 0) {
-      const allReviews = await db.select({
-        id: schema.reviews.id,
-        menuItemId: schema.reviews.menuItemId,
-        rating: schema.reviews.rating,
-        studentName: schema.reviews.studentName,
-        comment: schema.reviews.comment,
-        photoUrl: schema.reviews.photoUrl,
-        createdAt: schema.reviews.createdAt
-      }).from(schema.reviews);
+      ensurePhotoUrlColumn().catch(() => {});
+      let allReviews: any[] = [];
+      try {
+        allReviews = await db.select({
+          id: schema.reviews.id,
+          menuItemId: schema.reviews.menuItemId,
+          rating: schema.reviews.rating,
+          studentName: schema.reviews.studentName,
+          comment: schema.reviews.comment,
+          photoUrl: schema.reviews.photoUrl,
+          createdAt: schema.reviews.createdAt
+        }).from(schema.reviews);
+      } catch (colErr) {
+        try {
+          allReviews = await db.select({
+            id: schema.reviews.id,
+            menuItemId: schema.reviews.menuItemId,
+            rating: schema.reviews.rating,
+            studentName: schema.reviews.studentName,
+            comment: schema.reviews.comment,
+            createdAt: schema.reviews.createdAt
+          }).from(schema.reviews);
+        } catch (fallbackErr) {
+          allReviews = [];
+        }
+      }
 
       const reviewStatsMap: Record<number, { count: number; avgRating: string; reviews: any[] }> = {};
       for (const r of (allReviews || [])) {
@@ -1724,22 +1769,40 @@ export async function getReviewsByMenuItem(menuItemId: number) {
 
 export async function getReviewsByVendor(vendorId: number) {
   try {
+    ensurePhotoUrlColumn().catch(() => {});
     const db = createDb();
-    const result = await db.select({
-      id: schema.reviews.id,
-      menuItemId: schema.reviews.menuItemId,
-      studentName: schema.reviews.studentName,
-      rating: schema.reviews.rating,
-      comment: schema.reviews.comment,
-      photoUrl: schema.reviews.photoUrl,
-      createdAt: schema.reviews.createdAt,
-      menuItemName: schema.menuItems.name,
-    })
-      .from(schema.reviews)
-      .innerJoin(schema.menuItems, eq(schema.reviews.menuItemId, schema.menuItems.id))
-      .where(eq(schema.menuItems.vendorId, vendorId))
-      .orderBy(desc(schema.reviews.createdAt));
-    if (result && result.length > 0) return result;
+    let result: any[] = [];
+    try {
+      result = await db.select({
+        id: schema.reviews.id,
+        menuItemId: schema.reviews.menuItemId,
+        studentName: schema.reviews.studentName,
+        rating: schema.reviews.rating,
+        comment: schema.reviews.comment,
+        photoUrl: schema.reviews.photoUrl,
+        createdAt: schema.reviews.createdAt,
+        menuItemName: schema.menuItems.name,
+      })
+        .from(schema.reviews)
+        .innerJoin(schema.menuItems, eq(schema.reviews.menuItemId, schema.menuItems.id))
+        .where(eq(schema.menuItems.vendorId, vendorId))
+        .orderBy(desc(schema.reviews.createdAt));
+    } catch (colErr) {
+      result = await db.select({
+        id: schema.reviews.id,
+        menuItemId: schema.reviews.menuItemId,
+        studentName: schema.reviews.studentName,
+        rating: schema.reviews.rating,
+        comment: schema.reviews.comment,
+        createdAt: schema.reviews.createdAt,
+        menuItemName: schema.menuItems.name,
+      })
+        .from(schema.reviews)
+        .innerJoin(schema.menuItems, eq(schema.reviews.menuItemId, schema.menuItems.id))
+        .where(eq(schema.menuItems.vendorId, vendorId))
+        .orderBy(desc(schema.reviews.createdAt));
+    }
+    if (result && Array.isArray(result) && result.length > 0) return result;
   } catch (e) {
     // fallback
   }
@@ -1758,23 +1821,42 @@ export async function getReviewsByVendor(vendorId: number) {
 
 export async function getAllReviews() {
   try {
+    ensurePhotoUrlColumn().catch(() => {});
     const db = createDb();
-    const result = await db.select({
-      id: schema.reviews.id,
-      menuItemId: schema.reviews.menuItemId,
-      studentName: schema.reviews.studentName,
-      rating: schema.reviews.rating,
-      comment: schema.reviews.comment,
-      photoUrl: schema.reviews.photoUrl,
-      createdAt: schema.reviews.createdAt,
-      menuItemName: schema.menuItems.name,
-      vendorName: schema.vendors.name,
-    })
-      .from(schema.reviews)
-      .leftJoin(schema.menuItems, eq(schema.reviews.menuItemId, schema.menuItems.id))
-      .leftJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id))
-      .orderBy(desc(schema.reviews.createdAt));
-    if (result && result.length > 0) return result;
+    let result: any[] = [];
+    try {
+      result = await db.select({
+        id: schema.reviews.id,
+        menuItemId: schema.reviews.menuItemId,
+        studentName: schema.reviews.studentName,
+        rating: schema.reviews.rating,
+        comment: schema.reviews.comment,
+        photoUrl: schema.reviews.photoUrl,
+        createdAt: schema.reviews.createdAt,
+        menuItemName: schema.menuItems.name,
+        vendorName: schema.vendors.name,
+      })
+        .from(schema.reviews)
+        .leftJoin(schema.menuItems, eq(schema.reviews.menuItemId, schema.menuItems.id))
+        .leftJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id))
+        .orderBy(desc(schema.reviews.createdAt));
+    } catch (colErr) {
+      result = await db.select({
+        id: schema.reviews.id,
+        menuItemId: schema.reviews.menuItemId,
+        studentName: schema.reviews.studentName,
+        rating: schema.reviews.rating,
+        comment: schema.reviews.comment,
+        createdAt: schema.reviews.createdAt,
+        menuItemName: schema.menuItems.name,
+        vendorName: schema.vendors.name,
+      })
+        .from(schema.reviews)
+        .leftJoin(schema.menuItems, eq(schema.reviews.menuItemId, schema.menuItems.id))
+        .leftJoin(schema.vendors, eq(schema.menuItems.vendorId, schema.vendors.id))
+        .orderBy(desc(schema.reviews.createdAt));
+    }
+    if (result && Array.isArray(result) && result.length > 0) return result;
   } catch (e) {
     // fallback
   }
