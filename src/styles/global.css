@@ -3,147 +3,30 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  color-scheme: only light;
 }
 
 @layer base {
   :root, html {
-    color-scheme: light dark;
+    color-scheme: only light;
   }
 
   html {
     scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
+    color-scheme: only light;
+    background-color: #FEF7F0;
   }
 
   body {
     @apply antialiased bg-bistro-50 text-nitkkr-dark;
+    color-scheme: only light;
+    background-color: #FEF7F0 !important;
+    color: #1A1A2E !important;
   }
 
   * {
     @apply border-bistro-200;
-  }
-}
-
-/* =========================================================
-   🌙 AUTOMATIC NATIVE DARK THEME
-   Applies only when the user's phone or browser is in dark mode.
-   Prevents Firefox Android and Chromium from algorithmically inverting
-   the page into muddy brown / broken contrast.
-   ========================================================= */
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #0d0e14 !important;
-    color: #f1f5f9 !important;
-  }
-
-  .bg-bistro-50 {
-    background-color: #0d0e14 !important;
-  }
-
-  /* Cards, Surfaces & elevated modals */
-  .card,
-  .bg-white,
-  .bg-white\/95,
-  .bg-white\/80,
-  .bg-white\/60 {
-    background-color: #161722 !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-    color: #f1f5f9;
-  }
-
-  /* Headings & High Contrast Text */
-  .text-slate-900,
-  .text-nitkkr-dark,
-  .text-slate-800 {
-    color: #f8fafc !important;
-  }
-
-  /* Secondary & Muted Text */
-  .text-slate-600,
-  .text-slate-500,
-  .text-nitkkr-gray {
-    color: #94a3b8 !important;
-  }
-
-  .text-slate-700 {
-    color: #cbd5e1 !important;
-  }
-
-  .text-slate-400 {
-    color: #64748b !important;
-  }
-
-  /* Common subtle borders */
-  .border-slate-200,
-  .border-bistro-200,
-  .border-slate-100,
-  .border-slate-200\/90,
-  .border-slate-200\/60,
-  .border-amber-200\/50,
-  .border-amber-200\/60 {
-    border-color: rgba(255, 255, 255, 0.08) !important;
-  }
-
-  /* Inset / Subtle Pill backgrounds */
-  .bg-slate-50,
-  .bg-amber-50,
-  .bg-orange-50 {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-  }
-
-  .text-amber-800,
-  .text-amber-700 {
-    color: #fbbf24 !important;
-  }
-
-  /* Inputs, Search Bars & Textareas */
-  .input-search,
-  input[type="text"],
-  input[type="search"],
-  input[type="tel"],
-  textarea,
-  select {
-    background-color: #1e1f2d !important;
-    color: #ffffff !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-  }
-
-  .input-search::placeholder,
-  input::placeholder,
-  textarea::placeholder {
-    color: #64748b !important;
-  }
-
-  /* Interactive Chips & Filter Buttons */
-  .chip {
-    background-color: #1a1b26 !important;
-    color: #e2e8f0 !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-  }
-
-  .chip:hover {
-    background-color: #222332 !important;
-    color: #ff8833 !important;
-  }
-
-  /* Header & Footer */
-  header {
-    background-color: rgba(13, 14, 20, 0.92) !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-  }
-
-  footer {
-    background-color: #090a0e !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-  }
-
-  /* Dialogs and modals */
-  dialog {
-    background-color: #161722 !important;
-    color: #f1f5f9 !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
   }
 }
 
