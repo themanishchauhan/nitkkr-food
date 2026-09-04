@@ -19,8 +19,15 @@ const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 
-const heroTitle = settingsObj.homepage_title || 'Stop Asking “Bhai, Menu Bhej.”';
-const heroTagline = settingsObj.homepage_tagline || 'Find campus food, menus and prices in seconds.';
+const rawTitle = settingsObj.homepage_title;
+const heroTitle = (!rawTitle || rawTitle.includes('Hungry? We got you') || rawTitle === 'Find Food. See the Menu.')
+  ? 'Stop Asking “Bhai, Menu Bhej.”'
+  : rawTitle;
+
+const rawTagline = settingsObj.homepage_tagline;
+const heroTagline = (!rawTagline || rawTagline.includes('Explore campus') || rawTagline.includes('Search 20+') || rawTagline.includes('Discover campus food spots'))
+  ? 'Find campus food, menus and prices in seconds.'
+  : rawTagline;
 const bannerEnabled = settingsObj.announcement_banner_enabled === 'true';
 const bannerText = settingsObj.announcement_banner_text || '';
 const bannerType = settingsObj.announcement_banner_type || 'info';
@@ -73,7 +80,7 @@ if (settingsObj.vibe_chips_json) {
 }
 ---
 
-<Layout title="Orandus - Stop Asking “Bhai, Menu Bhej.”" description="Find campus food, menus and prices in seconds.">
+<Layout title="Orandus - Food Spots & Menus" description="Find campus food, menus and prices in seconds.">
 
   <section class="min-h-screen bg-gradient-to-b from-nitkkr-cream via-amber-50/20 to-white pb-20">
     <div class="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-6 sm:space-y-7">
