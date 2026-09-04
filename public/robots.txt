@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nitkkr-food.pages.dev/sitemap-index.xml
+Sitemap: https://orandus.manishchouhan770.workers.dev/sitemap-index.xml
