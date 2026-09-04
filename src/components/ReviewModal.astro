@@ -111,20 +111,68 @@ const reviewsData = vendorReviews || stallReviews || [];
           ></textarea>
         </div>
 
+        <div>
+          <label class="block text-xs font-bold text-slate-900 mb-1">Dish Photo (Optional)</label>
+          <div class="flex items-center gap-2">
+            <!-- Hidden File Input -->
+            <input
+              type="file"
+              x-ref="photoInput"
+              @change="handlePhotoSelect($event)"
+              accept="image/*"
+              capture="environment"
+              class="hidden"
+            />
+            <!-- Upload Trigger Button -->
+            <button
+              type="button"
+              @click="$refs.photoInput.click()"
+              class="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-300/80 rounded-xl text-xs font-bold text-amber-900 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-2xs"
+            >
+              <span>📷</span>
+              <span x-text="photoData ? 'Change Photo' : 'Attach Photo'"></span>
+            </button>
+            <span x-show="compressingPhoto" class="text-[11px] text-amber-700 animate-pulse font-medium">Optimizing photo...</span>
+          </div>
+
+          <!-- Photo Preview Thumbnail with Remove button -->
+          <template x-if="photoData">
+            <div class="mt-2.5 relative inline-block group">
+              <img
+                :src="photoData"
+                alt="Uploaded dish preview"
+                class="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-2xl border-2 border-amber-400 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                @click="zoomedPhoto = photoData"
+                title="Tap to view preview"
+              />
+              <button
+                type="button"
+                @click="removePhoto()"
+                class="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-rose-600 text-white text-xs font-bold flex items-center justify-center shadow-md hover:bg-rose-700 active:scale-90 transition-all cursor-pointer"
+                title="Remove photo"
+                aria-label="Remove photo"
+              >
+                ✕
+              </button>
+              <span class="block text-[10px] text-slate-500 mt-1 truncate max-w-[120px]" x-text="photoName || 'Dish Photo'"></span>
+            </div>
+          </template>
+        </div>
+
         <template x-if="error">
           <p class="text-xs font-bold text-rose-600 bg-rose-50 p-2.5 rounded-xl border border-rose-200" x-text="error"></p>
         </template>
 
         <template x-if="submitted">
           <p class="text-xs font-bold text-emerald-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
-            🎉 Thank you! Your rating has been published.
+            🎉 Thank you! Your review & photo have been published.
           </p>
         </template>
 
         <div class="pt-2">
           <button
             type="submit"
-            :disabled="loading || submitted"
+            :disabled="loading || submitted || compressingPhoto"
             class="w-full py-3 bg-bistro-500 hover:bg-bistro-600 text-white rounded-xl font-bold text-xs shadow-md shadow-bistro-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <span x-show="!loading">Submit Review ⭐</span>
@@ -151,7 +199,7 @@ const reviewsData = vendorReviews || stallReviews || [];
       </template>
 
       <template x-for="rev in filteredReviews" :key="rev.id">
-        <div class="p-3.5 rounded-2xl bg-bistro-50/60 border border-bistro-200/50 space-y-1.5">
+        <div class="p-3.5 rounded-2xl bg-bistro-50/60 border border-bistro-200/50 space-y-2">
           <div class="flex items-center justify-between">
             <span class="font-bold text-xs text-slate-900" x-text="rev.studentName"></span>
             <div class="flex items-center gap-0.5 text-amber-500 text-xs">
@@ -161,8 +209,46 @@ const reviewsData = vendorReviews || stallReviews || [];
             </div>
           </div>
           <p class="text-xs text-slate-600 leading-relaxed" x-text="rev.comment || ('Rated ' + rev.rating + '/5 stars')"></p>
+          
+          <!-- Dish Photo Thumbnail -->
+          <template x-if="rev.photoUrl">
+            <div class="pt-1">
+              <img
+                :src="rev.photoUrl"
+                alt="Student dish photo"
+                class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border border-slate-200 shadow-2xs hover:scale-105 transition-transform cursor-pointer"
+                @click="zoomedPhoto = rev.photoUrl"
+                title="Tap to enlarge photo"
+              />
+            </div>
+          </template>
         </div>
       </template>
+    </div>
+  </div>
+
+  <!-- 🔍 Fullscreen Zoom Lightbox Modal -->
+  <div
+    x-show="zoomedPhoto"
+    x-cloak
+    class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+    @click.self="zoomedPhoto = null"
+    @keydown.escape.window="zoomedPhoto = null"
+  >
+    <div class="relative max-w-lg w-full max-h-[90vh] flex flex-col items-center">
+      <button
+        type="button"
+        @click="zoomedPhoto = null"
+        class="absolute -top-10 right-0 text-white hover:text-amber-400 font-bold text-sm p-1.5 cursor-pointer flex items-center gap-1 transition-colors"
+      >
+        <span>✕ Close</span>
+      </button>
+      <img
+        :src="zoomedPhoto"
+        alt="Full Dish Photo"
+        class="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-white/20"
+        @click.stop
+      />
     </div>
   </div>
 </div>
@@ -177,6 +263,10 @@ const reviewsData = vendorReviews || stallReviews || [];
       studentName: '',
       rating: 0,
       comment: '',
+      photoData: null,
+      photoName: '',
+      compressingPhoto: false,
+      zoomedPhoto: null,
       loading: false,
       submitted: false,
       error: '',
@@ -190,6 +280,10 @@ const reviewsData = vendorReviews || stallReviews || [];
           this.activeTab = e.detail?.mode || 'write';
           this.rating = e.detail?.initialRating || 0;
           this.comment = '';
+          this.photoData = null;
+          this.photoName = '';
+          this.compressingPhoto = false;
+          this.zoomedPhoto = null;
           this.studentName = localStorage.getItem('student_name') || '';
           this.submitted = false;
           this.error = '';
@@ -208,6 +302,60 @@ const reviewsData = vendorReviews || stallReviews || [];
             } catch (err) {}
           }
         });
+      },
+
+      handlePhotoSelect(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+          this.error = 'Please select a valid image file (JPG, PNG, WebP)';
+          return;
+        }
+        this.compressingPhoto = true;
+        this.photoName = file.name;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              const maxDim = 800; // Optimal 800px for retina crispness & ~50-80KB size
+              if (width > maxDim || height > maxDim) {
+                if (width > height) {
+                  height = Math.round((height * maxDim) / width);
+                  width = maxDim;
+                } else {
+                  width = Math.round((width * maxDim) / height);
+                  height = maxDim;
+                }
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              // Export as JPEG with 0.75 quality
+              this.photoData = canvas.toDataURL('image/jpeg', 0.75);
+            } catch (err) {
+              this.photoData = event.target.result;
+            } finally {
+              this.compressingPhoto = false;
+            }
+          };
+          img.onerror = () => {
+            this.compressingPhoto = false;
+            this.error = 'Could not load image';
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      },
+
+      removePhoto() {
+        this.photoData = null;
+        this.photoName = '';
+        if (this.$refs.photoInput) this.$refs.photoInput.value = '';
       },
 
       get filteredReviews() {
@@ -239,7 +387,8 @@ const reviewsData = vendorReviews || stallReviews || [];
               menuItemId: this.itemId,
               studentName: this.studentName.trim(),
               rating: this.rating,
-              comment: this.comment.trim() || undefined
+              comment: this.comment.trim() || undefined,
+              photoUrl: this.photoData || undefined,
             })
           });
 
@@ -259,6 +408,8 @@ const reviewsData = vendorReviews || stallReviews || [];
             window.dispatchEvent(new CustomEvent('review-updated', { detail: { menuItemId: this.itemId, rating: this.rating } }));
             setTimeout(() => {
               this.submitted = false;
+              this.photoData = null;
+              this.photoName = '';
               this.activeTab = 'read';
             }, 1000);
           } else {

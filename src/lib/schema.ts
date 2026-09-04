@@ -48,6 +48,7 @@ export const reviews = sqliteTable('reviews', {
   studentName: text('student_name').notNull(),
   rating: integer('rating').notNull(),
   comment: text('comment'),
+  photoUrl: text('photo_url'),
   createdAt: text('created_at').default('CURRENT_TIMESTAMP').notNull(),
 });
 

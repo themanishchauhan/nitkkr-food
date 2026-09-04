@@ -21,6 +21,7 @@ const initialMenuItems = await getMenuItemsByVendor(21);
       selectedRating: '',
       search: '',
       toastMsg: '',
+      previewPhoto: null,
 
       async init() {
         await this.loadAll();
@@ -211,6 +212,20 @@ const initialMenuItems = await getMenuItemsByVendor(21);
                   </div>
 
                   <p class="text-xs text-slate-700 italic bg-nitkkr-cream/40 p-3 rounded-2xl border border-nitkkr-orange/15 leading-relaxed" x-text="'“' + (r.comment || 'Great taste!') + '”'"></p>
+
+                  <!-- Review Photo Thumbnail (if attached) -->
+                  <template x-if="r.photoUrl">
+                    <div class="mt-2.5 flex items-center gap-2 pt-1">
+                      <img
+                        :src="r.photoUrl"
+                        alt="Dish Photo"
+                        class="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-xl border border-amber-300 shadow-2xs hover:scale-105 transition-transform cursor-pointer"
+                        @click="previewPhoto = r.photoUrl"
+                        title="Click to zoom dish photo"
+                      />
+                      <span class="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">📷 Dish Photo Attached</span>
+                    </div>
+                  </template>
                 </div>
 
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
@@ -226,4 +241,29 @@ const initialMenuItems = await getMenuItemsByVendor(21);
 
     </div>
   </section>
+
+  <!-- 🔍 Admin Lightbox Modal -->
+  <div
+    x-show="previewPhoto"
+    x-cloak
+    class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+    @click.self="previewPhoto = null"
+    @keydown.escape.window="previewPhoto = null"
+  >
+    <div class="relative max-w-lg w-full max-h-[90vh] flex flex-col items-center">
+      <button
+        type="button"
+        @click="previewPhoto = null"
+        class="absolute -top-10 right-0 text-white hover:text-amber-400 font-bold text-sm p-1.5 cursor-pointer flex items-center gap-1 transition-colors"
+      >
+        <span>✕ Close</span>
+      </button>
+      <img
+        :src="previewPhoto"
+        alt="Enlarged Dish Photo"
+        class="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-white/20"
+        @click.stop
+      />
+    </div>
+  </div>
 </Layout>

@@ -38,6 +38,7 @@ export const GET: APIRoute = async ({ url }) => {
       studentName: schema.reviews.studentName,
       rating: schema.reviews.rating,
       comment: schema.reviews.comment,
+      photoUrl: schema.reviews.photoUrl,
       createdAt: schema.reviews.createdAt,
       dishName: schema.menuItems.name,
       stallName: schema.vendors.name,
@@ -77,7 +78,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const body = await request.json();
-    const { menuItemId, studentName, rating, comment } = body;
+    const { menuItemId, studentName, rating, comment, photoUrl, photo } = body;
 
     if (!menuItemId || isNaN(parseInt(menuItemId, 10))) {
       return new Response(JSON.stringify({ error: 'Valid menuItemId is required' }), {
@@ -104,6 +105,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
+    const rawPhoto = photoUrl || photo;
+    let cleanPhotoUrl: string | null = null;
+    if (typeof rawPhoto === 'string' && rawPhoto.trim()) {
+      const trimmed = rawPhoto.trim();
+      // Allow data:image/... base64 (up to 700KB) or valid http/https URLs
+      if ((trimmed.startsWith('data:image/') || trimmed.startsWith('https://') || trimmed.startsWith('http://')) && trimmed.length <= 700000) {
+        cleanPhotoUrl = trimmed;
+      }
+    }
+
     const db = locals.db || createDb();
 
     // Check if review by this student already exists for this dish
@@ -125,6 +136,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         .set({
           rating: parsedRating,
           comment: cleanComment,
+          photoUrl: cleanPhotoUrl !== null ? cleanPhotoUrl : undefined,
           createdAt: new Date().toISOString()
         })
         .where(eq(schema.reviews.id, existingId));
@@ -135,6 +147,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         studentName: cleanedName,
         rating: parsedRating,
         comment: cleanComment,
+        photoUrl: cleanPhotoUrl,
         createdAt: new Date().toISOString()
       };
     } else {
@@ -144,6 +157,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         studentName: cleanedName,
         rating: parsedRating,
         comment: typeof comment === 'string' && comment.trim() ? comment.trim().slice(0, 500) : undefined,
+        photoUrl: cleanPhotoUrl || undefined,
       }, db);
     }
 

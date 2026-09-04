@@ -82,9 +82,14 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
         student_name TEXT NOT NULL,
         rating INTEGER NOT NULL,
         comment TEXT,
+        photo_url TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL
       )
     `).run();
+
+    try {
+      await d1.prepare(`ALTER TABLE reviews ADD COLUMN photo_url TEXT`).run();
+    } catch (e) {}
 
     await d1.prepare(`
       CREATE TABLE IF NOT EXISTS site_settings (
@@ -991,6 +996,7 @@ export async function getAllMenuItemsForSearch() {
         rating: schema.reviews.rating,
         studentName: schema.reviews.studentName,
         comment: schema.reviews.comment,
+        photoUrl: schema.reviews.photoUrl,
         createdAt: schema.reviews.createdAt
       }).from(schema.reviews);
 
@@ -1056,6 +1062,7 @@ export async function getAllMenuItemsForSearch() {
         rating: schema.reviews.rating,
         studentName: schema.reviews.studentName,
         comment: schema.reviews.comment,
+        photoUrl: schema.reviews.photoUrl,
         createdAt: schema.reviews.createdAt
       }).from(schema.reviews);
 
@@ -1664,6 +1671,7 @@ export async function createReview(data: {
   studentName: string;
   rating: number;
   comment?: string;
+  photoUrl?: string;
 }, dbInstance?: any) {
   try {
     const db = dbInstance || createDb();
@@ -1672,6 +1680,7 @@ export async function createReview(data: {
       studentName: data.studentName.trim(),
       rating: data.rating,
       comment: data.comment?.trim() || null,
+      photoUrl: data.photoUrl || null,
     } as any).returning();
     if (Array.isArray(result) && result.length > 0) return result[0];
     return result || {
@@ -1680,6 +1689,7 @@ export async function createReview(data: {
       studentName: data.studentName.trim(),
       rating: data.rating,
       comment: data.comment?.trim() || null,
+      photoUrl: data.photoUrl || null,
       createdAt: new Date().toISOString()
     };
   } catch (error) {
@@ -1690,6 +1700,7 @@ export async function createReview(data: {
       studentName: data.studentName.trim(),
       rating: data.rating,
       comment: data.comment?.trim() || null,
+      photoUrl: data.photoUrl || null,
       createdAt: new Date().toISOString()
     };
   }
@@ -1720,6 +1731,7 @@ export async function getReviewsByVendor(vendorId: number) {
       studentName: schema.reviews.studentName,
       rating: schema.reviews.rating,
       comment: schema.reviews.comment,
+      photoUrl: schema.reviews.photoUrl,
       createdAt: schema.reviews.createdAt,
       menuItemName: schema.menuItems.name,
     })
@@ -1753,6 +1765,7 @@ export async function getAllReviews() {
       studentName: schema.reviews.studentName,
       rating: schema.reviews.rating,
       comment: schema.reviews.comment,
+      photoUrl: schema.reviews.photoUrl,
       createdAt: schema.reviews.createdAt,
       menuItemName: schema.menuItems.name,
       vendorName: schema.vendors.name,
