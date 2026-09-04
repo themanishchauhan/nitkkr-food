@@ -13,7 +13,7 @@ config({ path: '.dev.vars' });
 const isProduction = process.env.NODE_ENV === 'production';
 
 export default defineConfig({
-  site: process.env.SITE_URL || 'https://orandus.manishchouhan770.workers.dev',
+  site: process.env.SITE_URL || 'https://orandus.pages.dev',
   devToolbar: {
     enabled: false,
   },

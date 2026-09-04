@@ -13,7 +13,7 @@ const {
   ogUrl = Astro.url.href,
 } = Astro.props;
 
-const siteBase = Astro.url.origin || Astro.site || 'https://orandus.manishchouhan770.workers.dev';
+const siteBase = Astro.url.origin || Astro.site || 'https://orandus.pages.dev';
 const canonicalURL = new URL(Astro.url.pathname, siteBase);
 const resolvedOgImage = ogImage.startsWith('http') ? ogImage : new URL(ogImage, siteBase).href;
 
