@@ -73,6 +73,102 @@ export function isVendorOpen(opensAt: string | null | undefined, closesAt: strin
   return true;
 }
 
+export interface VendorTimingStatus {
+  isOpen: boolean;
+  statusText: string;
+  isUrgent: boolean;
+}
+
+/**
+ * Compute dynamic human-friendly timing status:
+ * - "Hurry up, closing soon" (if <= 45m left)
+ * - "Open until 11:30 PM" (when open normally)
+ * - "Opens in an hour" (if <= 60m until opening)
+ * - "Opens at 8:00 AM" (when closed)
+ */
+export function getVendorTimingStatus(
+  opensAt: string | null | undefined,
+  closesAt: string | null | undefined,
+  now?: Date
+): VendorTimingStatus {
+  if (!opensAt || !closesAt) {
+    return { isOpen: true, statusText: 'Open Today', isUrgent: false };
+  }
+
+  const currentDate = now || new Date();
+  // Compute IST minutes accurately
+  const utcMinutes = currentDate.getUTCHours() * 60 + currentDate.getUTCMinutes() + 330;
+  const currentTotal = (utcMinutes % 1440 + 1440) % 1440;
+
+  const [openH, openM] = opensAt.split(':').map(Number);
+  const [closeH, closeM] = closesAt.split(':').map(Number);
+
+  if (isNaN(openH) || isNaN(openM) || isNaN(closeH) || isNaN(closeM)) {
+    return { isOpen: true, statusText: 'Open Today', isUrgent: false };
+  }
+
+  const openTotal = openH * 60 + openM;
+  const closeTotal = closeH * 60 + closeM;
+  const openTimeFormatted = formatTime12h(opensAt);
+  const closeTimeFormatted = formatTime12h(closesAt);
+
+  // Normal same-day hours (e.g., 08:00 to 23:00)
+  if (openTotal < closeTotal) {
+    const isOpen = currentTotal >= openTotal && currentTotal < closeTotal;
+
+    if (isOpen) {
+      const minutesUntilClose = closeTotal - currentTotal;
+      if (minutesUntilClose <= 45) {
+        return { isOpen: true, statusText: 'Hurry up, closing soon', isUrgent: true };
+      }
+      if (minutesUntilClose <= 75) {
+        return { isOpen: true, statusText: 'Closes in ~1 hour', isUrgent: true };
+      }
+      return { isOpen: true, statusText: `Until ${closeTimeFormatted}`, isUrgent: false };
+    } else {
+      let minutesUntilOpen: number;
+      if (currentTotal < openTotal) {
+        minutesUntilOpen = openTotal - currentTotal;
+      } else {
+        minutesUntilOpen = (1440 - currentTotal) + openTotal;
+      }
+
+      if (minutesUntilOpen <= 60) {
+        return { isOpen: false, statusText: 'Opens in an hour', isUrgent: false };
+      }
+      return { isOpen: false, statusText: `Opens at ${openTimeFormatted}`, isUrgent: false };
+    }
+  }
+
+  // Overnight hours (e.g., 18:00 to 02:00 next day)
+  if (openTotal > closeTotal) {
+    const isOpen = currentTotal >= openTotal || currentTotal < closeTotal;
+
+    if (isOpen) {
+      const minutesUntilClose = currentTotal >= openTotal
+        ? (1440 - currentTotal) + closeTotal
+        : closeTotal - currentTotal;
+
+      if (minutesUntilClose <= 45) {
+        return { isOpen: true, statusText: 'Hurry up, closing soon', isUrgent: true };
+      }
+      if (minutesUntilClose <= 75) {
+        return { isOpen: true, statusText: 'Closes in ~1 hour', isUrgent: true };
+      }
+      return { isOpen: true, statusText: `Until ${closeTimeFormatted}`, isUrgent: false };
+    } else {
+      const minutesUntilOpen = openTotal - currentTotal;
+      if (minutesUntilOpen <= 60) {
+        return { isOpen: false, statusText: 'Opens in an hour', isUrgent: false };
+      }
+      return { isOpen: false, statusText: `Opens at ${openTimeFormatted}`, isUrgent: false };
+    }
+  }
+
+  // 24 hours open
+  return { isOpen: true, statusText: 'Open 24 Hours', isUrgent: false };
+}
+
 /**
  * Format price in Indian Rupee format
  */

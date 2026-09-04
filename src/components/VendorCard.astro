@@ -1,5 +1,5 @@
 ---
-import { formatOperatingHours } from '../lib/utils';
+import { getVendorTimingStatus } from '../lib/utils';
 
 interface Props {
   vendor: {
@@ -15,8 +15,8 @@ interface Props {
   isOpen?: boolean;
 }
 
-const { vendor, isOpen = false } = Astro.props;
-const formattedHours = formatOperatingHours(vendor.opensAt, vendor.closesAt);
+const { vendor } = Astro.props;
+const timing = getVendorTimingStatus(vendor.opensAt, vendor.closesAt);
 ---
 
 <a
@@ -36,17 +36,18 @@ const formattedHours = formatOperatingHours(vendor.opensAt, vendor.closesAt);
     </div>
     <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
       <span
-        class={`w-2 h-2 rounded-full flex-shrink-0 ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}
+        class={`w-2 h-2 rounded-full flex-shrink-0 ${timing.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}
         aria-hidden="true"
       ></span>
-      <span class="truncate font-medium">{isOpen ? 'Open Now' : 'Closed'} • {formattedHours}</span>
+      <span class={`truncate font-medium ${timing.isUrgent ? 'text-amber-600 font-semibold' : 'text-slate-500'}`}>
+        {timing.statusText}
+      </span>
     </p>
   </div>
-  <!-- Modern Interactive Action Pill (Replaces redundant 'From ₹12' price) -->
-  <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/80 font-bold text-xs group-hover:bg-nitkkr-orange group-hover:text-white group-hover:border-nitkkr-orange transition-all shadow-2xs flex-shrink-0">
-    <svg class="w-3.5 h-3.5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+  <!-- Sleek navigation indicator (Removes repetitive menu icon) -->
+  <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-nitkkr-orange group-hover:translate-x-0.5 transition-all flex-shrink-0 border border-slate-100/80">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
     </svg>
-    <span>Menu</span>
-  </span>
+  </div>
 </a>
