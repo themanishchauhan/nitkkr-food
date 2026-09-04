@@ -19,8 +19,8 @@ const settings = await getAllSiteSettings();
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 
-const heroTitle = settingsObj.homepage_title || 'Find Food. See the Menu.';
-const heroTagline = settingsObj.homepage_tagline || 'Discover campus food spots, menus, prices and locations in one place.';
+const heroTitle = settingsObj.homepage_title || 'Stop Asking “Bhai, Menu Bhej.”';
+const heroTagline = settingsObj.homepage_tagline || 'Find campus food, menus and prices in seconds.';
 const bannerEnabled = settingsObj.announcement_banner_enabled === 'true';
 const bannerText = settingsObj.announcement_banner_text || '';
 const bannerType = settingsObj.announcement_banner_type || 'info';
@@ -73,7 +73,7 @@ if (settingsObj.vibe_chips_json) {
 }
 ---
 
-<Layout title="Orandus - Find Food. See the Menu." description="Discover campus food spots, menus, prices and locations in one place.">
+<Layout title="Orandus - Stop Asking “Bhai, Menu Bhej.”" description="Find campus food, menus and prices in seconds.">
 
   <section class="min-h-screen bg-gradient-to-b from-nitkkr-cream via-amber-50/20 to-white pb-20">
     <div class="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-6 sm:space-y-7">
@@ -95,12 +95,6 @@ if (settingsObj.vibe_chips_json) {
 
       <!-- Clean Hero Section with Generous Breathing Room -->
       <div class="text-center space-y-2.5 pt-2 sm:pt-4">
-        <!-- Launch Campaign Badge -->
-        <div class="inline-flex items-center gap-1.5 px-3.5 py-1 bg-amber-50 border border-amber-200/80 rounded-full text-xs font-bold text-amber-900 shadow-2xs">
-          <span>💬</span>
-          <span>"Bhai, menu bhej?" There's an easier way now.</span>
-        </div>
-
         <h1 class="font-display text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
           {heroTitle}
         </h1>
