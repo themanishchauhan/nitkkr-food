@@ -7,6 +7,7 @@ interface Props {
   vendorWhatsAppLink?: string;
   showWhatsApp?: boolean;
   whatsAppLabel?: string;
+  googleMapsUrl?: string;
   shareUrl?: string;
   shareTitle?: string;
   shareText?: string;
@@ -20,6 +21,7 @@ const {
   vendorWhatsAppLink = '#',
   showWhatsApp = false,
   whatsAppLabel = 'Order on WhatsApp',
+  googleMapsUrl = '#',
   shareUrl = '',
   shareTitle = 'Orandus',
   shareText = 'Check out this menu on Orandus'
@@ -448,6 +450,20 @@ const {
           <span class="text-base">🔗</span>
           <span>Share</span>
         </button>
+
+        <!-- 3. 📍 Google Maps Location Button -->
+        {googleMapsUrl && googleMapsUrl !== '#' && (
+          <a
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-10 h-10 sm:w-11 sm:h-11 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl flex items-center justify-center transition-all cursor-pointer border border-slate-200/60 shadow-2xs flex-shrink-0"
+            aria-label="Open vendor on Google Maps"
+            title="Open on Google Maps"
+          >
+            <span class="text-base sm:text-lg">📍</span>
+          </a>
+        )}
 
         {showWhatsApp && (
           <a
