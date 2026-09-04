@@ -9,7 +9,7 @@ export const CHEF_ON_FOOD_JUNCTION_VENDOR = {
   longitude: '76.8818',
   opensAt: '10:30',
   closesAt: '22:00',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel', 'Boys Hostel'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

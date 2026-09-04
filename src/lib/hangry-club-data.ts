@@ -9,7 +9,7 @@ export const HANGRY_CLUB_VENDOR = {
   longitude: '76.8814',
   opensAt: '12:30',
   closesAt: '22:30',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

@@ -9,7 +9,7 @@ export const ASHU_FAST_FOOD_VENDOR = {
   longitude: '76.8814',
   opensAt: '10:00',
   closesAt: '02:00',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel', 'Boys Hostel', 'Hostel Delivery'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

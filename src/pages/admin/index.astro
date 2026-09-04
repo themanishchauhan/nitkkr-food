@@ -52,7 +52,7 @@ const initialSettingsObj = initialSettingsList.reduce((acc: any, s: any) => { if
         address: '',
         opensAt: '09:00',
         closesAt: '23:00',
-        deliversTo: 'Hostels, Academic Block',
+        deliversTo: 'NITKKR campus all',
         image: '',
         isActive: true,
         isFeatured: false
@@ -163,7 +163,7 @@ const initialSettingsObj = initialSettingsList.reduce((acc: any, s: any) => { if
               slug: this.newStall.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
             });
             this.showAddStallModal = false;
-            this.newStall = { name: '', phone: '', whatsapp: '', address: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels, Academic Block', image: '', isActive: true, isFeatured: false };
+            this.newStall = { name: '', phone: '', whatsapp: '', address: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'NITKKR campus all', image: '', isActive: true, isFeatured: false };
             this.showToast('✅ New vendor created successfully!');
           } else {
             const err = await res.json().catch(() => ({}));

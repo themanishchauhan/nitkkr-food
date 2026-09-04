@@ -9,7 +9,7 @@ export const BAKERS_BITE_KKR_VENDOR = {
   longitude: '76.8820',
   opensAt: '10:00',
   closesAt: '21:30',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel', 'Boys Hostel', 'Kurukshetra City'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

@@ -9,7 +9,7 @@ export const CAFE_AROMA_VENDOR = {
   longitude: '76.8824',
   opensAt: '10:00',
   closesAt: '23:00',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel', 'Boys Hostel', 'Kirmach Road', 'Hostel Delivery'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

@@ -9,7 +9,7 @@ export const ANTY_JI_TEA_STALL_VENDOR = {
   longitude: '76.8818',
   opensAt: '07:00',
   closesAt: '22:00',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel', 'Boys Hostel', 'Hostel Delivery'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

@@ -41,6 +41,11 @@ const {
       menuItems: Array.isArray(initialMenuItems) ? initialMenuItems : [],
       selectedItem: null,
       showDetailModal: false,
+      displayLimit: 20,
+
+      loadMore() {
+        this.displayLimit += 20;
+      },
 
       get totalCount() {
         return this.menuItems.length;
@@ -96,6 +101,10 @@ const {
         const list = this.searchedItems;
         if (this.activeCat === 'all') return list;
         return list.filter(i => (i.categorySlug === this.activeCat || i.categoryId === this.activeCat));
+      },
+
+      get visibleItems() {
+        return this.displayedItems.slice(0, this.displayLimit);
       },
 
       get visibleCategories() {
@@ -167,7 +176,7 @@ const {
   <!-- Horizontal Category Tabs -->
   <div class="flex gap-2 overflow-x-auto pb-3 mb-5 px-4 sm:px-0 scrollbar-none" role="tablist" aria-label="Menu categories">
     <button
-      @click="activeCat='all'"
+      @click="activeCat='all'; displayLimit = 20"
       :class="activeCat==='all' ? 'bg-nitkkr-orange text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 font-medium'"
       class="px-4 py-2 rounded-full text-xs whitespace-nowrap transition-all duration-200 cursor-pointer"
       role="tab"
@@ -177,7 +186,7 @@ const {
     </button>
     <template x-for="cat in visibleCategories" :key="cat.slug">
       <button
-        @click="activeCat=cat.slug"
+        @click="activeCat=cat.slug; displayLimit = 20"
         :class="activeCat===cat.slug ? 'bg-nitkkr-orange text-white shadow-sm font-bold' : 'bg-white text-nitkkr-dark border border-nitkkr-orange/30 font-medium'"
         class="px-4 py-2 rounded-full text-xs whitespace-nowrap transition-all duration-200 cursor-pointer flex items-center gap-1.5"
         role="tab"
@@ -192,7 +201,7 @@ const {
 
   <!-- Minimalist & Clutter-Free Menu Items List -->
   <div class="space-y-2.5 pb-28">
-    <template x-for="item in displayedItems" :key="item.id">
+    <template x-for="item in visibleItems" :key="item.id">
       <div
         x-transition:enter="transition ease-out duration-150"
         x-transition:enter-start="opacity-0 transform scale-98"
@@ -255,6 +264,20 @@ const {
         </div>
       </div>
     </template>
+
+    <!-- Load More Pagination Button -->
+    <template x-if="displayedItems.length > visibleItems.length">
+      <div class="text-center pt-3 pb-2">
+        <p class="text-[11px] font-semibold text-slate-400 mb-2" x-text="`Showing ${visibleItems.length} of ${displayedItems.length} dishes`"></p>
+        <button
+          type="button"
+          @click="loadMore()"
+          class="px-6 py-2.5 bg-white border border-slate-200 hover:border-nitkkr-orange hover:text-nitkkr-orange text-slate-800 font-bold text-xs rounded-2xl shadow-xs transition-all active:scale-95 cursor-pointer"
+        >
+          Load Next 20 Dishes ↓
+        </button>
+      </div>
+    </template>
   </div>
 
   <!-- Empty Search / Category State -->
@@ -269,7 +292,7 @@ const {
     <button
       type="button"
       x-show="searchQuery.trim() || activeCat !== 'all'"
-      @click="searchQuery = ''; searchExpanded = false; activeCat = 'all'"
+      @click="searchQuery = ''; searchExpanded = false; activeCat = 'all'; displayLimit = 20"
       class="mt-3 px-4 py-1.5 bg-nitkkr-orange/10 hover:bg-nitkkr-orange/20 text-nitkkr-orange text-xs font-bold rounded-xl transition-colors cursor-pointer"
     >
       Reset Filters
@@ -476,8 +499,8 @@ const {
             x-model="searchQuery"
             placeholder="Search dishes (e.g. maggi, chai)..."
             class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-slate-100 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20 transition-all"
-            aria-label="Search dishes in menu"
-            @keydown.escape="searchQuery = ''; searchExpanded = false"
+            @input="displayLimit = 20"
+            @keydown.escape="searchQuery = ''; searchExpanded = false; displayLimit = 20"
           />
           <button
             type="button"

@@ -9,7 +9,7 @@ export const RAHUL_FAST_FOOD_VENDOR = {
   longitude: '76.8811',
   opensAt: '12:00',
   closesAt: '02:00',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

@@ -9,7 +9,7 @@ export const THE_SPICE_CHAMBER_VENDOR = {
   longitude: '76.8830',
   opensAt: '12:00',
   closesAt: '22:30',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel', 'Boys Hostel', 'Kirmach Road', 'Campus Hostels'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

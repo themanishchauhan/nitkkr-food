@@ -9,7 +9,7 @@ export const YUMMY_TUMMY_FOODS_VENDOR = {
   longitude: '76.8824',
   opensAt: '08:00',
   closesAt: '23:30',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel', 'Boys Hostel', 'Hostel Delivery', 'Kirmach Road'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

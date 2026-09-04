@@ -9,7 +9,7 @@ export const FOOD_POINT_VENDOR = {
   longitude: '76.8810',
   opensAt: '12:00',
   closesAt: '02:00',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

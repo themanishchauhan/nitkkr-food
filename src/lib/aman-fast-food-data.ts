@@ -9,7 +9,7 @@ export const AMAN_FAST_FOOD_VENDOR = {
   longitude: '76.8821',
   opensAt: '08:00',
   closesAt: '23:00',
-  deliversTo: ['NIT Main Gate', 'NIT Back Gate', 'Girls Hostel', 'Boys Hostel', 'Hostel Delivery', 'Right Lane NIT Gate'],
+  deliversTo: ['NITKKR campus all'],
   image: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,
