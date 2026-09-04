@@ -6,8 +6,8 @@ export const FOOD_CAVE_VENDOR = {
   whatsapp: '9896475885',
   address: 'NIT Gate-2, Kirmach Road, Kurukshetra',
 
-  latitude: '29.9662',
-  longitude: '76.8808',
+  latitude: '29.944728850615977',
+  longitude: '76.82157470184504',
   opensAt: '09:00',
   closesAt: '23:30',
   deliversTo: ['NITKKR campus all'],
