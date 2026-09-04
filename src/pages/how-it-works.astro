@@ -10,8 +10,8 @@ const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) 
 const isWhatsAppEnabled = settingsObj.whatsapp_ordering_enabled === 'true' && settingsObj.show_whatsapp_button !== 'false';
 const step3Title = settingsObj.how_it_works_step3_title || (isWhatsAppEnabled ? '3. 1-Tap WhatsApp Order' : '3. Call or Visit');
 const step3Desc = settingsObj.how_it_works_step3_desc || (isWhatsAppEnabled 
-  ? 'Tap "Order on WhatsApp" to send a pre-filled message directly to the food spot. Zero commissions, zero middleman markups!' 
-  : 'Call the food spot directly to check availability or walk up with exact dishes and prices ready. Zero commissions, zero markups!');
+  ? 'Tap "Order on WhatsApp" to send a pre-filled message directly to the food spot.' 
+  : 'Call the food spot to check availability, or visit with the dishes you want in mind.');
 const step3Icon = isWhatsAppEnabled ? '💬' : '📞';
 ---
 
