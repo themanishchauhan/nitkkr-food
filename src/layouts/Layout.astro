@@ -37,7 +37,7 @@ try {
 const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isHomePage = currentPath === '/';
 const isVendorPage = currentPath.startsWith('/v/');
-const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string) || '';
+const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN as string) || '769ece91027a424eae4907f4cd2e6d79';
 ---
 
 <!doctype html>
@@ -76,7 +76,7 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
 
   <!-- 📊 Cloudflare Web Analytics (Privacy-First & Cookie-less) -->
   {cfAnalyticsToken && (
-    <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={`{"token": "${cfAnalyticsToken}"}`}></script>
+    <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={`{"token": "${cfAnalyticsToken}"}`}></script>
   )}
 </head>
 
