@@ -17,6 +17,7 @@ import { AMAN_FAST_FOOD_VENDOR, AMAN_FAST_FOOD_MENU_ITEMS } from '../../../lib/a
 import { YUMMY_TUMMY_FOODS_VENDOR, YUMMY_TUMMY_FOODS_MENU_ITEMS } from '../../../lib/yummy-tummy-foods-data';
 import { PIZZA_KING_VENDOR, PIZZA_KING_MENU_ITEMS } from '../../../lib/pizza-king-data';
 import { MEHFIL_VENDOR, MEHFIL_MENU_ITEMS } from '../../../lib/mehfil-data';
+import { KALU_FOOD_CORNER_VENDOR, KALU_FOOD_CORNER_MENU_ITEMS } from '../../../lib/kalu-food-corner-data';
 import { MOCK_CATEGORIES } from '../../../lib/mock-data';
 
 export const prerender = false;
@@ -59,7 +60,8 @@ export const POST: APIRoute = async ({ locals }) => {
       AMAN_FAST_FOOD_VENDOR,
       YUMMY_TUMMY_FOODS_VENDOR,
       PIZZA_KING_VENDOR,
-      MEHFIL_VENDOR
+      MEHFIL_VENDOR,
+      KALU_FOOD_CORNER_VENDOR
     ];
     for (const vendor of vendorsToSeed) {
       await d1.prepare(`
@@ -102,7 +104,8 @@ export const POST: APIRoute = async ({ locals }) => {
       ...AMAN_FAST_FOOD_MENU_ITEMS,
       ...YUMMY_TUMMY_FOODS_MENU_ITEMS,
       ...PIZZA_KING_MENU_ITEMS,
-      ...MEHFIL_MENU_ITEMS
+      ...MEHFIL_MENU_ITEMS,
+      ...KALU_FOOD_CORNER_MENU_ITEMS
     ];
     const statements: any[] = [];
     for (const item of allMenuItems) {

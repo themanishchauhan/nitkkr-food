@@ -1,6 +1,6 @@
 export const ANTY_JI_TEA_STALL_VENDOR = {
   id: 33,
-  name: 'Anty Ji Tea Stall',
+  name: 'Aunty Ji Tea Stall',
   slug: 'anty-ji-tea-stall',
   phone: '7056688037',
   whatsapp: '7056688037',

@@ -1,6 +1,6 @@
 export const MEHFIL_VENDOR = {
   id: 37,
-  name: 'Mehfil',
+  name: 'Mehfil Restaurant',
   slug: 'mehfil',
   phone: '9896208561',
   whatsapp: '9896208561',
