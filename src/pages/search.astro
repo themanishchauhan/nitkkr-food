@@ -407,7 +407,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           if (slug.includes('hangry')) return this.isVendorOpen('12:30', '22:30');
           if (slug.includes('eat-and-fun') || slug.includes('eat and fun')) return this.isVendorOpen('10:00', '22:00');
           if (slug.includes('suraj')) return this.isVendorOpen('10:00', '23:00');
-          if (slug.includes('apna')) return this.isVendorOpen('09:00', '23:00');
+          if (slug.includes('apna')) return this.isVendorOpen('08:00', '21:00');
           if (slug.includes('food-cave') || slug.includes('food cave')) return this.isVendorOpen('09:00', '23:30');
 
           // 3. Canonical campus vendor timings by name
@@ -417,7 +417,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           if (name.includes('hangry')) return this.isVendorOpen('12:30', '22:30');
           if (name.includes('eat and fun') || name.includes('eat & fun')) return this.isVendorOpen('10:00', '22:00');
           if (name.includes('suraj')) return this.isVendorOpen('10:00', '23:00');
-          if (name.includes('apna')) return this.isVendorOpen('09:00', '23:00');
+          if (name.includes('apna')) return this.isVendorOpen('08:00', '21:00');
           if (name.includes('food cave')) return this.isVendorOpen('09:00', '23:30');
 
           // 4. Lookup from allVendors
