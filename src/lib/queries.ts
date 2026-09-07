@@ -185,8 +185,8 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
           vendor.displayOrder
         ).run();
       } else {
-        await d1.prepare(`UPDATE vendors SET phone = ?, whatsapp = ?, address = ?, latitude = ?, longitude = ?, delivers_to = ?, opens_at = ?, closes_at = ? WHERE id = ? OR slug = ?`)
-          .bind(vendor.phone, vendor.whatsapp, vendor.address, vendor.latitude, vendor.longitude, JSON.stringify(vendor.deliversTo), vendor.opensAt, vendor.closesAt, vendor.id, vendor.slug)
+        await d1.prepare(`UPDATE vendors SET name = ?, phone = ?, whatsapp = ?, address = ?, latitude = ?, longitude = ?, delivers_to = ?, opens_at = ?, closes_at = ? WHERE id = ? OR slug = ?`)
+          .bind(vendor.name, vendor.phone, vendor.whatsapp, vendor.address, vendor.latitude, vendor.longitude, JSON.stringify(vendor.deliversTo), vendor.opensAt, vendor.closesAt, vendor.id, vendor.slug)
           .run();
       }
     }
