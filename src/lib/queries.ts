@@ -16,6 +16,7 @@ import { CAFE_AROMA_VENDOR, CAFE_AROMA_MENU_ITEMS } from './cafe-aroma-data';
 import { ANTY_JI_TEA_STALL_VENDOR, ANTY_JI_TEA_STALL_MENU_ITEMS } from './anty-ji-tea-stall-data';
 import { AMAN_FAST_FOOD_VENDOR, AMAN_FAST_FOOD_MENU_ITEMS } from './aman-fast-food-data';
 import { YUMMY_TUMMY_FOODS_VENDOR, YUMMY_TUMMY_FOODS_MENU_ITEMS } from './yummy-tummy-foods-data';
+import { PIZZA_KING_VENDOR, PIZZA_KING_MENU_ITEMS } from './pizza-king-data';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -149,7 +150,8 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       CAFE_AROMA_VENDOR,
       ANTY_JI_TEA_STALL_VENDOR,
       AMAN_FAST_FOOD_VENDOR,
-      YUMMY_TUMMY_FOODS_VENDOR
+      YUMMY_TUMMY_FOODS_VENDOR,
+      PIZZA_KING_VENDOR
     ];
     for (const vendor of vendorsToSeed) {
       const check = await d1.prepare(`SELECT id FROM vendors WHERE slug = ? OR id = ? LIMIT 1`)
@@ -422,13 +424,23 @@ export async function getVendorBySlug(slug: string) {
       return YUMMY_TUMMY_FOODS_VENDOR;
     }
 
+    if (slug === 'pizza-king' || slug === 'pizza') {
+      const db = getDb();
+      const result = await db.select()
+        .from(schema.vendors)
+        .where(and(eq(schema.vendors.slug, 'pizza-king'), eq(schema.vendors.isActive, true)))
+        .limit(1);
+      if (result && result[0]) return result[0];
+      return PIZZA_KING_VENDOR;
+    }
+
     const db = getDb();
     const result = await db.select()
       .from(schema.vendors)
       .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
       .limit(1);
     if (result && result[0]) return result[0];
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('yummy') && v.slug === 'yummy-tummy-foods') || (slug.startsWith('aman') && v.slug === 'aman-fast-food') || (slug.startsWith('anty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('aunty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('cafe') && v.slug === 'cafe-aroma') || (slug.startsWith('aroma') && v.slug === 'cafe-aroma') || (slug.startsWith('spice') && v.slug === 'the-spice-chamber') || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('pizza') && v.slug === 'pizza-king') || (slug.startsWith('yummy') && v.slug === 'yummy-tummy-foods') || (slug.startsWith('aman') && v.slug === 'aman-fast-food') || (slug.startsWith('anty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('aunty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('cafe') && v.slug === 'cafe-aroma') || (slug.startsWith('aroma') && v.slug === 'cafe-aroma') || (slug.startsWith('spice') && v.slug === 'the-spice-chamber') || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   } catch (e) {
     if (slug === 'food-cave') return FOOD_CAVE_VENDOR;
     if (slug === 'apna-fast-food' || slug === 'apna-fresh-fast-food') return APNA_FAST_FOOD_VENDOR;
@@ -445,7 +457,8 @@ export async function getVendorBySlug(slug: string) {
     if (slug === 'aman-fast-food' || slug === 'aman') return AMAN_FAST_FOOD_VENDOR;
     if (slug === 'anty-ji-tea-stall' || slug === 'anty-ji' || slug === 'aunty-ji' || slug === 'anty-ji-stall') return ANTY_JI_TEA_STALL_VENDOR;
     if (slug === 'yummy-tummy-foods' || slug === 'yummy-tummy' || slug === 'yummy' || slug === 'yummy-tummy-foods-and-guest-house') return YUMMY_TUMMY_FOODS_VENDOR;
-    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('yummy') && v.slug === 'yummy-tummy-foods') || (slug.startsWith('aman') && v.slug === 'aman-fast-food') || (slug.startsWith('anty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('aunty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('cafe') && v.slug === 'cafe-aroma') || (slug.startsWith('aroma') && v.slug === 'cafe-aroma') || (slug.startsWith('spice') && v.slug === 'the-spice-chamber') || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
+    if (slug === 'pizza-king' || slug === 'pizza') return PIZZA_KING_VENDOR;
+    return MOCK_VENDORS.find(v => (v.slug === slug || (slug.startsWith('pizza') && v.slug === 'pizza-king') || (slug.startsWith('yummy') && v.slug === 'yummy-tummy-foods') || (slug.startsWith('aman') && v.slug === 'aman-fast-food') || (slug.startsWith('anty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('aunty') && v.slug === 'anty-ji-tea-stall') || (slug.startsWith('cafe') && v.slug === 'cafe-aroma') || (slug.startsWith('aroma') && v.slug === 'cafe-aroma') || (slug.startsWith('spice') && v.slug === 'the-spice-chamber') || (slug.startsWith('ashu') && v.slug === 'ashu-fast-food') || (slug.startsWith('baker') && v.slug === 'bakers-bite-kkr') || (slug.startsWith('chef') && v.slug === 'chef-on-food-junction') || (slug.startsWith('eat') && v.slug === 'eat-and-fun') || (slug.startsWith('rahul') && v.slug === 'rahul-fast-food') || (slug.startsWith('hangry') && v.slug === 'the-hangry-club') || (slug.startsWith('suraj') && v.slug === 'suraj-restaurant') || (slug.startsWith('apna') && v.slug === 'apna-fast-food')) && v.isActive) || null;
   }
 }
 
@@ -1158,6 +1171,7 @@ export async function getAllMenuItemsForSearch() {
   const { ANTY_JI_TEA_STALL_MENU_ITEMS, ANTY_JI_TEA_STALL_VENDOR } = await import('./anty-ji-tea-stall-data');
   const { AMAN_FAST_FOOD_MENU_ITEMS, AMAN_FAST_FOOD_VENDOR } = await import('./aman-fast-food-data');
   const { YUMMY_TUMMY_FOODS_MENU_ITEMS, YUMMY_TUMMY_FOODS_VENDOR } = await import('./yummy-tummy-foods-data');
+  const { PIZZA_KING_MENU_ITEMS, PIZZA_KING_VENDOR } = await import('./pizza-king-data');
   const { MOCK_CATEGORIES } = await import('./mock-data');
 
   const foodCaveList = FOOD_CAVE_MENU_ITEMS.map((item: any) => {
@@ -1520,6 +1534,30 @@ export async function getAllMenuItemsForSearch() {
     };
   });
 
+  const pizzaKingList = PIZZA_KING_MENU_ITEMS.map((item: any) => {
+    const cat = MOCK_CATEGORIES.find((c: any) => c.id === item.categoryId);
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: (item as any).image || null,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable,
+      tags: item.tags || [],
+      vendorId: PIZZA_KING_VENDOR.id,
+      vendorName: PIZZA_KING_VENDOR.name,
+      vendorSlug: PIZZA_KING_VENDOR.slug,
+      vendorPhone: PIZZA_KING_VENDOR.phone,
+      vendorWhatsApp: PIZZA_KING_VENDOR.whatsapp,
+      vendorOpensAt: PIZZA_KING_VENDOR.opensAt,
+      vendorClosesAt: PIZZA_KING_VENDOR.closesAt,
+      categoryId: item.categoryId,
+      categoryName: cat?.name || 'Fast Food',
+      categorySlug: cat?.slug || 'fast-food',
+    };
+  });
+
   return fairInterleaveByVendor([
     ...foodCaveList, 
     ...apnaList, 
@@ -1535,7 +1573,8 @@ export async function getAllMenuItemsForSearch() {
     ...cafeAromaList,
     ...antyJiList,
     ...amanList,
-    ...yummyTummyList
+    ...yummyTummyList,
+    ...pizzaKingList
   ]);
 }
 
