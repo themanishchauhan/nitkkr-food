@@ -363,7 +363,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 </p>
 
                 <!-- Search Matching Badge if applicable -->
-                <template x-if="query.trim() && getVendorMatchCount(vendor.id) > 0">
+                <template x-if="query.trim() ? (getVendorMatchCount(vendor.id) > 0) : false">
                   <div class="mt-1">
                     <span class="text-[10px] font-bold text-amber-800 bg-amber-50/80 border border-amber-200/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
                       <span>✨</span>
@@ -377,21 +377,20 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             <!-- Bottom Row: Dynamic Timing on Left, Actions (Call, WhatsApp, Shortened Menu) on Right -->
             <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100/90 w-full flex-wrap sm:flex-nowrap">
               <!-- Dynamic Timing Status Pill Badge (Matches visual pill styling from vendor header) -->
+              <!-- Dynamic Timing Status Pill Badge (Matches visual pill styling from vendor header) -->
               <div class="flex items-center min-w-0">
                 <span
                   class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-2xs whitespace-nowrap"
-                  :class="(getVendorTiming(vendor) && getVendorTiming(vendor).isOpen) 
-                    ? ((getVendorTiming(vendor) && getVendorTiming(vendor).isUrgent) ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
-                    : 'bg-slate-100 text-slate-600 border-slate-200'"
+                  :class="getVendorTimingBadgeClass(vendor)"
                 >
                   <span
                     class="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    :class="(getVendorTiming(vendor) && getVendorTiming(vendor).isOpen) ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"
+                    :class="getVendorTimingDotClass(vendor)"
                     aria-hidden="true"
                   ></span>
                   <span
                     class="truncate"
-                    x-text="getVendorTiming(vendor) ? getVendorTiming(vendor).statusText : 'Open Today'"
+                    x-text="getVendorTimingText(vendor)"
                   >Open Today</span>
                 </span>
               </div>
@@ -463,16 +462,14 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 <div class="flex items-center gap-2 flex-wrap mt-1">
                   <span
                     class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs whitespace-nowrap"
-                    :class="(getVendorTiming(matchingVendor) && getVendorTiming(matchingVendor).isOpen) 
-                      ? ((getVendorTiming(matchingVendor) && getVendorTiming(matchingVendor).isUrgent) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300')
-                      : 'bg-slate-200 text-slate-700 border-slate-300'"
+                    :class="getMatchingVendorBadgeClass(matchingVendor)"
                   >
                     <span
                       class="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      :class="(getVendorTiming(matchingVendor) && getVendorTiming(matchingVendor).isOpen) ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"
+                      :class="getVendorTimingDotClass(matchingVendor)"
                       aria-hidden="true"
                     ></span>
-                    <span x-text="getVendorTiming(matchingVendor) ? getVendorTiming(matchingVendor).statusText : 'Open Today'"></span>
+                    <span x-text="getVendorTimingText(matchingVendor)"></span>
                   </span>
                   <p class="text-[11px] text-nitkkr-gray truncate" x-text="matchingVendor.address"></p>
                 </div>
@@ -541,7 +538,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                   <span class="font-medium text-slate-700 truncate bg-slate-100 px-1.5 py-0.5 rounded-md" x-text="item.vendorName || 'Campus Food Spot'"></span>
                   <span class="text-slate-300">•</span>
                   <span class="truncate" x-text="item.categoryName || 'Campus Fast Food'"></span>
-                  <template x-if="item.avgRating && item.reviewCount > 0">
+                  <template x-if="item.avgRating ? (item.reviewCount > 0) : false">
                     <span class="inline-flex items-center gap-0.5 text-amber-600 font-bold text-[11px] bg-amber-50 px-1.5 py-0.2 rounded-md border border-amber-200/60 ml-1">
                       <span>★</span>
                       <span x-text="item.avgRating"></span>
@@ -602,7 +599,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
     <!-- 🌟 Dish Detail Popup Modal in Search -->
     <div
-      x-show="showDetailModal && selectedItem"
+      x-show="showDetailModal ? Boolean(selectedItem) : false"
       x-cloak
       x-transition:enter="transition ease-out duration-300"
       x-transition:enter-start="opacity-0"
@@ -671,7 +668,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             </div>
 
             <!-- Tags -->
-            <template x-if="selectedItem.tags && selectedItem.tags.length > 0">
+            <template x-if="selectedItem.tags ? (selectedItem.tags.length > 0) : false">
               <div class="flex flex-wrap gap-1.5 items-center">
                 <span class="text-[11px] font-bold text-slate-400 mr-1">Tags:</span>
                 <template x-for="tag in selectedItem.tags" :key="tag">

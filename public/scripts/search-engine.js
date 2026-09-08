@@ -545,6 +545,32 @@
         return getVendorTimingStatus(vendor.opensAt, vendor.closesAt);
       },
 
+      getVendorTimingBadgeClass: function (vendor) {
+        var t = this.getVendorTiming(vendor);
+        if (t && t.isOpen) {
+          return t.isUrgent ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        }
+        return 'bg-slate-100 text-slate-600 border-slate-200';
+      },
+
+      getVendorTimingDotClass: function (vendor) {
+        var t = this.getVendorTiming(vendor);
+        return (t && t.isOpen) ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400';
+      },
+
+      getVendorTimingText: function (vendor) {
+        var t = this.getVendorTiming(vendor);
+        return t ? t.statusText : 'Open Today';
+      },
+
+      getMatchingVendorBadgeClass: function (vendor) {
+        var t = this.getVendorTiming(vendor);
+        if (t && t.isOpen) {
+          return t.isUrgent ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        }
+        return 'bg-slate-200 text-slate-700 border-slate-300';
+      },
+
       isItemVendorOpen: function (item) {
         if (!item) return false;
         if (item.vendorOpensAt && item.vendorClosesAt) {
