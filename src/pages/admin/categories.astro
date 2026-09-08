@@ -2,11 +2,11 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
-import { getCategories, getActiveVendors, getMenuItemsByVendor, getAllReviews } from '../../lib/queries';
+import { getCategories, getActiveVendors, getAllMenuItemsForSearch, getAllReviews } from '../../lib/queries';
 
 const initialCategories = await getCategories();
 const initialVendors = await getActiveVendors();
-const initialMenuItems = await getMenuItemsByVendor(21);
+const initialMenuItems = await getAllMenuItemsForSearch();
 const initialReviews = await getAllReviews();
 ---
 

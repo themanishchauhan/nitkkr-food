@@ -2,12 +2,12 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import AdminSidebar from '../../components/AdminSidebar.astro';
-import { getAllReviews, getActiveVendors, getCategories, getMenuItemsByVendor } from '../../lib/queries';
+import { getAllReviews, getActiveVendors, getCategories, getAllMenuItemsForSearch } from '../../lib/queries';
 
 const initialReviews = await getAllReviews();
 const initialVendors = await getActiveVendors();
 const initialCategories = await getCategories();
-const initialMenuItems = await getMenuItemsByVendor(21);
+const initialMenuItems = await getAllMenuItemsForSearch();
 ---
 
 <script is:inline define:vars={{ initialReviews, initialVendors, initialCategories, initialMenuItems }}>
