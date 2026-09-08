@@ -6,6 +6,7 @@ import AdBanner from '../../components/AdBanner.astro';
 import ReviewModal from '../../components/ReviewModal.astro';
 import { getVendorBySlug, getMenuItemsWithReviewStats, getReviewsByVendor, getCategories, isVendorOpenNow, getAllSiteSettings } from '../../lib/queries';
 import { formatOperatingHours, cleanTelHref, cleanDisplayPhone, cleanWhatsAppHref, formatRating } from '../../lib/utils';
+import { getOptimizedImageUrl, getResponsiveSrcSet } from '../../lib/images';
 
 const { slug } = Astro.params;
 const vendor = await getVendorBySlug(slug as string);
@@ -14,19 +15,25 @@ if (!vendor) {
   return Astro.redirect('/404');
 }
 
-const menuItems = await getMenuItemsWithReviewStats(vendor.id);
-const allCategories = await getCategories();
+const [menuItems, allCategories, vendorReviews, settings] = await Promise.all([
+  getMenuItemsWithReviewStats(vendor.id),
+  getCategories(),
+  getReviewsByVendor(vendor.id),
+  getAllSiteSettings()
+]);
+
 const categories = allCategories.filter((c: any) => 
   menuItems.some((item: any) => item.categoryId === c.id || item.categorySlug === c.slug)
 );
 const isOpen = isVendorOpenNow(vendor.opensAt, vendor.closesAt);
-const vendorReviews = await getReviewsByVendor(vendor.id);
 const vendorReviewCount = vendorReviews.length;
 const vendorAvgRating = vendorReviewCount > 0
   ? formatRating(vendorReviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / vendorReviewCount)
   : null;
 
-const settings = await getAllSiteSettings();
+const heroCoverUrl = getOptimizedImageUrl(vendor.image || '/og-default.jpg', { width: 800, quality: 80, format: 'auto' });
+const heroCoverSrcSet = getResponsiveSrcSet(vendor.image || '/og-default.jpg', [400, 640, 800, 1200]);
+
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 const adEnabled = settingsObj.ad_banner_enabled === 'true';
@@ -75,8 +82,15 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
     <div class="relative w-full h-56 sm:h-72 bg-neutral-900 overflow-hidden">
 
       <img
-        src={vendor.image || '/og-default.jpg'}
+        src={heroCoverUrl}
+        srcset={heroCoverSrcSet}
+        sizes="(max-width: 640px) 100vw, 800px"
         alt={vendor.name}
+        width="800"
+        height="288"
+        fetchpriority="high"
+        loading="eager"
+        decoding="async"
         class="w-full h-full object-cover opacity-80 filter brightness-90 transform scale-105 transition-transform duration-700"
       />
 

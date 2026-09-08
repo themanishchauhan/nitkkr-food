@@ -1,5 +1,6 @@
 ---
 import { getVendorTimingStatus } from '../lib/utils';
+import { getOptimizedImageUrl } from '../lib/images';
 
 interface Props {
   vendor: {
@@ -17,6 +18,7 @@ interface Props {
 
 const { vendor } = Astro.props;
 const timing = getVendorTimingStatus(vendor.opensAt, vendor.closesAt);
+const optimizedImg = getOptimizedImageUrl(vendor.image || '/placeholder-vendor.svg', { width: 160, quality: 80, format: 'auto' });
 ---
 
 <a
@@ -25,10 +27,13 @@ const timing = getVendorTimingStatus(vendor.opensAt, vendor.closesAt);
          hover:border-nitkkr-orange hover:shadow-md active:scale-[0.99] transition-all duration-200 group shadow-2xs"
 >
   <img
-    src={vendor.image || '/placeholder-vendor.svg'}
+    src={optimizedImg}
     alt={vendor.name}
+    width="64"
+    height="64"
     class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-slate-100 bg-slate-50"
     loading="lazy"
+    decoding="async"
   />
   <div class="flex-1 min-w-0">
     <div class="flex items-center gap-2">

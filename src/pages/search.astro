@@ -11,10 +11,15 @@ const initialIsVeg = Astro.url.searchParams.get('isVeg')?.trim() || '';
 const initialTag = Astro.url.searchParams.get('tag')?.trim() || '';
 const initialTab = Astro.url.searchParams.get('tab')?.trim() || 'dishes';
 
-const categories = await getCategories();
-const initialVendors = await getActiveVendors();
-const initialItems = await getAllMenuItemsForSearch();
-const settings = await getAllSiteSettings();
+const [categories, initialVendors, allSearchItems, settings] = await Promise.all([
+  getCategories(),
+  getActiveVendors(),
+  getAllMenuItemsForSearch(),
+  getAllSiteSettings(),
+]);
+const initialItems = initialQuery
+  ? allSearchItems.filter((i: any) => i.name.toLowerCase().includes(initialQuery.toLowerCase()) || (Array.isArray(i.tags) && i.tags.join(' ').toLowerCase().includes(initialQuery.toLowerCase()))).slice(0, 40)
+  : allSearchItems.slice(0, 30);
 const settingsList = Array.isArray(settings) ? settings : [];
 const settingsObj = settingsList.reduce((acc: any, s: any) => { if (s && s.key) acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
 const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && settingsObj.show_whatsapp_button !== 'false';
@@ -25,664 +30,13 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
   description="Find campus food, menus and prices in seconds."
 >
 
+  <script is:inline src="/scripts/search-engine.js"></script>
   <script is:inline define:vars={{ initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTag, initialTab, showWhatsApp, initialVendors, initialItems }}>
-
-    function normalizePhonetics(str) {
-      return (str || '').toLowerCase()
-        .replace(/aa/g, 'a')
-        .replace(/ee/g, 'i')
-        .replace(/oo/g, 'u')
-        .replace(/nn/g, 'n')
-        .replace(/tt/g, 't')
-        .replace(/pp/g, 'p')
-        .replace(/rr/g, 'r')
-        .replace(/ll/g, 'l')
-        .replace(/mm/g, 'm')
-        .replace(/kk/g, 'k')
-        .replace(/ss/g, 's')
-        .replace(/zz/g, 'z')
-        .replace(/ph/g, 'f')
-        .replace(/bh/g, 'b')
-        .replace(/dh/g, 'd')
-        .replace(/th/g, 't')
-        .replace(/sh/g, 's');
-    }
-
-    function levenshteinDist(a, b) {
-      if (a === b) return 0;
-      if (!a.length) return b.length;
-      if (!b.length) return a.length;
-      var matrix = [];
-      for (var i = 0; i <= b.length; i++) matrix[i] = [i];
-      for (var j = 0; j <= a.length; j++) matrix[0][j] = j;
-      for (var i = 1; i <= b.length; i++) {
-        for (var j = 1; j <= a.length; j++) {
-          if (b.charAt(i - 1) === a.charAt(j - 1)) {
-            matrix[i][j] = matrix[i - 1][j - 1];
-          } else {
-            matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
-          }
-        }
-      }
-      return matrix[b.length][a.length];
-    }
-
-    var STOP_WORDS = new Set(['in', 'on', 'at', 'to', 'of', 'for', 'with', 'a', 'an', 'the', 'and', 'or', 'is', 'by', 'as']);
-
-    function isFuzzyTokenMatch(queryToken, targetWords, fullText) {
-      if (!queryToken) return false;
-
-      // 1. Direct substring in full text (e.g. "chowmein" in item text)
-      if (fullText.indexOf(queryToken) !== -1) return true;
-
-      // 2. Singular / plural variants
-      if (queryToken.endsWith('s') && fullText.indexOf(queryToken.slice(0, -1)) !== -1) return true;
-      if (queryToken.endsWith('es') && fullText.indexOf(queryToken.slice(0, -2)) !== -1) return true;
-
-      var normQuery = normalizePhonetics(queryToken);
-
-      for (var k = 0; k < targetWords.length; k++) {
-        var word = targetWords[k];
-        if (!word || word.length < 2 || STOP_WORDS.has(word)) continue;
-
-        // Exact match
-        if (word === queryToken) return true;
-
-        // Target word contains the query token (e.g. searching "chow" matches word "chowmein")
-        if (word.indexOf(queryToken) !== -1) return true;
-
-        // Query token starts with target word only if target word is sufficiently long (at least 4 chars and 75% of query length)
-        if (queryToken.length >= 4 && word.length >= 4 && word.length >= queryToken.length * 0.75) {
-          if (queryToken.indexOf(word) === 0) return true;
-        }
-
-        // Phonetic matching
-        var normWord = normalizePhonetics(word);
-        if (normWord === normQuery) return true;
-        if (normWord.indexOf(normQuery) !== -1) return true;
-
-        // Levenshtein fuzzy distance for typos (e.g., "chwomin" -> "chowmein")
-        if (queryToken.length >= 4 && word.length >= 4 && Math.abs(queryToken.length - word.length) <= 2) {
-          var maxAllowedDist = queryToken.length >= 6 ? 2 : 1;
-          if (levenshteinDist(queryToken, word) <= maxAllowedDist) return true;
-          if (levenshteinDist(normQuery, normWord) <= maxAllowedDist) return true;
-        }
-      }
-
-      return false;
-    }
-
-    function fairInterleaveByVendor(items) {
-      if (!items || items.length <= 1) return items;
-      var vendorBuckets = {};
-      var vendorKeys = [];
-      for (var i = 0; i < items.length; i++) {
-        var itm = items[i];
-        var key = itm.vendorSlug || itm.vendorName || String(itm.vendorId) || 'unknown';
-        if (!vendorBuckets[key]) {
-          vendorBuckets[key] = [];
-          vendorKeys.push(key);
-        }
-        vendorBuckets[key].push(itm);
-      }
-
-      // Shuffle individual vendor buckets
-      for (var k = 0; k < vendorKeys.length; k++) {
-        var bucket = vendorBuckets[vendorKeys[k]];
-        for (var idx = bucket.length - 1; idx > 0; idx--) {
-          var rand = Math.floor(Math.random() * (idx + 1));
-          var temp = bucket[idx];
-          bucket[idx] = bucket[rand];
-          bucket[rand] = temp;
-        }
-      }
-
-      // Shuffle vendor order for fair first-place rotation
-      for (var vIdx = vendorKeys.length - 1; vIdx > 0; vIdx--) {
-        var vRand = Math.floor(Math.random() * (vIdx + 1));
-        var vTemp = vendorKeys[vIdx];
-        vendorKeys[vIdx] = vendorKeys[vRand];
-        vendorKeys[vRand] = vTemp;
-      }
-
-      var result = [];
-      var added = true;
-      while (added) {
-        added = false;
-        for (var j = 0; j < vendorKeys.length; j++) {
-          var vKey = vendorKeys[j];
-          if (vendorBuckets[vKey] && vendorBuckets[vKey].length > 0) {
-            result.push(vendorBuckets[vKey].shift());
-            added = true;
-          }
-        }
-      }
-      return result;
-    }
-
-    function fairShuffleVendors(vendors) {
-      if (!vendors || vendors.length <= 1) return vendors;
-      var arr = vendors.slice();
-      for (var i = arr.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = temp;
-      }
-      return arr;
-    }
-
-    function fairInterleaveRankedEntries(entries) {
-      if (!entries || entries.length === 0) return [];
-      if (entries.length === 1) return [entries[0].item];
-
-      // Sort scores descending
-      entries.sort(function(a, b) { return b.score - a.score; });
-
-      // Group matching items into score tiers so equal-relevance items get interleaved fairly
-      var scoreBands = {};
-      var scores = [];
-      for (var i = 0; i < entries.length; i++) {
-        var sc = entries[i].score;
-        if (!scoreBands[sc]) {
-          scoreBands[sc] = [];
-          scores.push(sc);
-        }
-        scoreBands[sc].push(entries[i].item);
-      }
-
-      var finalResult = [];
-      for (var k = 0; k < scores.length; k++) {
-        var band = scoreBands[scores[k]];
-        var interleavedBand = fairInterleaveByVendor(band);
-        for (var m = 0; m < interleavedBand.length; m++) {
-          finalResult.push(interleavedBand[m]);
-        }
-      }
-      return finalResult;
-    }
-
-    window.searchPage = function() {
-      return {
-        activeTab: (initialTab === 'stalls' || initialTab === 'vendors') ? 'vendors' : 'dishes',
-        query: initialQuery,
-        activeCat: initialCategory || 'all',
-        vibeTag: initialTag || 'all',
-        priceBracket: initialMaxPrice ? (initialMaxPrice === '50' ? 'under-50' : (initialMaxPrice === '100' ? '50-100' : (initialMaxPrice === '150' ? '100-150' : (initialMaxPrice === '150+' ? 'above-150' : initialMaxPrice)))) : 'all',
-        vegFilter: (initialIsVeg === 'true' || initialIsVeg === 'veg') ? 'veg' :
-                   (initialIsVeg === 'egg' || initialIsVeg === 'eggs') ? 'egg' :
-                   ((initialIsVeg === 'false' || initialIsVeg === 'nonveg' || initialIsVeg === 'non-veg') ? 'nonveg' : 'all'),
-        displayLimit: 20,
-        expandedVendors: {},
-        allVendors: Array.isArray(initialVendors) ? fairShuffleVendors(initialVendors) : [],
-        allItems: Array.isArray(initialItems) ? fairInterleaveByVendor(initialItems) : [],
-        selectedItem: null,
-        showDetailModal: false,
-        formatCount(count) {
-          var num = Number(count) || 0;
-          return num > 99 ? '99+' : String(num);
-        },
-        toggleVendorExpand(vendorName) {
-          this.expandedVendors[vendorName] = !this.expandedVendors[vendorName];
-        },
-        loadMore() {
-          this.displayLimit += 20;
-        },
-        openDetail(item) {
-          this.selectedItem = item;
-          this.showDetailModal = true;
-        },
-        syncUrl() {
-          try {
-            var url = new URL(window.location.href);
-            if (this.query && this.query.trim()) {
-              url.searchParams.set('q', this.query.trim());
-            } else {
-              url.searchParams.delete('q');
-            }
-
-            if (this.activeCat && this.activeCat !== 'all') {
-              url.searchParams.set('category', this.activeCat);
-            } else {
-              url.searchParams.delete('category');
-            }
-
-            if (this.vibeTag && this.vibeTag !== 'all') {
-              url.searchParams.set('tag', this.vibeTag);
-            } else {
-              url.searchParams.delete('tag');
-            }
-
-            if (this.priceBracket && this.priceBracket !== 'all') {
-              url.searchParams.set('maxPrice', this.priceBracket);
-            } else {
-              url.searchParams.delete('maxPrice');
-            }
-
-            if (this.vegFilter && this.vegFilter !== 'all') {
-              url.searchParams.set('isVeg', this.vegFilter);
-            } else {
-              url.searchParams.delete('isVeg');
-            }
-
-            if (this.activeTab === 'vendors') {
-              url.searchParams.set('tab', 'vendors');
-            } else {
-              url.searchParams.delete('tab');
-            }
-
-            var cleanUrl = url.pathname + (url.search ? url.search : '');
-            window.history.replaceState(null, '', cleanUrl);
-          } catch (e) {}
-        },
-
-        switchTab(tab) {
-          this.activeTab = tab;
-          this.syncUrl();
-        },
-
-        getItemDiet(item) {
-          if (!item) return 'veg';
-          var name = (item.name || '').toLowerCase();
-          var desc = (item.description || '').toLowerCase();
-          var rawTags = Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? [item.tags] : []);
-          var tagsText = rawTags.join(' ').toLowerCase();
-          var full = name + ' ' + desc + ' ' + tagsText;
-
-          var isMeat = /chicken|mutton|fish|prawn|kebab|kabab|keema|meat|tangri|kalmi|seekh|basa/i.test(full);
-          var hasEgg = /\b(egg|eggs|anda|omelet|omelette|bhurji|french toast|boiled egg)\b/i.test(full);
-
-          if (hasEgg && !isMeat) return 'egg';
-          if (isMeat || item.isVeg === false || item.isVeg === 0) {
-            return isMeat ? 'nonveg' : (hasEgg ? 'egg' : 'nonveg');
-          }
-          return 'veg';
-        },
-
-        getTelHref(phone) {
-          if (!phone) return '#';
-          var digits = String(phone).replace(/[^0-9]/g, '');
-          if (digits.length === 10) return 'tel:+91' + digits;
-          if (digits.length > 10 && digits.startsWith('91')) return 'tel:+' + digits;
-          return 'tel:+91' + digits.slice(-10);
-        },
-        getWhatsAppHref(phone) {
-          if (!phone) return '#';
-          var digits = String(phone).replace(/[^0-9]/g, '');
-          var full = digits.length === 10 ? '91' + digits : (digits.startsWith('91') ? digits : '91' + digits.slice(-10));
-          return 'https://wa.me/' + full;
-        },
-
-        async init() {
-          var self = this;
-          var debounceTimer = null;
-          if (this.$watch) {
-            this.$watch('query', function() {
-              clearTimeout(debounceTimer);
-              debounceTimer = setTimeout(function() {
-                self.syncUrl();
-              }, 150);
-            });
-            this.$watch('activeCat', function() { self.syncUrl(); });
-            this.$watch('vibeTag', function() { self.syncUrl(); });
-            this.$watch('priceBracket', function() { self.syncUrl(); });
-            this.$watch('vegFilter', function() { self.syncUrl(); });
-          }
-
-          window.addEventListener('review-updated', (e) => {
-            const { menuItemId, rating } = e.detail || {};
-            if (!menuItemId) return;
-            const target = this.allItems.find(i => Number(i.id) === Number(menuItemId));
-            if (target) {
-              const currentCount = Number(target.reviewCount) || 0;
-              const currentAvg = Number(target.avgRating) || Number(rating) || 5;
-              const newCount = currentCount + 1;
-              const newAvg = ((currentAvg * currentCount + Number(rating)) / newCount).toFixed(1);
-              target.reviewCount = newCount;
-              target.avgRating = newAvg;
-              if (this.selectedItem && Number(this.selectedItem.id) === Number(menuItemId)) {
-                this.selectedItem.reviewCount = newCount;
-                this.selectedItem.avgRating = newAvg;
-              }
-            }
-          });
-
-          if (this.allItems.length === 0 || this.allVendors.length === 0) {
-            try {
-              const res = await fetch('/api/search.json?limit=250');
-              if (res.ok) {
-                const data = await res.json();
-                const items = data.hits || data.results || [];
-                if (items.length > 0) {
-                  this.allItems = fairInterleaveByVendor(items);
-                }
-              }
-            } catch (e) {}
-          }
-        },
-
-
-        get matchingVendor() {
-          if (!this.query.trim()) return null;
-          var q = this.query.trim().toLowerCase();
-          var matches = this.filteredVendors;
-          for (var i = 0; i < matches.length; i++) {
-            var v = matches[i];
-            if (v.name && v.name.toLowerCase().includes(q)) return v;
-          }
-          return null;
-        },
-
-
-        isVendorOpen(opensAt, closesAt) {
-          if (!opensAt || !closesAt) return true;
-          try {
-            var istFormatter = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
-            var parts = istFormatter.format(new Date()).split(':');
-            var curTotal = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-            var oParts = opensAt.split(':');
-            var cParts = closesAt.split(':');
-            var openTotal = parseInt(oParts[0], 10) * 60 + parseInt(oParts[1], 10);
-            var closeTotal = parseInt(cParts[0], 10) * 60 + parseInt(cParts[1], 10);
-            if (openTotal < closeTotal) return curTotal >= openTotal && curTotal < closeTotal;
-            if (openTotal > closeTotal) return curTotal >= openTotal || curTotal < closeTotal;
-            return true;
-          } catch (e) {
-            return true;
-          }
-        },
-
-        isItemVendorOpen(item) {
-          if (!item) return false;
-
-          // 1. Direct vendor timing on item
-          if (item.vendorOpensAt && item.vendorClosesAt) {
-            return this.isVendorOpen(item.vendorOpensAt, item.vendorClosesAt);
-          }
-
-          // 2. Canonical campus vendor timings by slug
-          var slug = (item.vendorSlug || '').toLowerCase();
-          if (slug.includes('food-point')) return this.isVendorOpen('12:00', '02:00');
-          if (slug.includes('rahul')) return this.isVendorOpen('12:00', '02:00');
-          if (slug.includes('hangry')) return this.isVendorOpen('12:30', '22:30');
-          if (slug.includes('eat-and-fun') || slug.includes('eat and fun')) return this.isVendorOpen('10:00', '22:00');
-          if (slug.includes('suraj')) return this.isVendorOpen('10:00', '23:00');
-          if (slug.includes('apna')) return this.isVendorOpen('08:00', '21:00');
-          if (slug.includes('food-cave') || slug.includes('food cave')) return this.isVendorOpen('09:00', '23:30');
-
-          // 3. Canonical campus vendor timings by name
-          var name = (item.vendorName || '').toLowerCase();
-          if (name.includes('food point')) return this.isVendorOpen('12:00', '02:00');
-          if (name.includes('rahul')) return this.isVendorOpen('12:00', '02:00');
-          if (name.includes('hangry')) return this.isVendorOpen('12:30', '22:30');
-          if (name.includes('eat and fun') || name.includes('eat & fun')) return this.isVendorOpen('10:00', '22:00');
-          if (name.includes('suraj')) return this.isVendorOpen('10:00', '23:00');
-          if (name.includes('apna')) return this.isVendorOpen('08:00', '21:00');
-          if (name.includes('food cave')) return this.isVendorOpen('09:00', '23:30');
-
-          // 4. Lookup from allVendors
-          for (var i = 0; i < this.allVendors.length; i++) {
-            var v = this.allVendors[i];
-            if ((item.vendorId && (v.id === item.vendorId || v.id === item.stallId)) ||
-                (v.slug && v.slug.toLowerCase() === slug) ||
-                (v.name && v.name.toLowerCase() === name)) {
-              return this.isVendorOpen(v.opensAt, v.closesAt);
-            }
-          }
-
-          return false;
-        },
-
-        get openItemsCount() {
-          var self = this;
-          return this.allItems.filter(function(i) {
-            return self.isItemVendorOpen(i);
-          }).length;
-        },
-
-        getVendorMatchCount(vendorId) {
-          if (!vendorId) return 0;
-          return this.filteredItems.filter(function(i) {
-            return i.vendorId === vendorId || i.stallId === vendorId;
-          }).length;
-        },
-
-        get filteredVendors() {
-          var self = this;
-          var matchingItemVendorIds = new Set();
-          var matchedItems = this.filteredItems;
-          for (var j = 0; j < matchedItems.length; j++) {
-            var itm = matchedItems[j];
-            if (itm.vendorId) matchingItemVendorIds.add(itm.vendorId);
-            if (itm.stallId) matchingItemVendorIds.add(itm.stallId);
-          }
-
-          var vList = this.allVendors;
-
-          if (this.query.trim()) {
-            var rawQuery = this.query.toLowerCase().trim();
-            var tokens = rawQuery.split(/\s+/).filter(Boolean);
-
-            vList = vList.filter(function(v) {
-              var nameLower = (v.name || '').toLowerCase();
-              var addrLower = (v.address || '').toLowerCase();
-              var descLower = (v.description || '').toLowerCase();
-              var full = nameLower + ' ' + addrLower + ' ' + descLower;
-              var words = full.split(/[\s,()\/+-]+/).filter(Boolean);
-
-              var directMatch = tokens.every(function(t) {
-                return isFuzzyTokenMatch(t, words, full);
-              });
-
-              var hasMatchingItems = matchingItemVendorIds.has(v.id);
-
-              return directMatch || hasMatchingItems;
-            });
-          }
-
-          // In vendor view, sort open vendors first so students see open vendors on top
-          return vList.slice().sort(function(a, b) {
-            var aOpen = self.isVendorOpen(a.opensAt, a.closesAt) ? 1 : 0;
-            var bOpen = self.isVendorOpen(b.opensAt, b.closesAt) ? 1 : 0;
-            return bOpen - aOpen;
-          });
-        },
-
-
-        get matchingStall() {
-          if (!this.query.trim()) return null;
-          var matches = this.filteredVendors;
-          return matches.length > 0 ? matches[0] : null;
-        },
-
-        get filteredItems() {
-          var self = this;
-          var list = this.allItems;
-
-          // 0. STRICT FILTER: Exclude menu items of vendors who are closed right now
-          list = list.filter(function(i) {
-            return self.isItemVendorOpen(i);
-          });
-
-          // 1. Category Filter
-          if (this.activeCat && this.activeCat !== 'all') {
-            var catSlug = this.activeCat.toLowerCase();
-            list = list.filter(function(i) {
-              return (i.categorySlug && i.categorySlug.toLowerCase() === catSlug) ||
-                     (i.categoryName && i.categoryName.toLowerCase() === catSlug);
-            });
-          }
-
-          // 2. Gen-Z Lifestyle & Vibe Filter
-          if (this.vibeTag && this.vibeTag !== 'all') {
-            var vibe = this.vibeTag.toLowerCase();
-            list = list.filter(function(i) {
-              var nameLower = (i.name || '').toLowerCase();
-              var descLower = (i.description || '').toLowerCase();
-              var rawTags = Array.isArray(i.tags) ? i.tags : (typeof i.tags === 'string' ? [i.tags] : []);
-              var tags = rawTags.map(function(t) { return String(t).toLowerCase(); });
-              var full = nameLower + ' ' + descLower + ' ' + tags.join(' ');
-
-              if (vibe === 'protein') {
-                return tags.indexOf('protein') !== -1 || tags.indexOf('gym') !== -1 || tags.indexOf('fitness') !== -1 ||
-                       /paneer|egg|chicken|soya|bhurji|protein|whey|chana|tofu|peanut/i.test(full);
-              }
-              if (vibe === 'late-night') {
-                return tags.indexOf('late-night') !== -1 || tags.indexOf('midnight') !== -1 || tags.indexOf('snack') !== -1 ||
-                       /maggi|roll|fries|sandwich|canteen|coffee|tea|burger/i.test(full);
-              }
-              if (vibe === 'spicy') {
-                return tags.indexOf('spicy') !== -1 || tags.indexOf('crispy') !== -1 || tags.indexOf('hot') !== -1 ||
-                       /spicy|peri|schezwan|chilli|momo|kurkure|crispy|tandoori/i.test(full);
-              }
-              if (vibe === 'cheese') {
-                return tags.indexOf('cheese') !== -1 || tags.indexOf('cheesy') !== -1 || tags.indexOf('cheat-meal') !== -1 ||
-                       /cheese|cheesy|mozzarella|pizza|loaded|garlic bread|pasta/i.test(full);
-              }
-              if (vibe === 'shakes') {
-                return (i.categorySlug && i.categorySlug.indexOf('beverage') !== -1) ||
-                       /shake|smoothie|coffee|cold coffee|boba|oreo|kitkat|mojito/i.test(full);
-              }
-              if (vibe === 'healthy') {
-                return tags.indexOf('healthy') !== -1 || tags.indexOf('fresh') !== -1 ||
-                       /juice|fruit|salad|sprouts|green tea|coconut|curd/i.test(full);
-              }
-              if (vibe === 'bestseller') {
-                return tags.indexOf('bestseller') !== -1 || tags.indexOf('popular') !== -1 || tags.indexOf('top-rated') !== -1 || tags.indexOf('chef-special') !== -1;
-              }
-              return tags.indexOf(vibe) !== -1 || full.indexOf(vibe) !== -1;
-            });
-          }
-
-          // 3. Smart Mutual Price Brackets
-          if (this.priceBracket && this.priceBracket !== 'all') {
-            var b = this.priceBracket;
-            list = list.filter(function(i) {
-              var p = Number(i.price);
-              if (isNaN(p)) return false;
-              if (b === 'under-50' || b === '50') return p <= 50;
-              if (b === '50-100' || b === '100') return p > 50 && p <= 100;
-              if (b === '100-150' || b === '150') return p > 100 && p <= 150;
-              if (b === 'above-150' || b === '150+') return p > 150;
-              return true;
-            });
-          }
-
-          // 4. Diet Filter (3 Sections: Veg, Non-Veg, Eggs)
-          if (this.vegFilter === 'veg') {
-            list = list.filter(function(i) { return self.getItemDiet(i) === 'veg'; });
-          } else if (this.vegFilter === 'egg' || this.vegFilter === 'eggs') {
-            list = list.filter(function(i) { return self.getItemDiet(i) === 'egg'; });
-          } else if (this.vegFilter === 'nonveg' || this.vegFilter === 'non-veg') {
-            list = list.filter(function(i) { return self.getItemDiet(i) === 'nonveg'; });
-          }
-
-          // 5. Keyword & Typo-Tolerant Search
-          if (!this.query.trim()) {
-            return fairInterleaveByVendor(list);
-          }
-
-          var rawQuery = this.query.toLowerCase().trim();
-          var tokens = rawQuery.split(/\s+/).filter(Boolean);
-
-          var matchingEntries = list
-            .map(function(item) {
-              var nameLower = (item.name || '').toLowerCase();
-              var descLower = (item.description || '').toLowerCase();
-              var vendorLower = (item.vendorName || '').toLowerCase();
-              var categoryLower = (item.categoryName || '').toLowerCase();
-              var rawItemTags = Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? [item.tags] : []);
-              var tagsText = rawItemTags.join(' ').toLowerCase();
-              var fullSearchText = nameLower + ' ' + descLower + ' ' + vendorLower + ' ' + categoryLower + ' ' + tagsText;
-
-              var targetWords = fullSearchText.split(/[\s,()\/+-]+/).filter(Boolean);
-
-              var allTokensMatch = tokens.every(function(token) {
-                return isFuzzyTokenMatch(token, targetWords, fullSearchText);
-              });
-
-              if (!allTokensMatch) return null;
-
-              var score = 0;
-              if (nameLower === rawQuery) score += 100;
-              else if (nameLower.indexOf(rawQuery) === 0) score += 50;
-              else if (nameLower.indexOf(rawQuery) !== -1) score += 30;
-
-              tokens.forEach(function(token) {
-                if (nameLower.indexOf(token) !== -1) score += 15;
-                if (tagsText.indexOf(token) !== -1) score += 8;
-                if (vendorLower.indexOf(token) !== -1) score += 5;
-                if (descLower.indexOf(token) !== -1) score += 2;
-              });
-
-              return { item: item, score: score };
-            })
-            .filter(Boolean);
-
-          return fairInterleaveRankedEntries(matchingEntries);
-        },
-
-        get visibleItems() {
-          return this.filteredItems.slice(0, this.displayLimit);
-        },
-
-        get hasActiveFilters() {
-          return Boolean(
-            (this.query && this.query.trim()) ||
-            (this.activeCat && this.activeCat !== 'all') ||
-            (this.vibeTag && this.vibeTag !== 'all') ||
-            (this.priceBracket && this.priceBracket !== 'all') ||
-            (this.vegFilter && this.vegFilter !== 'all')
-          );
-        },
-
-        get activeFilterCount() {
-          var count = 0;
-          if (this.query && this.query.trim()) count++;
-          if (this.activeCat && this.activeCat !== 'all') count++;
-          if (this.vibeTag && this.vibeTag !== 'all') count++;
-          if (this.priceBracket && this.priceBracket !== 'all') count++;
-          if (this.vegFilter && this.vegFilter !== 'all') count++;
-          return count;
-        },
-
-        resetAllFilters() {
-          this.query = '';
-          this.activeCat = 'all';
-          this.vibeTag = 'all';
-          this.priceBracket = 'all';
-          this.vegFilter = 'all';
-          this.displayLimit = 20;
-          this.syncUrl();
-        },
-
-        get groupedDishesByVendor() {
-          var grouped = [];
-          var map = {};
-          var list = this.filteredItems;
-          for (var k = 0; k < list.length; k++) {
-            var itm = list[k];
-            var vName = itm.vendorName || 'Campus Food Spot';
-            if (!map[vName]) {
-              map[vName] = {
-                name: vName,
-                slug: itm.vendorSlug || '',
-                vendorId: itm.vendorId,
-                address: itm.vendorAddress || 'NIT Kurukshetra Campus',
-                items: []
-              };
-              grouped.push(map[vName]);
-            }
-            map[vName].items.push(itm);
-          }
-          return grouped;
-        }
-      };
-    };
+    window.__SEARCH_CONFIG__ = { initialQuery, initialCategory, initialMaxPrice, initialIsVeg, initialTag, initialTab, showWhatsApp, initialVendors, initialItems };
   </script>
 
   <section
-    x-data="searchPage()"
+    x-data="searchPage(window.__SEARCH_CONFIG__)"
     x-init="init()"
     class="min-h-screen bg-bistro-50 pb-20"
   >
@@ -693,7 +47,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
         <div class="relative w-full">
           <input
             type="search"
-            x-model="query"
+            x-model.debounce.150ms="query"
             @keydown.enter="$el.blur()"
             @search="$el.blur()"
             placeholder="Search food spots (Food Cave) or dishes (paratha, noodles, maggi)..."
@@ -958,10 +312,13 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             <div class="flex items-center gap-3.5 min-w-0">
               <div class="relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100 shadow-2xs">
                 <img
-                  :src="vendor.image || '/placeholder-vendor.svg'"
+                  :src="getThumbnailUrl(vendor.image, 160)"
                   alt=""
+                  width="64"
+                  height="64"
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
               <div class="min-w-0">
@@ -1100,10 +457,13 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               <!-- Left: Dish Thumbnail Image -->
               <div class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100">
                 <img
-                  :src="item.image || '/placeholder-food.svg'"
+                  :src="getThumbnailUrl(item.image, 128)"
                   :alt="item.name"
+                  width="64"
+                  height="64"
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
 
@@ -1229,9 +589,10 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           <!-- Large Dish Image Cover -->
           <div class="relative w-full h-48 sm:h-56 bg-slate-100 overflow-hidden">
             <img
-              :src="selectedItem.image || '/placeholder-food.svg'"
+              :src="getThumbnailUrl(selectedItem.image, 600)"
               :alt="selectedItem.name"
               class="w-full h-full object-cover"
+              decoding="async"
             />
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
 

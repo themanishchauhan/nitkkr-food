@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { createDb, schema, getRawD1Binding } from '../../../../lib/db';
 import { eq } from 'drizzle-orm';
 import { authenticateAdminRequest } from '../../../../lib/auth';
+import { invalidateSiteSettingsCache } from '../../../../lib/queries';
 
 export const prerender = false;
 
@@ -101,6 +102,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
       }
 
+      invalidateSiteSettingsCache();
       return new Response(JSON.stringify({ success: true, count: entries.length }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -124,6 +126,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value: String(value) } });
     }
 
+    invalidateSiteSettingsCache();
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -166,6 +169,7 @@ export const DELETE: APIRoute = async ({ request, locals, url }) => {
       await db.delete(schema.siteSettings).where(eq(schema.siteSettings.key, key));
     }
 
+    invalidateSiteSettingsCache();
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

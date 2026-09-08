@@ -36,6 +36,7 @@ export async function ensurePhotoUrlColumn(d1Raw?: any) {
 }
 
 export async function ensureRealDatabasePopulated(d1Raw?: any) {
+  if (hasCheckedD1Seed) return;
   const d1 = d1Raw || getRawD1Binding();
   if (!d1 || typeof d1.prepare !== 'function') return;
 
@@ -1164,10 +1165,22 @@ export async function getAllMenuItemsForSearch() {
       const mapped = items.map((item: any) => {
         const stats = reviewStatsMap[item.id];
         return {
-          ...item,
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          isVeg: item.isVeg,
+          image: item.image,
+          tags: item.tags,
+          vendorId: item.vendorId,
+          vendorName: item.vendorName,
+          vendorSlug: item.vendorSlug,
+          vendorOpensAt: item.vendorOpensAt,
+          vendorClosesAt: item.vendorClosesAt,
+          categoryId: item.categoryId,
+          categoryName: item.categoryName,
+          categorySlug: item.categorySlug,
           avgRating: stats ? stats.avgRating : null,
-          reviewCount: stats ? stats.count : 0,
-          reviews: stats ? stats.reviews : []
+          reviewCount: stats ? stats.count : 0
         };
       });
 
@@ -1247,10 +1260,22 @@ export async function getAllMenuItemsForSearch() {
       const mapped = items.map((item: any) => {
         const stats = reviewStatsMap[item.id];
         return {
-          ...item,
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          isVeg: item.isVeg,
+          image: item.image,
+          tags: item.tags,
+          vendorId: item.vendorId,
+          vendorName: item.vendorName,
+          vendorSlug: item.vendorSlug,
+          vendorOpensAt: item.vendorOpensAt,
+          vendorClosesAt: item.vendorClosesAt,
+          categoryId: item.categoryId,
+          categoryName: item.categoryName,
+          categorySlug: item.categorySlug,
           avgRating: stats ? stats.avgRating : null,
-          reviewCount: stats ? stats.count : 0,
-          reviews: stats ? stats.reviews : []
+          reviewCount: stats ? stats.count : 0
         };
       });
 
@@ -2083,14 +2108,20 @@ export async function deleteReview(id: number) {
   }
 }
 
+let cachedSiteSettings: any[] | null = null;
+let cachedSiteSettingsTime = 0;
+const SITE_SETTINGS_TTL_MS = 60 * 1000;
+
+export function invalidateSiteSettingsCache() {
+  cachedSiteSettings = null;
+  cachedSiteSettingsTime = 0;
+}
+
 export async function getSiteSetting(key: string): Promise<string | null> {
   try {
-    const db = createDb();
-    const result = await db.select()
-      .from(schema.siteSettings)
-      .where(eq(schema.siteSettings.key, key))
-      .limit(1);
-    return result[0]?.value || null;
+    const all = await getAllSiteSettings();
+    const found = all.find((s: any) => s.key === key);
+    return found?.value || null;
   } catch (e) {
     return null;
   }
@@ -2101,6 +2132,7 @@ export async function setSiteSetting(key: string, value: string) {
     const db = createDb();
     await db.insert(schema.siteSettings).values({ key, value })
       .onConflictDoUpdate({ target: schema.siteSettings.key, set: { value } });
+    invalidateSiteSettingsCache();
     return true;
   } catch (error) {
     console.error('Set site setting error:', error);
@@ -2109,11 +2141,39 @@ export async function setSiteSetting(key: string, value: string) {
 }
 
 export async function getAllSiteSettings() {
+  const now = Date.now();
+  if (cachedSiteSettings && (now - cachedSiteSettingsTime) < SITE_SETTINGS_TTL_MS) {
+    return cachedSiteSettings;
+  }
   try {
     const db = createDb();
-    return await db.select()
-      .from(schema.siteSettings);
+    const res = await db.select().from(schema.siteSettings);
+    cachedSiteSettings = res || [];
+    cachedSiteSettingsTime = now;
+    return cachedSiteSettings;
   } catch (e) {
+    return cachedSiteSettings || [];
+  }
+}
+
+let cachedFooterPages: any[] | null = null;
+let cachedFooterPagesTime = 0;
+
+export async function getCustomFooterPages(d1Raw?: any) {
+  const now = Date.now();
+  if (cachedFooterPages && (now - cachedFooterPagesTime) < SITE_SETTINGS_TTL_MS) {
+    return cachedFooterPages;
+  }
+  try {
+    const rawD1 = d1Raw || getRawD1Binding();
+    if (rawD1 && typeof rawD1.prepare === 'function') {
+      const res = await rawD1.prepare('SELECT title, slug, category, icon FROM custom_pages WHERE show_in_footer = 1 AND is_published = 1 ORDER BY display_order ASC, id ASC').all();
+      cachedFooterPages = res?.results || [];
+      cachedFooterPagesTime = now;
+      return cachedFooterPages;
+    }
     return [];
+  } catch (e) {
+    return cachedFooterPages || [];
   }
 }

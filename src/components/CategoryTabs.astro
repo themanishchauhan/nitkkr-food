@@ -26,141 +26,15 @@ const {
 } = Astro.props;
 ---
 
+<script is:inline src="/scripts/search-engine.js"></script>
+<script is:inline define:vars={{ initialCategories: categories, initialMenuItems: menuItems, shareUrlVal: shareUrl, shareTitleVal: shareTitle, shareTextVal: shareText }}>
+  window.__VENDOR_MENU_CONFIG__ = { initialCategories, initialMenuItems, shareUrlVal, shareTitleVal, shareTextVal };
+</script>
+
 <div
-  x-data="categoryTabsComponent()"
+  x-data="categoryTabsComponent(window.__VENDOR_MENU_CONFIG__)"
   class="mb-8"
 >
-
-<script is:inline define:vars={{ initialCategories: categories, initialMenuItems: menuItems, shareUrlVal: shareUrl, shareTitleVal: shareTitle, shareTextVal: shareText }}>
-  window.categoryTabsComponent = function() {
-    return {
-      activeCat: 'all',
-      searchQuery: '',
-      searchExpanded: false,
-      categories: Array.isArray(initialCategories) ? initialCategories : [],
-      menuItems: Array.isArray(initialMenuItems) ? initialMenuItems : [],
-      selectedItem: null,
-      showDetailModal: false,
-      displayLimit: 20,
-
-      loadMore() {
-        this.displayLimit += 20;
-      },
-
-      get totalCount() {
-        return this.menuItems.length;
-      },
-
-      normalize(str) {
-        return (str || '').toLowerCase()
-          .replace(/aa/g, 'a')
-          .replace(/ee/g, 'i')
-          .replace(/oo/g, 'u')
-          .replace(/nn/g, 'n')
-          .replace(/tt/g, 't')
-          .replace(/pp/g, 'p')
-          .replace(/rr/g, 'r')
-          .replace(/ll/g, 'l')
-          .replace(/mm/g, 'm')
-          .replace(/kk/g, 'k')
-          .replace(/ss/g, 's')
-          .replace(/zz/g, 'z')
-          .replace(/ph/g, 'f')
-          .replace(/bh/g, 'b')
-          .replace(/dh/g, 'd')
-          .replace(/th/g, 't')
-          .replace(/sh/g, 's')
-          .replace(/[^a-z0-9]/g, '');
-      },
-
-      matchToken(token, full, normFull) {
-        if (full.includes(token)) return true;
-        const normToken = this.normalize(token);
-        if (normToken && normFull.includes(normToken)) return true;
-        if (token.endsWith('s') && full.includes(token.slice(0, -1))) return true;
-        if (token.endsWith('es') && full.includes(token.slice(0, -2))) return true;
-        return false;
-      },
-
-      get searchedItems() {
-        if (!this.searchQuery.trim()) return this.menuItems;
-        const rawTokens = this.searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
-        return this.menuItems.filter(item => {
-          const name = (item.name || '').toLowerCase();
-          const desc = (item.description || '').toLowerCase();
-          const cat = (item.categoryName || '').toLowerCase();
-          const rawTags = Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? [item.tags] : []);
-          const tags = rawTags.join(' ').toLowerCase();
-          const full = [name, desc, cat, tags].join(' ');
-          const normFull = this.normalize(full);
-          return rawTokens.every(token => this.matchToken(token, full, normFull));
-        });
-      },
-
-      get displayedItems() {
-        const list = this.searchedItems;
-        if (this.activeCat === 'all') return list;
-        return list.filter(i => (i.categorySlug === this.activeCat || i.categoryId === this.activeCat));
-      },
-
-      get visibleItems() {
-        return this.displayedItems.slice(0, this.displayLimit);
-      },
-
-      get visibleCategories() {
-        return this.categories.filter(cat => this.getCatCount(cat.slug) > 0);
-      },
-
-      getCatCount(slug) {
-        if (slug === 'all') return this.searchedItems.length;
-        return this.searchedItems.filter(i => (i.categorySlug === slug || i.categoryId === slug)).length;
-      },
-
-      openDetail(item) {
-        this.selectedItem = item;
-        this.showDetailModal = true;
-      },
-
-      getItemDiet(item) {
-        if (!item) return 'veg';
-        var name = (item.name || '').toLowerCase();
-        var desc = (item.description || '').toLowerCase();
-        var rawTags = Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? [item.tags] : []);
-        var tagsText = rawTags.join(' ').toLowerCase();
-        var full = name + ' ' + desc + ' ' + tagsText;
-
-        var isMeat = /chicken|mutton|fish|prawn|kebab|kabab|keema|meat|tangri|kalmi|seekh|basa/i.test(full);
-        var hasEgg = /\b(egg|eggs|anda|omelet|omelette|bhurji|french toast|boiled egg)\b/i.test(full);
-
-        if (hasEgg && !isMeat) return 'egg';
-        if (isMeat || item.isVeg === false || item.isVeg === 0) {
-          return isMeat ? 'nonveg' : (hasEgg ? 'egg' : 'nonveg');
-        }
-        return 'veg';
-      },
-
-      async shareVendor() {
-        const activeUrl = (typeof window !== 'undefined' && window.location.href) ? window.location.href : (shareUrlVal || '');
-        if (navigator.share) {
-          try {
-            await navigator.share({
-              title: shareTitleVal || 'Orandus',
-              text: shareTextVal || 'Check out this menu on Orandus',
-              url: activeUrl
-            });
-          } catch (e) {}
-        } else {
-          try {
-            await navigator.clipboard.writeText(activeUrl);
-            alert('Link copied to clipboard: ' + activeUrl);
-          } catch (e) {
-            prompt('Copy link:', activeUrl);
-          }
-        }
-      }
-    };
-  };
-</script>
   <!-- Menu Header -->
   <div class="mb-4">
     <h2 class="font-display text-xl font-extrabold text-slate-900 flex items-center gap-2">
@@ -213,10 +87,13 @@ const {
         <!-- Left: Dish Thumbnail Image -->
         <div class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100">
           <img
-            :src="item.image || '/placeholder-food.svg'"
+            :src="getThumbnailUrl(item.image, 128)"
             :alt="item.name"
+            width="64"
+            height="64"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
+            decoding="async"
           />
         </div>
 
@@ -332,9 +209,10 @@ const {
         <!-- Large Dish Image Cover -->
         <div class="relative w-full h-44 sm:h-52 bg-slate-100 overflow-hidden flex-shrink-0">
           <img
-            :src="selectedItem.image || '/placeholder-food.svg'"
+            :src="getThumbnailUrl(selectedItem.image, 600)"
             :alt="selectedItem.name"
             class="w-full h-full object-cover"
+            decoding="async"
           />
           <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
 
@@ -496,7 +374,7 @@ const {
           <input
             type="text"
             x-ref="menuSearchInput"
-            x-model="searchQuery"
+            x-model.debounce.150ms="searchQuery"
             placeholder="Search dishes (e.g. maggi, chai)..."
             class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-slate-100 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:border-nitkkr-orange focus:ring-2 focus:ring-nitkkr-orange/20 transition-all"
             @input="displayLimit = 20"
