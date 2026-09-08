@@ -57,6 +57,17 @@ export const siteSettings = sqliteTable('site_settings', {
   value: text('value').notNull(),
 });
 
+export const analyticsEvents = sqliteTable('analytics_events', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  eventType: text('event_type').notNull(), // 'qr_scan' | 'call_click' | 'whatsapp_click' | 'pwa_install' | 'search'
+  vendorId: integer('vendor_id'),
+  source: text('source'), // 'qr', 'search', 'direct'
+  medium: text('medium'), // 'counter_sticker', 'table_tent', 'hostel_poster', 'standee'
+  campaign: text('campaign'), // 'food_cave', 'hostel_7', 'gate1'
+  metadata: text('metadata'), // JSON string
+  createdAt: text('created_at').default('CURRENT_TIMESTAMP').notNull(),
+});
+
 export type Vendor = typeof vendors.$inferSelect;
 export type NewVendor = typeof vendors.$inferInsert;
 export type Category = typeof categories.$inferSelect;
@@ -67,3 +78,5 @@ export type Review = typeof reviews.$inferSelect;
 export type NewReview = typeof reviews.$inferInsert;
 export type SiteSetting = typeof siteSettings.$inferSelect;
 export type NewSiteSetting = typeof siteSettings.$inferInsert;
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert;

@@ -1,0 +1,592 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import AdminSidebar from '../../components/AdminSidebar.astro';
+import { getActiveVendors, getQrAnalyticsData } from '../../lib/queries';
+
+const initialVendors = await getActiveVendors();
+const initialQrStats = await getQrAnalyticsData();
+---
+
+<script is:inline define:vars={{ initialVendors, initialQrStats }}>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('qrStudio', () => ({
+      sidebarOpen: false,
+      vendors: Array.isArray(initialVendors) ? initialVendors : [],
+      stats: initialQrStats || { totalScans: 0, totalCalls: 0, totalWhatsApp: 0, totalInstalls: 0, campaigns: [], recentEvents: [] },
+      
+      // Campaign Configurator State
+      destinationType: 'vendor', // 'vendor' | 'home' | 'late-night' | 'custom'
+      selectedVendorSlug: initialVendors?.[0]?.slug || 'food-cave',
+      customUrl: 'https://orandus.in',
+      placement: 'counter_sticker', // 'counter_sticker' | 'table_tent' | 'hostel_poster' | 'gate_standee' | 'parcel_slip'
+      customCampaignTag: '',
+      
+      // Card Styler State
+      colorTheme: '#FF5200', // '#FF5200' | '#0F172A' | '#059669' | '#DC2626'
+      cardTitle: 'Scan for Live Menu & Prices',
+      cardSubtext: 'Direct Stall Call • Zero Commission',
+      showLogoCenter: true,
+      
+      // UI State
+      copied: false,
+      loadingStats: false,
+      toastMsg: '',
+
+      init() {
+        this.updateDefaultCampaignTag();
+      },
+
+      showToast(msg) {
+        this.toastMsg = msg;
+        setTimeout(() => { this.toastMsg = ''; }, 3500);
+      },
+
+      updateDefaultCampaignTag() {
+        if (this.destinationType === 'vendor') {
+          this.customCampaignTag = `${this.selectedVendorSlug}_${this.placement}`;
+        } else if (this.destinationType === 'late-night') {
+          this.customCampaignTag = `late_night_${this.placement}`;
+        } else if (this.destinationType === 'home') {
+          this.customCampaignTag = `campus_${this.placement}`;
+        } else {
+          this.customCampaignTag = `custom_${this.placement}`;
+        }
+      },
+
+      get selectedVendorName() {
+        const v = this.vendors.find(item => item.slug === this.selectedVendorSlug);
+        return v ? v.name : 'Campus Food Spot';
+      },
+
+      get generatedTargetUrl() {
+        let base = 'https://orandus.in';
+        if (this.destinationType === 'vendor') {
+          base = `https://orandus.in/v/${this.selectedVendorSlug}`;
+        } else if (this.destinationType === 'late-night') {
+          base = 'https://orandus.in/search?tag=late-night';
+        } else if (this.destinationType === 'custom') {
+          base = this.customUrl || 'https://orandus.in';
+        }
+
+        const tag = (this.customCampaignTag || 'qr_direct').toLowerCase().replace(/[^a-z0-9_-]+/g, '_');
+        const sep = base.includes('?') ? '&' : '?';
+        return `${base}${sep}utm_source=qr&utm_medium=${encodeURIComponent(this.placement)}&utm_campaign=${encodeURIComponent(tag)}`;
+      },
+
+      get qrImageSrc() {
+        const encoded = encodeURIComponent(this.generatedTargetUrl);
+        const darkColor = encodeURIComponent(this.colorTheme);
+        return `/api/qr-generate?url=${encoded}&dark=${darkColor}&size=512&format=svg`;
+      },
+
+      get qrDownloadPngSrc() {
+        const encoded = encodeURIComponent(this.generatedTargetUrl);
+        const darkColor = encodeURIComponent(this.colorTheme);
+        return `/api/qr-generate?url=${encoded}&dark=${darkColor}&size=1024&format=png`;
+      },
+
+      copyUrl() {
+        navigator.clipboard.writeText(this.generatedTargetUrl);
+        this.copied = true;
+        this.showToast('📋 Tracking link copied to clipboard!');
+        setTimeout(() => { this.copied = false; }, 3000);
+      },
+
+      printFlyer() {
+        window.print();
+      },
+
+      async refreshStats() {
+        this.loadingStats = true;
+        try {
+          const res = await fetch('/api/admin/qr');
+          if (res.ok) {
+            const data = await res.json();
+            this.stats = data;
+            this.showToast('🔄 Live QR analytics updated');
+          }
+        } catch (e) {
+          console.error('Refresh stats error:', e);
+        } finally {
+          this.loadingStats = false;
+        }
+      }
+    }));
+  });
+</script>
+
+<style>
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #printable-qr-card, #printable-qr-card * {
+      visibility: visible;
+    }
+    #printable-qr-card {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      max-width: 480px;
+      box-shadow: none !important;
+      border: 2px solid #000 !important;
+    }
+  }
+</style>
+
+<Layout title="QR Marketing & Analytics Studio - Orandus Ops" description="Design, generate and track dynamic campus QR campaigns for stalls, tables and hostel notice boards">
+  <section x-data="qrStudio" class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
+    
+    <!-- Toast Notification -->
+    <div
+      x-show="toastMsg"
+      x-transition
+      class="fixed bottom-6 right-6 z-50 bg-nitkkr-dark text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-2 border border-nitkkr-orange/40"
+    >
+      <span class="text-base">🔔</span>
+      <span x-text="toastMsg"></span>
+    </div>
+
+    <!-- Admin Sidebar -->
+    <AdminSidebar currentPath="/admin/qr" />
+
+    <!-- 🚀 Main QR Studio Workspace -->
+    <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-7xl space-y-8">
+      
+      <!-- Top Studio Hero Banner -->
+      <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-2 z-10">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-[11px] font-bold">
+            <span>📱</span> Physical-to-Digital Campus Growth Engine
+          </div>
+          <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-nitkkr-dark tracking-tight">
+            Dynamic QR Studio & Telemetry
+          </h1>
+          <p class="text-xs sm:text-sm text-nitkkr-gray max-w-xl">
+            Generate high-resolution printable table tents, counter stickers, and hostel flyers with built-in telemetry to prove real order volume to campus vendors.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3 z-10">
+          <button
+            @click="refreshStats()"
+            :disabled="loadingStats"
+            class="px-4 py-2.5 bg-white border border-nitkkr-orange/30 hover:bg-nitkkr-orange/10 text-nitkkr-dark font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <span :class="loadingStats ? 'animate-spin' : ''">🔄</span> Refresh Telemetry
+          </button>
+          <button
+            @click="printFlyer()"
+            class="px-5 py-2.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-xl shadow-md shadow-nitkkr-orange/20 transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <span>🖨️</span> Print Active Card
+          </button>
+        </div>
+
+        <div class="absolute -top-24 -right-24 w-72 h-72 bg-nitkkr-orange/5 rounded-full blur-3xl pointer-events-none"></div>
+      </div>
+
+      <!-- 📊 Real-Time QR Telemetry Metrics Bar -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        
+        <!-- Metric 1: Total Scans -->
+        <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-3 shadow-xs hover:border-nitkkr-orange/50 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-nitkkr-gray">Physical QR Scans</span>
+            <div class="w-8 h-8 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-sm">
+              📱
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="font-display text-3xl sm:text-4xl font-extrabold text-nitkkr-orange" x-text="stats.totalScans"></span>
+            <span class="text-[11px] font-bold text-emerald-600">Total verified</span>
+          </div>
+          <p class="text-[11px] text-nitkkr-gray">From posters, tables & counter stickers</p>
+        </div>
+
+        <!-- Metric 2: Vendor Phone Calls Driven -->
+        <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-3 shadow-xs hover:border-emerald-500/50 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-nitkkr-gray">Stall Calls Driven</span>
+            <div class="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-sm">
+              📞
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="font-display text-3xl sm:text-4xl font-extrabold text-emerald-700" x-text="stats.totalCalls"></span>
+            <span class="text-[11px] font-bold text-emerald-600" x-text="stats.totalScans > 0 ? ((stats.totalCalls / stats.totalScans) * 100).toFixed(1) + '% conv' : '0% conv'"></span>
+          </div>
+          <p class="text-[11px] text-nitkkr-gray">Direct phone orders via QR sessions</p>
+        </div>
+
+        <!-- Metric 3: WhatsApp Inquiries -->
+        <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-3 shadow-xs hover:border-emerald-500/50 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-nitkkr-gray">WhatsApp Chats</span>
+            <div class="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-sm">
+              💬
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="font-display text-3xl sm:text-4xl font-extrabold text-emerald-600" x-text="stats.totalWhatsApp"></span>
+            <span class="text-[11px] font-bold text-emerald-600">Live chat leads</span>
+          </div>
+          <p class="text-[11px] text-nitkkr-gray">Pre-filled menu inquiries</p>
+        </div>
+
+        <!-- Metric 4: App Installs from QR -->
+        <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-3 shadow-xs hover:border-blue-500/50 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-nitkkr-gray">PWA Home Screen Saves</span>
+            <div class="w-8 h-8 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-sm">
+              📲
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="font-display text-3xl sm:text-4xl font-extrabold text-blue-600" x-text="stats.totalInstalls"></span>
+            <span class="text-[11px] font-bold text-blue-700">Retained students</span>
+          </div>
+          <p class="text-[11px] text-nitkkr-gray">Installed directly from QR entry</p>
+        </div>
+
+      </div>
+
+      <!-- 🎨 Studio Interactive Workbench: Controls (Left) & Live Printable Card (Right) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left: Configuration & Styler Form (7 cols) -->
+        <div class="lg:col-span-7 bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+          <div class="pb-4 border-b border-slate-100">
+            <h3 class="font-display text-lg font-bold text-nitkkr-dark flex items-center gap-2">
+              <span>🎛️</span> Step 1: Campaign & Destination Setup
+            </h3>
+            <p class="text-xs text-nitkkr-gray">Configure where the QR code directs the student and tag its physical placement</p>
+          </div>
+
+          <!-- Destination Selector -->
+          <div class="space-y-4">
+            <div>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-2">QR Destination Target</label>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  type="button"
+                  @click="destinationType = 'vendor'; updateDefaultCampaignTag()"
+                  class="px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center"
+                  :class="destinationType === 'vendor' ? 'bg-nitkkr-orange text-white border-nitkkr-orange shadow-xs' : 'bg-nitkkr-cream/40 border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+                >
+                  🏪 Food Vendor
+                </button>
+                <button
+                  type="button"
+                  @click="destinationType = 'late-night'; updateDefaultCampaignTag()"
+                  class="px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center"
+                  :class="destinationType === 'late-night' ? 'bg-nitkkr-orange text-white border-nitkkr-orange shadow-xs' : 'bg-nitkkr-cream/40 border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+                >
+                  🌙 Late Night
+                </button>
+                <button
+                  type="button"
+                  @click="destinationType = 'home'; updateDefaultCampaignTag()"
+                  class="px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center"
+                  :class="destinationType === 'home' ? 'bg-nitkkr-orange text-white border-nitkkr-orange shadow-xs' : 'bg-nitkkr-cream/40 border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+                >
+                  🌐 Homepage
+                </button>
+                <button
+                  type="button"
+                  @click="destinationType = 'custom'; updateDefaultCampaignTag()"
+                  class="px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center"
+                  :class="destinationType === 'custom' ? 'bg-nitkkr-orange text-white border-nitkkr-orange shadow-xs' : 'bg-nitkkr-cream/40 border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+                >
+                  🔗 Custom URL
+                </button>
+              </div>
+            </div>
+
+            <!-- Conditional: Vendor Dropdown -->
+            <div x-show="destinationType === 'vendor'" class="space-y-1.5">
+              <label class="text-xs font-bold text-nitkkr-dark">Select Campus Food Vendor</label>
+              <select
+                x-model="selectedVendorSlug"
+                @change="updateDefaultCampaignTag()"
+                class="w-full px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
+              >
+                <template x-for="v in vendors" :key="v.slug">
+                  <option :value="v.slug" x-text="v.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <!-- Conditional: Custom URL Input -->
+            <div x-show="destinationType === 'custom'" class="space-y-1.5">
+              <label class="text-xs font-bold text-nitkkr-dark">Custom Target URL</label>
+              <input
+                type="url"
+                x-model="customUrl"
+                class="w-full px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
+                placeholder="https://orandus.in/search?q=momos"
+              />
+            </div>
+
+            <!-- Placement / Physical Medium -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-nitkkr-dark">Physical Placement Type</label>
+              <select
+                x-model="placement"
+                @change="updateDefaultCampaignTag()"
+                class="w-full px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
+              >
+                <option value="counter_sticker">🏷️ Counter Sticker (Stall billing counter)</option>
+                <option value="table_tent">📐 Dining Table Tent (Acrylic table stand)</option>
+                <option value="hostel_poster">🏢 Hostel Notice Poster (Hostels 1–10 & lifts)</option>
+                <option value="gate_standee">🚪 Campus Gate Standee (Gate 1 & Gate 2 walkway)</option>
+                <option value="parcel_slip">📦 Food Parcel Bag Insert (Stapled with order)</option>
+              </select>
+            </div>
+
+            <!-- Campaign Identifier -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-nitkkr-dark flex items-center justify-between">
+                <span>Unique Campaign Tag (UTM Campaign)</span>
+                <span class="text-[10px] text-nitkkr-gray">Auto-formatted for analytics</span>
+              </label>
+              <input
+                type="text"
+                x-model="customCampaignTag"
+                class="w-full px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-mono font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
+                placeholder="e.g. food_cave_table_4"
+              />
+            </div>
+          </div>
+
+          <!-- Step 2: Visual Card Customizer -->
+          <div class="pt-6 border-t border-slate-100 space-y-4">
+            <h3 class="font-display text-lg font-bold text-nitkkr-dark flex items-center gap-2">
+              <span>🎨</span> Step 2: Card Styler & Print Branding
+            </h3>
+
+            <!-- Color Palette Selector -->
+            <div>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-2">QR Code Foreground Color</label>
+              <div class="flex items-center gap-3">
+                <button
+                  type="button"
+                  @click="colorTheme = '#FF5200'"
+                  class="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all"
+                  :class="colorTheme === '#FF5200' ? 'border-orange-500 bg-orange-50 text-orange-700 ring-2 ring-orange-500/20' : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
+                >
+                  <span class="w-3.5 h-3.5 rounded-full bg-[#FF5200]"></span>
+                  <span>Orandus Orange</span>
+                </button>
+                <button
+                  type="button"
+                  @click="colorTheme = '#0F172A'"
+                  class="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all"
+                  :class="colorTheme === '#0F172A' ? 'border-slate-900 bg-slate-100 text-slate-900 ring-2 ring-slate-900/20' : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
+                >
+                  <span class="w-3.5 h-3.5 rounded-full bg-[#0F172A]"></span>
+                  <span>Midnight Slate</span>
+                </button>
+                <button
+                  type="button"
+                  @click="colorTheme = '#059669'"
+                  class="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all"
+                  :class="colorTheme === '#059669' ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-600/20' : 'border-slate-200 hover:bg-slate-50 text-slate-700'"
+                >
+                  <span class="w-3.5 h-3.5 rounded-full bg-[#059669]"></span>
+                  <span>Forest Emerald</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Card Headline Text -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Print Card Headline</label>
+                <input
+                  type="text"
+                  x-model="cardTitle"
+                  class="w-full px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
+                  placeholder="Scan for Live Menu & Prices"
+                />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-nitkkr-dark">Footer Sub-Headline</label>
+                <input
+                  type="text"
+                  x-model="cardSubtext"
+                  class="w-full px-4 py-2.5 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:border-nitkkr-orange focus:outline-hidden"
+                  placeholder="Direct Stall Call • Zero Commission"
+                />
+              </div>
+            </div>
+
+            <!-- Generated Encoded Link Display -->
+            <div class="p-3 bg-nitkkr-cream/60 rounded-2xl border border-nitkkr-orange/20 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-mono font-bold uppercase text-nitkkr-gray">Live Tracking Target Link:</span>
+                <button
+                  type="button"
+                  @click="copyUrl()"
+                  class="text-[11px] font-bold text-nitkkr-orange hover:underline cursor-pointer"
+                >
+                  <span x-text="copied ? '✅ Copied!' : '📋 Copy Link'"></span>
+                </button>
+              </div>
+              <p class="font-mono text-xs text-slate-800 break-all select-all" x-text="generatedTargetUrl"></p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right: Realtime Print-Ready Card Preview (5 cols) -->
+        <div class="lg:col-span-5 space-y-4">
+          
+          <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 shadow-sm">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <span class="text-xs font-bold text-nitkkr-gray">Physical Print Preview</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-nitkkr-orange/10 text-nitkkr-orange font-bold text-[10px]" x-text="placement.replace('_', ' ').toUpperCase()"></span>
+            </div>
+
+            <!-- 🖨️ The Printable Standee Card Element -->
+            <div
+              id="printable-qr-card"
+              class="bg-gradient-to-b from-orange-50/50 via-white to-orange-50/30 border-2 border-slate-900/10 rounded-3xl p-6 text-center space-y-4 shadow-xl relative overflow-hidden"
+            >
+              <!-- Brand Header -->
+              <div class="flex items-center justify-center gap-2">
+                <div class="w-7 h-7 rounded-xl bg-nitkkr-orange text-white flex items-center justify-center text-sm font-bold shadow-xs">
+                  🍜
+                </div>
+                <span class="font-display font-extrabold text-lg text-nitkkr-dark tracking-tight">Orandus</span>
+                <span class="px-2 py-0.5 rounded-full bg-slate-900 text-white font-mono text-[9px] font-bold">CAMPUS</span>
+              </div>
+
+              <!-- Stall or Highlight Context -->
+              <div class="space-y-1">
+                <h4 class="font-display text-xl sm:text-2xl font-black text-slate-900 leading-tight" x-text="destinationType === 'vendor' ? selectedVendorName : cardTitle"></h4>
+                <p class="text-xs font-bold text-nitkkr-orange uppercase tracking-wider" x-text="destinationType === 'vendor' ? cardTitle : 'Campus Food & Menus'"></p>
+              </div>
+
+              <!-- High-Resolution QR Graphic Container with Center Logo Badge -->
+              <div class="relative inline-block mx-auto p-3 bg-white rounded-2xl border-2 border-slate-100 shadow-md">
+                <img
+                  :src="qrImageSrc"
+                  alt="Campus Food QR Code"
+                  class="w-56 h-56 mx-auto object-contain"
+                  loading="eager"
+                />
+                <!-- Center Logo Badge Overlay -->
+                <div
+                  x-show="showLogoCenter"
+                  class="absolute inset-0 m-auto w-12 h-12 bg-white rounded-xl shadow-lg border-2 border-slate-200 flex items-center justify-center text-xl pointer-events-none"
+                >
+                  🍜
+                </div>
+              </div>
+
+              <!-- Scan CTA Instruction -->
+              <div class="space-y-1 pt-1">
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-white text-[11px] font-bold">
+                  <span>📸</span> Scan with Any Camera / Phone
+                </div>
+                <p class="text-[11px] text-slate-500 font-semibold" x-text="cardSubtext"></p>
+              </div>
+
+              <!-- Footer Verification Note -->
+              <div class="pt-3 border-t border-slate-200/60 text-[10px] text-slate-400 font-mono">
+                <span>orandus.in • Zero Commissions Direct Connect</span>
+              </div>
+            </div>
+
+            <!-- Download & Export Action Buttons -->
+            <div class="grid grid-cols-2 gap-3 pt-4">
+              <a
+                :href="qrDownloadPngSrc"
+                download="orandus_qr.png"
+                class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-center font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>📥</span> Download PNG
+              </a>
+              <button
+                type="button"
+                @click="printFlyer()"
+                class="px-4 py-2.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>🖨️</span> Print Standee
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- 📈 Real-Time QR Physical Campaigns Leaderboard Table -->
+      <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div>
+            <h3 class="font-display text-lg font-bold text-nitkkr-dark flex items-center gap-2">
+              <span>🏆</span> Active Campus QR Placements & ROI Leaderboard
+            </h3>
+            <p class="text-xs text-nitkkr-gray">Live scan volume, direct phone calls, and PWA installs driven by each poster & standee</p>
+          </div>
+          <button
+            @click="refreshStats()"
+            class="text-xs font-bold text-nitkkr-orange hover:underline self-start cursor-pointer"
+          >
+            Live Sync 🔄
+          </button>
+        </div>
+
+        <template x-if="stats.campaigns.length === 0">
+          <div class="text-center py-10 bg-nitkkr-cream/40 rounded-2xl border border-dashed border-nitkkr-orange/30 space-y-2">
+            <span class="text-3xl block">📱</span>
+            <p class="text-xs font-bold text-nitkkr-dark">No physical scans recorded yet</p>
+            <p class="text-[11px] text-nitkkr-gray max-w-sm mx-auto">
+              Download and place your first QR code standee on a campus counter or hostel notice board. Scans and call conversions will update here automatically.
+            </p>
+          </div>
+        </template>
+
+        <template x-if="stats.campaigns.length > 0">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-slate-100 text-[10px] font-mono uppercase text-nitkkr-gray">
+                  <th class="py-3 px-4">Placement / Campaign</th>
+                  <th class="py-3 px-4">Medium</th>
+                  <th class="py-3 px-4 text-center">Scans</th>
+                  <th class="py-3 px-4 text-center">Stall Calls</th>
+                  <th class="py-3 px-4 text-center">WhatsApp</th>
+                  <th class="py-3 px-4 text-center">PWA Saves</th>
+                  <th class="py-3 px-4 text-right">Conversion</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <template x-for="(camp, idx) in stats.campaigns" :key="idx">
+                  <tr class="hover:bg-nitkkr-cream/40 transition-colors">
+                    <td class="py-3.5 px-4 font-bold text-nitkkr-dark font-mono text-xs" x-text="camp.campaign"></td>
+                    <td class="py-3.5 px-4">
+                      <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold text-[10px]" x-text="camp.medium"></span>
+                    </td>
+                    <td class="py-3.5 px-4 text-center font-bold text-nitkkr-orange" x-text="camp.scans"></td>
+                    <td class="py-3.5 px-4 text-center font-bold text-emerald-700" x-text="camp.calls"></td>
+                    <td class="py-3.5 px-4 text-center font-semibold text-emerald-600" x-text="camp.whatsapp"></td>
+                    <td class="py-3.5 px-4 text-center font-semibold text-blue-600" x-text="camp.installs"></td>
+                    <td class="py-3.5 px-4 text-right font-mono font-bold text-slate-900" x-text="camp.scans > 0 ? (((camp.calls + camp.whatsapp) / camp.scans) * 100).toFixed(1) + '%' : '0%'"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </template>
+      </div>
+
+    </main>
+  </section>
+</Layout>

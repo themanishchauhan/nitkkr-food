@@ -131,6 +131,19 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       )
     `).run();
 
+    await d1.prepare(`
+      CREATE TABLE IF NOT EXISTS analytics_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_type TEXT NOT NULL,
+        vendor_id INTEGER,
+        source TEXT,
+        medium TEXT,
+        campaign TEXT,
+        metadata TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `).run();
+
     // 1. Ensure Categories exist in D1
     for (const cat of MOCK_CATEGORIES) {
       await d1.prepare(`
@@ -2207,5 +2220,132 @@ export async function getCustomFooterPages(d1Raw?: any) {
     return [];
   } catch (e) {
     return cachedFooterPages || [];
+  }
+}
+
+// ==========================================
+// 📱 QR MARKETING & TELEMETRY ANALYTICS
+// ==========================================
+
+const inMemoryAnalyticsEvents: Array<{
+  id: number;
+  event_type: string;
+  vendor_id?: number | null;
+  source?: string | null;
+  medium?: string | null;
+  campaign?: string | null;
+  metadata?: string | null;
+  created_at: string;
+}> = [];
+
+export async function recordAnalyticsEvent(event: {
+  eventType: string;
+  vendorId?: number | null;
+  source?: string | null;
+  medium?: string | null;
+  campaign?: string | null;
+  metadata?: any;
+}) {
+  const metadataStr = typeof event.metadata === 'object' ? JSON.stringify(event.metadata) : (event.metadata || null);
+  const nowStr = new Date().toISOString();
+
+  // Store in memory fallback buffer
+  inMemoryAnalyticsEvents.unshift({
+    id: inMemoryAnalyticsEvents.length + 1,
+    event_type: event.eventType,
+    vendor_id: event.vendorId || null,
+    source: event.source || null,
+    medium: event.medium || null,
+    campaign: event.campaign || null,
+    metadata: metadataStr,
+    created_at: nowStr,
+  });
+  if (inMemoryAnalyticsEvents.length > 500) {
+    inMemoryAnalyticsEvents.pop();
+  }
+
+  try {
+    const rawD1 = getRawD1Binding();
+    if (rawD1 && typeof rawD1.prepare === 'function') {
+      await rawD1.prepare(`
+        INSERT INTO analytics_events (event_type, vendor_id, source, medium, campaign, metadata, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        event.eventType,
+        event.vendorId || null,
+        event.source || null,
+        event.medium || null,
+        event.campaign || null,
+        metadataStr,
+        nowStr
+      ).run();
+      return true;
+    }
+  } catch (error) {
+    console.error('Failed to persist analytics event to D1:', error);
+  }
+  return true;
+}
+
+export async function getQrAnalyticsData() {
+  try {
+    const rawD1 = getRawD1Binding();
+    let events: any[] = [];
+
+    if (rawD1 && typeof rawD1.prepare === 'function') {
+      const res = await rawD1.prepare(`
+        SELECT * FROM analytics_events 
+        WHERE source = 'qr' OR event_type IN ('qr_scan', 'call_click', 'whatsapp_click', 'pwa_install')
+        ORDER BY id DESC LIMIT 500
+      `).all();
+      events = res?.results || [];
+    }
+
+    if (!events || events.length === 0) {
+      events = inMemoryAnalyticsEvents;
+    }
+
+    const qrScans = events.filter(e => e.event_type === 'qr_scan');
+    const callClicks = events.filter(e => e.event_type === 'call_click');
+    const waClicks = events.filter(e => e.event_type === 'whatsapp_click');
+    const pwaInstalls = events.filter(e => e.event_type === 'pwa_install');
+
+    const campaignMap: Record<string, { campaign: string; medium: string; scans: number; calls: number; whatsapp: number; installs: number }> = {};
+    for (const e of events) {
+      const key = `${e.campaign || 'campus_general'}::${e.medium || 'direct'}`;
+      if (!campaignMap[key]) {
+        campaignMap[key] = {
+          campaign: e.campaign || 'campus_general',
+          medium: e.medium || 'direct',
+          scans: 0,
+          calls: 0,
+          whatsapp: 0,
+          installs: 0,
+        };
+      }
+      if (e.event_type === 'qr_scan') campaignMap[key].scans++;
+      if (e.event_type === 'call_click') campaignMap[key].calls++;
+      if (e.event_type === 'whatsapp_click') campaignMap[key].whatsapp++;
+      if (e.event_type === 'pwa_install') campaignMap[key].installs++;
+    }
+
+    return {
+      totalScans: qrScans.length,
+      totalCalls: callClicks.length,
+      totalWhatsApp: waClicks.length,
+      totalInstalls: pwaInstalls.length,
+      campaigns: Object.values(campaignMap).sort((a, b) => b.scans - a.scans),
+      recentEvents: events.slice(0, 30),
+    };
+  } catch (error) {
+    console.error('Error fetching QR analytics:', error);
+    return {
+      totalScans: 0,
+      totalCalls: 0,
+      totalWhatsApp: 0,
+      totalInstalls: 0,
+      campaigns: [],
+      recentEvents: [],
+    };
   }
 }
