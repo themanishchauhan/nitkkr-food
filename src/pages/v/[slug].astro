@@ -102,7 +102,7 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
         fetchpriority="high"
         loading="eager"
         decoding="async"
-        class="w-full h-full object-cover opacity-80 filter brightness-90 transform scale-105 transition-transform duration-700"
+        class={`w-full h-full object-cover filter brightness-90 transform scale-105 transition-transform duration-700 ${!isVendorOpen ? 'grayscale opacity-75' : 'opacity-80'}`}
       />
 
       <!-- Gradient Overlay -->
@@ -157,11 +157,11 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
     <!-- Main Content Container -->
     <div class="max-w-2xl mx-auto px-4 -mt-3 relative z-20">
       <!-- Vendor Status & Info Card -->
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-5 space-y-3">
+      <div class={`rounded-2xl p-4 shadow-sm border mb-5 space-y-3 ${isVendorOpen ? 'bg-white border-slate-100' : 'bg-slate-50/90 border-slate-200'}`}>
         <!-- Top Row: Backend Open/Closed Tag + Operating Hours (Only these two) -->
         <div class="flex items-center gap-3">
-          <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${isVendorOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' : 'bg-rose-50 text-rose-700 border border-rose-200/80'}`}>
-            <span class={`w-2 h-2 rounded-full ${isVendorOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+          <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${isVendorOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+            <span class={`w-2 h-2 rounded-full ${isVendorOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
             <span>{isVendorOpen ? 'Open' : 'Closed'}</span>
           </span>
 
@@ -172,7 +172,7 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
         </div>
 
         {deliversToList.length > 0 && (
-          <div class="pt-2 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
+          <div class={`pt-2 border-t flex items-center gap-2 text-xs text-slate-600 ${isVendorOpen ? 'border-slate-100' : 'border-slate-200/80'}`}>
             <span class="text-base">🛵</span>
             <span><strong class="text-slate-800 font-semibold">Delivers to:</strong> {deliversToList.join(', ')}</span>
           </div>
@@ -180,7 +180,7 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
 
         <!-- 📢 Simple Notice / Note Section -->
         {vendorNote && (
-          <div class="pt-2 border-t border-slate-100 flex items-start gap-2 text-xs">
+          <div class={`pt-2 border-t flex items-start gap-2 text-xs ${isVendorOpen ? 'border-slate-100' : 'border-slate-200/80'}`}>
             <span class="text-amber-600 font-bold flex items-center gap-1 flex-shrink-0">
               <span>📢</span> Notice:
             </span>
