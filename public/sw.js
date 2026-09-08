@@ -1,4 +1,4 @@
-const CACHE_NAME = 'orandus-v4';
+const CACHE_NAME = 'orandus-v5';
 const STATIC_ASSETS = [
   '/offline',
   '/manifest.webmanifest',
