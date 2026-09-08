@@ -21,12 +21,14 @@ const initialReviews = await getAllReviews();
       selectedVendorId: '',
       search: '',
       filterVeg: 'all',
+      filterStock: 'all',
+      priceRange: 'all',
+      viewMode: 'table', // 'table' | 'grid'
       showAddModal: false,
       editingItem: null,
       form: { vendorId: '', categoryId: '', name: '', price: '', description: '', image: '', isVeg: true, isAvailable: true },
       saving: false,
       toastMsg: '',
-
 
       async init() {
         await this.loadAll();
@@ -65,15 +67,45 @@ const initialReviews = await getAllReviews();
         } else if (this.filterVeg === 'nonveg') {
           list = list.filter(m => !m.isVeg);
         }
+        if (this.filterStock === 'in_stock') {
+          list = list.filter(m => m.isAvailable !== false);
+        } else if (this.filterStock === 'out_of_stock') {
+          list = list.filter(m => m.isAvailable === false);
+        }
+        if (this.priceRange === 'under50') {
+          list = list.filter(m => Number(m.price) < 50);
+        } else if (this.priceRange === '50to100') {
+          list = list.filter(m => Number(m.price) >= 50 && Number(m.price) <= 100);
+        } else if (this.priceRange === '100to200') {
+          list = list.filter(m => Number(m.price) > 100 && Number(m.price) <= 200);
+        } else if (this.priceRange === 'above200') {
+          list = list.filter(m => Number(m.price) > 200);
+        }
+
         if (this.search.trim()) {
           const q = this.search.toLowerCase();
           list = list.filter(m => 
             (m.name && m.name.toLowerCase().includes(q)) || 
             (m.categoryName && m.categoryName.toLowerCase().includes(q)) ||
+            (m.vendorName && m.vendorName.toLowerCase().includes(q)) ||
             (m.description && m.description.toLowerCase().includes(q))
           );
         }
         return list;
+      },
+
+      get stats() {
+        const total = this.filteredItems.length;
+        if (!total) return { total: 0, avgPrice: 0, vegPercent: 0, outOfStock: 0 };
+        const sumPrice = this.filteredItems.reduce((acc, m) => acc + (Number(m.price) || 0), 0);
+        const vegCount = this.filteredItems.filter(m => m.isVeg).length;
+        const outOfStock = this.filteredItems.filter(m => m.isAvailable === false).length;
+        return {
+          total,
+          avgPrice: Math.round(sumPrice / total),
+          vegPercent: Math.round((vegCount / total) * 100),
+          outOfStock
+        };
       },
 
       exportCSV() {
@@ -116,14 +148,14 @@ const initialReviews = await getAllReviews();
           description: item.description || '',
           image: item.image || '',
           isVeg: item.isVeg,
-          isAvailable: item.isAvailable
+          isAvailable: item.isAvailable !== false
         };
         this.showAddModal = true;
       },
 
       async saveItem() {
         if (!this.form.name.trim() || !this.form.vendorId || !this.form.price) {
-          alert('Vendor, name, and price are required');
+          alert('Vendor, dish name, and price are required');
           return;
         }
         this.saving = true;
@@ -155,26 +187,29 @@ const initialReviews = await getAllReviews();
 
       async toggleAvailability(item) {
         try {
+          const newStatus = !(item.isAvailable !== false);
           const res = await fetch('/api/admin/menu', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: item.id, isAvailable: !item.isAvailable })
+            body: JSON.stringify({ id: item.id, isAvailable: newStatus })
           });
           if (res.ok) {
-            item.isAvailable = !item.isAvailable;
-            this.showToast(`${item.name} is now ${item.isAvailable ? 'In Stock' : 'Out of Stock'}`);
+            item.isAvailable = newStatus;
+            this.showToast(`"${item.name}" marked ${item.isAvailable ? 'In Stock' : 'Out of Stock'}`);
+          } else {
+            alert('Failed to update availability status');
           }
         } catch (e) {
-          alert('Failed to toggle availability');
+          alert('Network error while updating status');
         }
       },
 
       async deleteItem(item) {
-        if (!confirm(`Are you sure you want to delete "${item.name}"?`)) return;
+        if (!confirm(`Are you sure you want to permanently delete "${item.name}"?`)) return;
         try {
           const res = await fetch(`/api/admin/menu?id=${item.id}`, { method: 'DELETE' });
           if (res.ok) {
-            this.showToast('✅ Dish removed from menu');
+            this.showToast('✅ Dish removed from catalog');
             await this.loadAll();
           } else {
             alert('Failed to delete dish');
@@ -187,28 +222,25 @@ const initialReviews = await getAllReviews();
       async logout() {
         if (!confirm('Log out from Founder Panel?')) return;
         await fetch('/api/admin/auth', { method: 'DELETE' });
-        window.location.href = '/';
+        window.location.href = '/admin/login';
       }
     }));
   });
 </script>
 
-<Layout title="Menu Items & Prices - Orandus Admin" description="Full CRUD operations for dishes and prices across all campus vendors">
-
-  <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
+<Layout title="Menu Catalog & Pricing Operations - Orandus Ops" description="Manage dishes, prices, veg/non-veg tags, and live inventory across campus food spots">
+  <section class="min-h-screen bg-[#090D15] flex flex-col lg:flex-row text-slate-200 antialiased font-sans">
     <div
       x-data="menuAdmin"
       class="flex-1 flex flex-col lg:flex-row min-h-screen"
     >
-
-
       <!-- Toast Notification -->
       <div
         x-show="toastMsg"
         x-transition
-        class="fixed bottom-6 right-6 z-50 bg-nitkkr-dark text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-2 border border-nitkkr-orange/40"
+        class="fixed bottom-6 right-6 z-50 bg-[#161F30] border border-amber-500/40 text-amber-300 px-4 py-2.5 rounded-xl shadow-2xl font-medium text-xs flex items-center gap-2.5 backdrop-blur-md"
       >
-        <span class="text-base">🔔</span>
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
         <span x-text="toastMsg"></span>
       </div>
 
@@ -216,165 +248,343 @@ const initialReviews = await getAllReviews();
       <AdminSidebar currentPath="/admin/menu-items" />
 
       <!-- Main Content Area -->
-      <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-6xl">
-        <div class="space-y-8">
-
-          <!-- Header -->
-          <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-[11px] font-bold mb-2">
-                <span>🍱</span> Dish Catalogs & Pricing
-              </div>
-              <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-nitkkr-dark">
-                Menu Dishes Manager
-              </h1>
-              <p class="text-xs sm:text-sm text-nitkkr-gray mt-1">
-                Add dishes, update student prices, adjust veg/non-veg tags, and toggle availability.
-              </p>
+      <main class="flex-1 p-3.5 sm:p-6 lg:p-7 overflow-y-auto space-y-5 max-w-7xl w-full">
+        
+        <!-- Header -->
+        <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-semibold mb-2">
+              <span>🍱</span> Catalog & Pricing Operations
             </div>
-
-            <div class="flex flex-wrap items-center gap-3">
-              <button
-                @click="exportCSV()"
-                class="px-4 py-3 bg-white border border-nitkkr-orange/30 hover:bg-nitkkr-orange/10 text-nitkkr-dark font-bold text-xs rounded-2xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <span>📥</span> Export CSV
-              </button>
-              <button
-                @click="openAdd()"
-                class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <span>➕</span> Add New Dish
-              </button>
-            </div>
+            <h1 class="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Dishes & Menu Catalog
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">
+              Audit 1,420+ student menu items, update prices, manage dietary classifications, and control live counter stock.
+            </p>
           </div>
 
-          <!-- Vendor & Dish Filter Controls -->
-          <div class="bg-white border border-nitkkr-orange/20 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center gap-3">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button
+              @click="exportCSV()"
+              class="px-3 py-2 bg-[#0A0F1A] border border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-white font-medium text-xs rounded-xl shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <span>📥</span> Export CSV
+            </button>
+            <button
+              @click="openAdd()"
+              class="px-4 py-2 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs rounded-xl shadow-sm shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <span>➕</span> Add Dish
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Metrics Bar -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-[#101726] border border-slate-800/80 rounded-xl p-3.5 flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-medium text-slate-400">Total Filtered</p>
+              <p class="text-lg font-bold text-white mt-0.5" x-text="stats.total"></p>
+            </div>
+            <span class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-sm">🥘</span>
+          </div>
+
+          <div class="bg-[#101726] border border-slate-800/80 rounded-xl p-3.5 flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-medium text-slate-400">Average Price</p>
+              <p class="text-lg font-bold text-emerald-400 mt-0.5" x-text="'₹' + stats.avgPrice"></p>
+            </div>
+            <span class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold">₹</span>
+          </div>
+
+          <div class="bg-[#101726] border border-slate-800/80 rounded-xl p-3.5 flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-medium text-slate-400">Pure Veg Ratio</p>
+              <p class="text-lg font-bold text-amber-300 mt-0.5" x-text="stats.vegPercent + '%'"></p>
+            </div>
+            <span class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 flex items-center justify-center text-sm">🌱</span>
+          </div>
+
+          <div class="bg-[#101726] border border-slate-800/80 rounded-xl p-3.5 flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-medium text-slate-400">Out of Stock</p>
+              <p class="text-lg font-bold mt-0.5" :class="stats.outOfStock > 0 ? 'text-rose-400' : 'text-slate-400'" x-text="stats.outOfStock"></p>
+            </div>
+            <span class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-sm">⚠️</span>
+          </div>
+        </div>
+
+        <!-- Filter Controls Toolbar -->
+        <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-4 shadow-sm space-y-3">
+          <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            <!-- Search -->
             <div class="relative flex-1">
-              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">🔍</span>
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">🔍</span>
               <input
                 type="text"
                 x-model="search"
-                placeholder="Search dishes by name or category..."
-                class="w-full pl-10 pr-4 py-2 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden focus:border-nitkkr-orange"
+                placeholder="Search by dish name, category, or ingredients..."
+                class="w-full pl-9 pr-8 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-amber-500/50"
               />
+              <button
+                x-show="search"
+                @click="search = ''"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-300"
+              >✕</button>
             </div>
 
-            <div class="flex items-center gap-3">
-              <select x-model="selectedVendorId" class="px-4 py-2 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
-                <option value="">All Vendors</option>
-                <template x-for="v in vendors" :key="v.id">
-                  <option :value="v.id" x-text="v.name"></option>
-                </template>
-              </select>
+            <!-- Vendor Dropdown -->
+            <select
+              x-model="selectedVendorId"
+              class="px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-hidden focus:border-amber-500/50 min-w-[180px]"
+            >
+              <option value="">All 18 Food Spots</option>
+              <template x-for="v in vendors" :key="v.id">
+                <option :value="v.id" x-text="v.name"></option>
+              </template>
+            </select>
 
-              <select x-model="filterVeg" class="px-4 py-2 bg-nitkkr-cream/50 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
-                <option value="all">🌱 All Food Types</option>
-                <option value="veg">🌱 Pure Veg Only</option>
-                <option value="nonveg">🍗 Non-Veg Only</option>
-              </select>
+            <!-- Dietary Dropdown -->
+            <select
+              x-model="filterVeg"
+              class="px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-hidden focus:border-amber-500/50"
+            >
+              <option value="all">🌱 All Food Types</option>
+              <option value="veg">🌱 Pure Veg Only</option>
+              <option value="nonveg">🍗 Non-Veg Only</option>
+            </select>
+
+            <!-- Stock Dropdown -->
+            <select
+              x-model="filterStock"
+              class="px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-hidden focus:border-amber-500/50"
+            >
+              <option value="all">📦 All Stock</option>
+              <option value="in_stock">✅ In Stock</option>
+              <option value="out_of_stock">❌ Out of Stock</option>
+            </select>
+
+            <!-- View Mode Switcher -->
+            <div class="flex items-center bg-[#0A0F1A] border border-slate-800 p-1 rounded-xl">
+              <button
+                @click="viewMode = 'table'"
+                :class="viewMode === 'table' ? 'bg-slate-800 text-amber-300 font-semibold shadow-xs' : 'text-slate-400 hover:text-slate-200'"
+                class="px-2.5 py-1 text-xs rounded-lg transition-colors cursor-pointer"
+                title="Table View"
+              >
+                ≡ Table
+              </button>
+              <button
+                @click="viewMode = 'grid'"
+                :class="viewMode === 'grid' ? 'bg-slate-800 text-amber-300 font-semibold shadow-xs' : 'text-slate-400 hover:text-slate-200'"
+                class="px-2.5 py-1 text-xs rounded-lg transition-colors cursor-pointer"
+                title="Grid View"
+              >
+                ⊞ Grid
+              </button>
             </div>
           </div>
 
+          <!-- Price Filter Chips -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-1 text-xs border-t border-slate-800/60">
+            <span class="text-[11px] font-medium text-slate-400 mr-1">Price Tier:</span>
+            <button
+              @click="priceRange = 'all'"
+              :class="priceRange === 'all' ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-[#0A0F1A] border-slate-800 text-slate-400 hover:text-slate-200'"
+              class="px-2.5 py-1 border rounded-lg text-[11px] transition-colors cursor-pointer"
+            >All</button>
+            <button
+              @click="priceRange = 'under50'"
+              :class="priceRange === 'under50' ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-[#0A0F1A] border-slate-800 text-slate-400 hover:text-slate-200'"
+              class="px-2.5 py-1 border rounded-lg text-[11px] transition-colors cursor-pointer"
+            >&lt; ₹50 (Pocket Friendly)</button>
+            <button
+              @click="priceRange = '50to100'"
+              :class="priceRange === '50to100' ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-[#0A0F1A] border-slate-800 text-slate-400 hover:text-slate-200'"
+              class="px-2.5 py-1 border rounded-lg text-[11px] transition-colors cursor-pointer"
+            >₹50 – ₹100</button>
+            <button
+              @click="priceRange = '100to200'"
+              :class="priceRange === '100to200' ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-[#0A0F1A] border-slate-800 text-slate-400 hover:text-slate-200'"
+              class="px-2.5 py-1 border rounded-lg text-[11px] transition-colors cursor-pointer"
+            >₹100 – ₹200</button>
+            <button
+              @click="priceRange = 'above200'"
+              :class="priceRange === 'above200' ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-[#0A0F1A] border-slate-800 text-slate-400 hover:text-slate-200'"
+              class="px-2.5 py-1 border rounded-lg text-[11px] transition-colors cursor-pointer"
+            >&gt; ₹200 (Platters & Combos)</button>
+          </div>
+        </div>
 
-          <!-- Dishes Table / Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <template x-for="item in filteredItems" :key="item.id">
-              <div class="bg-white rounded-3xl border border-nitkkr-orange/20 p-5 space-y-3 shadow-sm hover:border-emerald-500/50 transition-all flex flex-col justify-between">
-                <div>
-                  <div class="flex items-center justify-between gap-2 mb-1">
-                    <div class="flex items-center gap-1.5">
-                      <span class="w-3 h-3 rounded-full border" :class="item.isVeg ? 'border-emerald-600 bg-emerald-500' : 'border-rose-600 bg-rose-500'"></span>
-                      <h4 class="font-bold text-sm text-nitkkr-dark" x-text="item.name"></h4>
-                    </div>
-                    <span class="font-display font-bold text-sm text-emerald-700" x-text="'₹' + item.price"></span>
-                  </div>
+        <!-- TABLE VIEW -->
+        <div x-show="viewMode === 'table'" class="bg-[#101726] border border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-[#0A0F1A] border-b border-slate-800 text-slate-400 font-medium uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">Dish</th>
+                  <th class="py-3 px-4">Food Spot</th>
+                  <th class="py-3 px-4">Category</th>
+                  <th class="py-3 px-4">Price</th>
+                  <th class="py-3 px-4">Diet</th>
+                  <th class="py-3 px-4">Counter Stock</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60 font-normal">
+                <template x-for="item in filteredItems" :key="item.id">
+                  <tr class="hover:bg-slate-800/30 transition-colors">
+                    <td class="py-3 px-4">
+                      <div class="font-medium text-slate-200" x-text="item.name"></div>
+                      <p class="text-[11px] text-slate-400 line-clamp-1 max-w-xs mt-0.5" x-text="item.description || 'Campus favorite'"></p>
+                    </td>
+                    <td class="py-3 px-4 text-slate-300 whitespace-nowrap">
+                      <span class="px-2 py-0.5 rounded-md bg-[#0A0F1A] border border-slate-800 text-[11px]" x-text="item.vendorName || 'Campus Spot'"></span>
+                    </td>
+                    <td class="py-3 px-4 text-slate-400 whitespace-nowrap" x-text="item.categoryName || 'General'"></td>
+                    <td class="py-3 px-4 whitespace-nowrap">
+                      <span class="font-mono font-bold text-amber-300" x-text="'₹' + item.price"></span>
+                    </td>
+                    <td class="py-3 px-4 whitespace-nowrap">
+                      <span
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                        :class="item.isVeg ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'"
+                      >
+                        <span class="w-1.5 h-1.5 rounded-full" :class="item.isVeg ? 'bg-emerald-400' : 'bg-rose-400'"></span>
+                        <span x-text="item.isVeg ? 'Veg' : 'Non-Veg'"></span>
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 whitespace-nowrap">
+                      <button
+                        @click="toggleAvailability(item)"
+                        class="px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all border"
+                        :class="item.isAvailable !== false ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20' : 'bg-rose-500/10 border-rose-500/30 text-rose-300 hover:bg-rose-500/20'"
+                        x-text="item.isAvailable !== false ? 'In Stock' : 'Out of Stock'"
+                      ></button>
+                    </td>
+                    <td class="py-3 px-4 text-right whitespace-nowrap space-x-2">
+                      <button @click="openEdit(item)" class="text-amber-400 hover:text-amber-300 font-semibold text-[11px] cursor-pointer">Edit</button>
+                      <button @click="deleteItem(item)" class="text-rose-400 hover:text-rose-300 font-semibold text-[11px] cursor-pointer">Delete</button>
+                    </td>
+                  </tr>
+                </template>
 
-                  <p class="text-xs text-nitkkr-gray line-clamp-2" x-text="item.description || 'Delicious campus preparation'"></p>
-                  
-                  <div class="pt-2 flex items-center justify-between text-[11px] text-slate-500">
-                    <span x-text="item.categoryName || 'General'"></span>
-                    <span :class="item.isAvailable ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'" x-text="item.isAvailable ? 'In Stock' : 'Out of Stock'"></span>
+                <tr x-show="filteredItems.length === 0">
+                  <td colspan="7" class="py-12 text-center text-slate-500">
+                    <p class="text-sm">No dishes match your active filters.</p>
+                    <button @click="search = ''; selectedVendorId = ''; filterVeg = 'all'; filterStock = 'all'; priceRange = 'all'" class="mt-2 text-xs text-amber-400 hover:underline">Reset Filters</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- GRID VIEW -->
+        <div x-show="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          <template x-for="item in filteredItems" :key="item.id">
+            <div class="bg-[#101726] rounded-2xl border border-slate-800/80 p-4 space-y-3 shadow-xs hover:border-slate-700 transition-all flex flex-col justify-between">
+              <div>
+                <div class="flex items-start justify-between gap-2 mb-1.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full" :class="item.isVeg ? 'bg-emerald-400' : 'bg-rose-400'"></span>
+                    <h4 class="font-bold text-xs text-slate-100 line-clamp-1" x-text="item.name"></h4>
                   </div>
+                  <span class="font-mono font-bold text-xs text-amber-300" x-text="'₹' + item.price"></span>
                 </div>
 
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
-                  <button @click="openEdit(item)" class="text-xs text-blue-600 font-bold hover:underline">Edit Price</button>
-                  <button @click="deleteItem(item)" class="text-xs text-rose-600 font-bold hover:underline">Delete</button>
+                <p class="text-[11px] text-slate-400 line-clamp-2" x-text="item.description || 'Campus favorite preparation'"></p>
+
+                <div class="pt-2.5 flex items-center justify-between text-[11px] text-slate-400">
+                  <span class="px-1.5 py-0.5 rounded bg-[#0A0F1A] border border-slate-800" x-text="item.vendorName || 'Spot'"></span>
+                  <span x-text="item.categoryName || 'General'"></span>
                 </div>
               </div>
-            </template>
-          </div>
 
+              <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                <button
+                  @click="toggleAvailability(item)"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all border"
+                  :class="item.isAvailable !== false ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'"
+                  x-text="item.isAvailable !== false ? 'In Stock' : 'Out of Stock'"
+                ></button>
+
+                <div class="flex items-center gap-2.5">
+                  <button @click="openEdit(item)" class="text-xs text-amber-400 hover:text-amber-300 font-semibold cursor-pointer">Edit</button>
+                  <button @click="deleteItem(item)" class="text-xs text-rose-400 hover:text-rose-300 font-semibold cursor-pointer">Delete</button>
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
+
       </main>
 
       <!-- Modal: Add / Edit Dish -->
       <div
         x-show="showAddModal"
         x-transition
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs"
         @click.self="showAddModal = false"
       >
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 border border-nitkkr-orange/30 shadow-2xl">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 class="font-display text-lg font-bold text-nitkkr-dark" x-text="editingItem ? '✏️ Edit Dish' : '🍱 Add New Dish'"></h3>
-            <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">✕</button>
+        <div class="bg-[#101726] rounded-2xl p-6 sm:p-7 max-w-lg w-full space-y-4 border border-slate-800 shadow-2xl text-slate-200">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <h3 class="font-display text-base font-bold text-white" x-text="editingItem ? '✏️ Edit Menu Item' : '🍱 Add New Menu Item'"></h3>
+            <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-200 text-lg cursor-pointer">✕</button>
           </div>
 
-          <form @submit.prevent="saveItem()" class="space-y-4">
+          <form @submit.prevent="saveItem()" class="space-y-3.5">
             <div>
-              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Select Food Vendor *</label>
-              <select x-model="form.vendorId" required class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
-                <option value="">-- Choose Vendor --</option>
+              <label class="text-xs font-semibold text-slate-300 block mb-1">Food Vendor *</label>
+              <select x-model="form.vendorId" required class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-hidden focus:border-amber-500/50">
+                <option value="">-- Select Food Vendor --</option>
                 <template x-for="v in vendors" :key="v.id">
                   <option :value="v.id" x-text="v.name"></option>
                 </template>
               </select>
             </div>
 
-
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Dish Name *</label>
-                <input type="text" x-model="form.name" required placeholder="e.g. Butter Paneer Paratha" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+                <label class="text-xs font-semibold text-slate-300 block mb-1">Dish Name *</label>
+                <input type="text" x-model="form.name" required placeholder="e.g. Butter Paneer Paratha" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-amber-500/50" />
               </div>
               <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Price (₹) *</label>
-                <input type="number" x-model="form.price" required placeholder="60" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+                <label class="text-xs font-semibold text-slate-300 block mb-1">Price (₹) *</label>
+                <input type="number" x-model="form.price" required placeholder="60" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-amber-500/50" />
               </div>
             </div>
 
             <div>
-              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Category</label>
-              <select x-model="form.categoryId" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
+              <label class="text-xs font-semibold text-slate-300 block mb-1">Category</label>
+              <select x-model="form.categoryId" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-hidden focus:border-amber-500/50">
                 <option value="">-- Select Category --</option>
                 <template x-for="c in categories" :key="c.id">
-                  <option :value="c.id" x-text="c.icon + ' ' + c.name"></option>
+                  <option :value="c.id" x-text="(c.icon || '🍽️') + ' ' + c.name"></option>
                 </template>
               </select>
             </div>
 
             <div>
-              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Description</label>
-              <input type="text" x-model="form.description" placeholder="Served hot with mint chutney & curd" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
+              <label class="text-xs font-semibold text-slate-300 block mb-1">Description</label>
+              <input type="text" x-model="form.description" placeholder="e.g. Served hot with mint chutney & amul butter" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-amber-500/50" />
             </div>
 
-            <div class="flex items-center gap-4 pt-2">
+            <div class="flex items-center gap-5 pt-1">
               <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" x-model="form.isVeg" class="rounded text-emerald-600">
-                <span class="text-xs font-bold text-emerald-700">🌱 Pure Veg</span>
+                <input type="checkbox" x-model="form.isVeg" class="rounded text-emerald-500 bg-[#0A0F1A] border-slate-700">
+                <span class="text-xs font-semibold text-emerald-400">🌱 Pure Veg</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" x-model="form.isAvailable" class="rounded text-nitkkr-orange">
-                <span class="text-xs font-bold text-nitkkr-dark">Available in Stock</span>
+                <input type="checkbox" x-model="form.isAvailable" class="rounded text-amber-500 bg-[#0A0F1A] border-slate-700">
+                <span class="text-xs font-semibold text-slate-300">In Stock at Counter</span>
               </label>
             </div>
 
-            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
-              <button type="button" @click="showAddModal = false" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-500">Cancel</button>
-              <button type="submit" :disabled="saving" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm">
+            <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+              <button type="button" @click="showAddModal = false" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200">Cancel</button>
+              <button type="submit" :disabled="saving" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer">
                 <span x-show="!saving" x-text="editingItem ? 'Save Changes' : 'Add Dish'"></span>
                 <span x-show="saving">Saving...</span>
               </button>

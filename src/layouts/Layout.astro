@@ -111,9 +111,10 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
   </script>
 </head>
 
-<body class="font-body bg-nitkkr-cream text-nitkkr-dark min-h-screen flex flex-col antialiased">
+<body class={`font-body ${isAdminPage ? 'bg-[#090D15] text-slate-200' : 'bg-nitkkr-cream text-nitkkr-dark'} min-h-screen flex flex-col antialiased`}>
 
   <!-- 📲 Smart PWA Install Top Banner -->
+  {!isAdminPage && (
   <div
     x-data="{
       showBanner: false,
@@ -299,6 +300,7 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
       </div>
     </div>
   </div>
+  )}
 
 
   <!-- 🌟 Sticky Micro-Header for Inner Subpages -->

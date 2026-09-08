@@ -33,11 +33,11 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
         privacy_custom_text: '',
         about_custom_text: '',
         contact_email: 'm.chauhan@zohomail.in',
-        support_whatsapp: '+91 98964 75885',
+        support_whatsapp: '+91 89010 26416',
         instagram_url: 'https://instagram.com/orandus.in',
-        footer_tagline: 'Instant menu search for food spots and local services.',
+        footer_tagline: 'Discover campus food spots, menus, prices and locations in one place.',
         footer_custom_note: 'Zero Commissions • Direct Vendor Connect',
-        footer_copyright: 'Food Spots & Services Directory'
+        footer_copyright: 'Find Food. See the Menu.'
       },
       selectedPolicy: 'terms',
 
@@ -144,32 +144,32 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
           });
 
           if (res.ok) {
-            this.showToast(this.editingPage ? '✅ Page updated successfully!' : '🎉 New page published live!');
+            this.showToast(this.editingPage ? '✅ Page updated successfully!' : '🎉 Page published live!');
             this.showAddModal = false;
             await this.loadPages();
           } else {
-            const err = await res.json().catch(() => ({}));
-            alert(err.error || 'Failed to save page');
+            const err = await res.json();
+            alert('Failed to save page: ' + (err.error || 'Server error'));
           }
         } catch (e) {
-          alert('Server error saving page');
+          alert('Network error while saving page');
         } finally {
           this.saving = false;
         }
       },
 
       async deletePage(p) {
-        if (!confirm('Are you sure you want to delete "' + p.title + '"? Live URL /p/' + p.slug + ' will be removed.')) return;
+        if (!confirm(`Are you sure you want to permanently delete "${p.title}"?`)) return;
         try {
-          const res = await fetch('/api/admin/custom-pages?id=' + p.id, { method: 'DELETE' });
+          const res = await fetch(`/api/admin/custom-pages?id=${p.id}`, { method: 'DELETE' });
           if (res.ok) {
-            this.pages = this.pages.filter(x => x.id !== p.id);
-            this.showToast('🗑️ Page removed');
+            this.showToast('✅ Page deleted');
+            await this.loadPages();
           } else {
             alert('Failed to delete page');
           }
         } catch (e) {
-          alert('Error deleting page');
+          alert('Network error');
         }
       },
 
@@ -182,7 +182,7 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             body: JSON.stringify({ settings: this.settings })
           });
           if (res.ok) {
-            this.showToast('✅ Policy content saved live on the website!');
+            this.showToast('✅ Policies & footer updated live!');
           } else {
             alert('Failed to save policy settings');
           }
@@ -196,27 +196,26 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
       async logout() {
         if (!confirm('Log out from Founder Panel?')) return;
         await fetch('/api/admin/auth', { method: 'DELETE' });
-        window.location.href = '/';
+        window.location.href = '/admin/login';
       }
     }));
   });
 </script>
 
-<Layout title="Footer Pages & Custom Content Hub - Orandus Admin" description="Full CRUD operations for custom pages and footer legal policies">
-  <section class="min-h-screen bg-nitkkr-cream flex flex-col lg:flex-row text-nitkkr-dark">
+<Layout title="Pages & Policy Documents - Orandus Ops" description="Manage custom campus pages and footer legal policies">
+  <section class="min-h-screen bg-[#090D15] flex flex-col lg:flex-row text-slate-200 antialiased font-sans">
     
     <div
       x-data="pagesAdmin"
       class="flex-1 flex flex-col lg:flex-row min-h-screen"
     >
-
       <!-- Toast Notification -->
       <div
         x-show="toastMsg"
         x-transition
-        class="fixed bottom-6 right-6 z-50 bg-nitkkr-dark text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-2 border border-nitkkr-orange/40"
+        class="fixed bottom-6 right-6 z-50 bg-[#161F30] border border-amber-500/40 text-amber-300 px-4 py-2.5 rounded-xl shadow-2xl font-medium text-xs flex items-center gap-2.5 backdrop-blur-md"
       >
-        <span class="text-base">🔔</span>
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
         <span x-text="toastMsg"></span>
       </div>
 
@@ -224,315 +223,318 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
       <AdminSidebar currentPath="/admin/pages" />
 
       <!-- Main Content Area -->
-      <main class="flex-1 p-4 sm:p-8 lg:p-10 overflow-y-auto max-w-6xl">
-        <div class="space-y-8">
-
-          <!-- Header -->
-          <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nitkkr-orange/10 border border-nitkkr-orange/20 text-nitkkr-orange text-[11px] font-bold mb-2">
-                <span>📄</span> Custom Pages & Footer Navigation Engine
-              </div>
-              <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-nitkkr-dark">
-                Pages & Legal Policies Hub
-              </h1>
-              <p class="text-xs sm:text-sm text-nitkkr-gray mt-1">
-                Create custom campus pages, manage live links, edit legal policies, and customize footer sections.
-              </p>
+      <main class="flex-1 p-3.5 sm:p-6 lg:p-7 overflow-y-auto space-y-5 max-w-6xl w-full">
+        
+        <!-- Header -->
+        <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-semibold mb-2">
+              <span>📄</span> Custom Pages & Legal Documents
             </div>
-
-            <div class="flex items-center gap-3">
-              <button
-                x-show="activeTab === 'custom'"
-                @click="openAdd()"
-                class="px-5 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-2xl shadow-md shadow-nitkkr-orange/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-              >
-                <span>➕</span> Create New Page
-              </button>
-
-              <button
-                x-show="activeTab !== 'custom'"
-                @click="savePolicySettings()"
-                :disabled="saving"
-                class="px-6 py-3 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-2xl shadow-md shadow-nitkkr-orange/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-              >
-                <span x-text="saving ? 'Saving...' : '💾 Save Changes'"></span>
-              </button>
-            </div>
+            <h1 class="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Pages & Policy Management
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">
+              Create custom markdown guides, manage terms and privacy policies, and configure global footer links.
+            </p>
           </div>
 
-          <!-- Tab Navigation -->
-          <div class="flex flex-wrap gap-2 pb-2">
+          <div class="flex items-center gap-2.5">
             <button
-              @click="activeTab = 'custom'"
-              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
-              :class="activeTab === 'custom' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+              x-show="activeTab === 'custom'"
+              @click="openAdd()"
+              class="px-4 py-2 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs rounded-xl shadow-sm shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
             >
-              <span>📑</span> Custom Dynamic Pages (<span x-text="pages.length"></span>)
+              <span>➕</span> New Page
             </button>
 
             <button
-              @click="activeTab = 'policies'"
-              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
-              :class="activeTab === 'policies' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
+              x-show="activeTab !== 'custom'"
+              @click="savePolicySettings()"
+              :disabled="saving"
+              class="px-4 py-2 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs rounded-xl shadow-sm shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
             >
-              <span>📜</span> Core Policies (Terms, Privacy, About)
-            </button>
-
-            <button
-              @click="activeTab = 'footer'"
-              class="px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer"
-              :class="activeTab === 'footer' ? 'bg-nitkkr-orange text-white shadow-sm' : 'bg-white border border-nitkkr-orange/20 text-nitkkr-dark hover:bg-nitkkr-orange/10'"
-            >
-              <span>🦶</span> Global Footer Branding
+              <span x-text="saving ? 'Saving...' : '💾 Save Changes'"></span>
             </button>
           </div>
+        </div>
 
-          <!-- TAB 1: CUSTOM PAGES CRUD -->
-          <div x-show="activeTab === 'custom'" class="space-y-6">
-            
-            <!-- Search Filter Bar -->
-            <div class="bg-white border border-nitkkr-orange/20 rounded-2xl p-4 shadow-xs flex items-center gap-3">
-              <span class="text-slate-400">🔍</span>
-              <input
-                type="text"
-                x-model="search"
-                placeholder="Search custom pages by title, slug, or section..."
-                class="w-full bg-transparent text-xs font-semibold text-nitkkr-dark placeholder-slate-400 focus:outline-hidden"
-              />
-            </div>
+        <!-- Tab Navigation -->
+        <div class="flex flex-wrap gap-1.5 p-1 bg-[#101726] border border-slate-800/80 rounded-2xl">
+          <button
+            @click="activeTab = 'custom'"
+            class="px-3.5 py-2 rounded-xl font-semibold text-xs transition-all flex items-center gap-2 cursor-pointer"
+            :class="activeTab === 'custom' ? 'bg-slate-800 text-amber-300 shadow-xs ring-1 ring-amber-500/20' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'"
+          >
+            <span>📑</span> Custom Dynamic Pages (<span x-text="pages.length"></span>)
+          </button>
 
-            <!-- Custom Pages List Table -->
-            <div class="bg-white border border-nitkkr-orange/20 rounded-3xl overflow-hidden shadow-sm">
-              <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                  <thead class="bg-nitkkr-cream/60 border-b border-nitkkr-orange/20 text-nitkkr-gray font-bold uppercase tracking-wider text-[10px]">
-                    <tr>
-                      <th class="p-4 sm:px-6">Page Title & Slug</th>
-                      <th class="p-4">Footer Column</th>
-                      <th class="p-4">Status</th>
-                      <th class="p-4">Live URL</th>
-                      <th class="p-4 text-right sm:px-6">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    <template x-for="p in filteredPages" :key="p.id">
-                      <tr class="hover:bg-amber-50/40 transition-colors">
-                        <td class="p-4 sm:px-6 font-bold text-nitkkr-dark">
-                          <div class="flex items-center gap-2.5">
-                            <span class="text-lg" x-text="p.icon || '📄'"></span>
-                            <div>
-                              <span class="block text-sm" x-text="p.title"></span>
-                              <span class="text-[11px] text-nitkkr-gray font-mono font-normal" x-text="'/p/' + p.slug"></span>
-                            </div>
+          <button
+            @click="activeTab = 'policies'"
+            class="px-3.5 py-2 rounded-xl font-semibold text-xs transition-all flex items-center gap-2 cursor-pointer"
+            :class="activeTab === 'policies' ? 'bg-slate-800 text-amber-300 shadow-xs ring-1 ring-amber-500/20' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'"
+          >
+            <span>📜</span> Core Policies (Terms, Privacy, About)
+          </button>
+
+          <button
+            @click="activeTab = 'footer'"
+            class="px-3.5 py-2 rounded-xl font-semibold text-xs transition-all flex items-center gap-2 cursor-pointer"
+            :class="activeTab === 'footer' ? 'bg-slate-800 text-amber-300 shadow-xs ring-1 ring-amber-500/20' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'"
+          >
+            <span>🦶</span> Footer Branding
+          </button>
+        </div>
+
+        <!-- TAB 1: CUSTOM PAGES CRUD -->
+        <div x-show="activeTab === 'custom'" class="space-y-4">
+          
+          <!-- Search Filter Bar -->
+          <div class="bg-[#101726] border border-slate-800/80 rounded-xl p-3 flex items-center gap-3">
+            <span class="text-xs text-slate-400">🔍</span>
+            <input
+              type="text"
+              x-model="search"
+              placeholder="Search custom pages by title, slug, or section..."
+              class="w-full bg-transparent text-xs font-medium text-slate-200 placeholder-slate-500 focus:outline-hidden"
+            />
+            <button
+              x-show="search"
+              @click="search = ''"
+              class="text-xs text-slate-500 hover:text-slate-300"
+            >✕</button>
+          </div>
+
+          <!-- Custom Pages List Table -->
+          <div class="bg-[#101726] border border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-[#0A0F1A] border-b border-slate-800 text-slate-400 font-medium uppercase tracking-wider text-[10px]">
+                  <tr>
+                    <th class="py-3 px-4">Page Title & Slug</th>
+                    <th class="py-3 px-4">Footer Column</th>
+                    <th class="py-3 px-4">Status</th>
+                    <th class="py-3 px-4">Live URL</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 font-normal">
+                  <template x-for="p in filteredPages" :key="p.id">
+                    <tr class="hover:bg-slate-800/30 transition-colors">
+                      <td class="py-3 px-4">
+                        <div class="flex items-center gap-2.5">
+                          <span class="text-base" x-text="p.icon || '📄'"></span>
+                          <div>
+                            <span class="font-semibold text-slate-200 block" x-text="p.title"></span>
+                            <span class="text-[11px] text-slate-400 font-mono" x-text="'/p/' + p.slug"></span>
                           </div>
-                        </td>
-                        <td class="p-4">
-                          <span class="px-2.5 py-1 bg-nitkkr-cream text-nitkkr-dark font-bold text-[11px] rounded-lg border border-nitkkr-orange/20" x-text="p.category || 'Explore'"></span>
-                          <span x-show="p.showInFooter" class="ml-1 text-[10px] text-emerald-600 font-bold" title="Visible in footer">🦶 In Footer</span>
-                        </td>
-                        <td class="p-4">
-                          <span
-                            class="px-2 py-0.5 rounded-full font-bold text-[10px]"
-                            :class="p.isPublished ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'"
-                            x-text="p.isPublished ? 'Published 🟢' : 'Draft ⚪'"
-                          ></span>
-                        </td>
-                        <td class="p-4">
-                          <a
-                            :href="'/p/' + p.slug"
-                            target="_blank"
-                            class="text-nitkkr-orange hover:underline font-bold text-xs inline-flex items-center gap-1"
-                          >
-                            View Page ↗
-                          </a>
-                        </td>
-                        <td class="p-4 sm:px-6 text-right space-x-2 whitespace-nowrap">
-                          <button
-                            @click="openEdit(p)"
-                            class="px-3 py-1.5 bg-nitkkr-cream hover:bg-nitkkr-orange/10 border border-nitkkr-orange/30 text-nitkkr-dark rounded-xl font-bold text-[11px] transition-colors cursor-pointer"
-                          >
-                            ✏️ Edit
-                          </button>
-                          <button
-                            @click="deletePage(p)"
-                            class="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-xl font-bold text-[11px] transition-colors cursor-pointer"
-                          >
-                            🗑️ Delete
-                          </button>
-                        </td>
-                      </tr>
-                    </template>
-
-                    <tr x-show="filteredPages.length === 0">
-                      <td colspan="5" class="p-12 text-center text-nitkkr-gray">
-                        <span class="text-3xl block mb-2">📑</span>
-                        <span class="font-bold block text-nitkkr-dark">No custom pages found</span>
-                        <span class="text-xs text-slate-400 mt-1 block">Click "+ Create New Page" to add custom content or hostel guides.</span>
+                        </div>
+                      </td>
+                      <td class="py-3 px-4 whitespace-nowrap">
+                        <span class="px-2 py-0.5 rounded-md bg-[#0A0F1A] border border-slate-800 text-slate-300 text-[11px]" x-text="p.category || 'Explore'"></span>
+                        <span x-show="p.showInFooter" class="ml-1.5 text-[10px] text-emerald-400 font-semibold" title="Visible in footer">🦶 Footer</span>
+                      </td>
+                      <td class="py-3 px-4 whitespace-nowrap">
+                        <span
+                          class="px-2 py-0.5 rounded-full font-semibold text-[10px]"
+                          :class="p.isPublished ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'"
+                          x-text="p.isPublished ? 'Published 🟢' : 'Draft ⚪'"
+                        ></span>
+                      </td>
+                      <td class="py-3 px-4 whitespace-nowrap">
+                        <a
+                          :href="'/p/' + p.slug"
+                          target="_blank"
+                          class="text-amber-400 hover:underline font-semibold text-xs inline-flex items-center gap-1"
+                        >
+                          View ↗
+                        </a>
+                      </td>
+                      <td class="py-3 px-4 text-right space-x-2 whitespace-nowrap">
+                        <button
+                          @click="openEdit(p)"
+                          class="text-amber-400 hover:text-amber-300 font-semibold text-xs cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          @click="deletePage(p)"
+                          class="text-rose-400 hover:text-rose-300 font-semibold text-xs cursor-pointer"
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                  </template>
 
-          </div>
-
-          <!-- TAB 2: CORE POLICIES -->
-          <div x-show="activeTab === 'policies'" class="space-y-6">
-            
-            <!-- Policy Switcher -->
-            <div class="flex gap-2">
-              <button
-                @click="selectedPolicy = 'terms'"
-                class="px-4 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer"
-                :class="selectedPolicy === 'terms' ? 'bg-nitkkr-dark text-white' : 'bg-white border border-slate-200 text-slate-700'"
-              >
-                📜 Terms (/terms)
-              </button>
-              <button
-                @click="selectedPolicy = 'privacy'"
-                class="px-4 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer"
-                :class="selectedPolicy === 'privacy' ? 'bg-nitkkr-dark text-white' : 'bg-white border border-slate-200 text-slate-700'"
-              >
-                🔒 Privacy (/privacy)
-              </button>
-              <button
-                @click="selectedPolicy = 'about'"
-                class="px-4 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer"
-                :class="selectedPolicy === 'about' ? 'bg-nitkkr-dark text-white' : 'bg-white border border-slate-200 text-slate-700'"
-              >
-                ℹ️ About Us (/about)
-              </button>
-            </div>
-
-            <div class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
-              <div x-show="selectedPolicy === 'terms'">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                  <h3 class="font-display text-base font-bold text-nitkkr-dark">📜 Terms of Service Editor</h3>
-                  <a href="/terms" target="_blank" class="text-nitkkr-orange text-xs underline font-bold">Preview Live ↗</a>
-                </div>
-                <textarea
-                  x-model="settings.terms_custom_text"
-                  rows="12"
-                  class="w-full p-4 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-2xl text-xs font-mono text-nitkkr-dark focus:outline-hidden focus:border-nitkkr-orange leading-relaxed"
-                  placeholder="Custom student terms and food safety guidelines..."
-                ></textarea>
-              </div>
-
-              <div x-show="selectedPolicy === 'privacy'">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                  <h3 class="font-display text-base font-bold text-nitkkr-dark">🔒 Privacy Policy Editor</h3>
-                  <a href="/privacy" target="_blank" class="text-nitkkr-orange text-xs underline font-bold">Preview Live ↗</a>
-                </div>
-                <textarea
-                  x-model="settings.privacy_custom_text"
-                  rows="12"
-                  class="w-full p-4 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-2xl text-xs font-mono text-nitkkr-dark focus:outline-hidden focus:border-nitkkr-orange leading-relaxed"
-                  placeholder="Custom privacy and data protection clauses..."
-                ></textarea>
-              </div>
-
-              <div x-show="selectedPolicy === 'about'">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                  <h3 class="font-display text-base font-bold text-nitkkr-dark">ℹ️ About Us & Campus Story</h3>
-                  <a href="/about" target="_blank" class="text-nitkkr-orange text-xs underline font-bold">Preview Live ↗</a>
-                </div>
-                <textarea
-                  x-model="settings.about_custom_text"
-                  rows="12"
-                  class="w-full p-4 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-2xl text-xs font-mono text-nitkkr-dark focus:outline-hidden focus:border-nitkkr-orange leading-relaxed"
-                  placeholder="Describe your student mission and campus food ecosystem..."
-                ></textarea>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- TAB 3: FOOTER BRANDING -->
-          <div x-show="activeTab === 'footer'" class="bg-white border border-nitkkr-orange/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
-            <div class="pb-3 border-b border-slate-100">
-              <h3 class="font-display text-lg font-bold text-nitkkr-dark">🏷️ Global Footer Branding</h3>
-              <p class="text-xs text-nitkkr-gray">Controls text and links rendered across the bottom of every page</p>
-            </div>
-
-            <div class="space-y-4">
-              <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Footer Tagline</label>
-                <input type="text" x-model="settings.footer_tagline" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
-              </div>
-
-              <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Footer Custom Highlight Note</label>
-                <input type="text" x-model="settings.footer_custom_note" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
-              </div>
-
-              <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Copyright Line</label>
-                <input type="text" x-model="settings.footer_copyright" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
-              </div>
+                  <tr x-show="filteredPages.length === 0">
+                    <td colspan="5" class="p-10 text-center text-slate-500">
+                      <span class="text-3xl block mb-2">📑</span>
+                      <span class="font-semibold block text-slate-300">No custom pages found</span>
+                      <span class="text-xs text-slate-500 mt-1 block">Click "+ New Page" to publish campus guides or hostel meal policies.</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
         </div>
+
+        <!-- TAB 2: CORE POLICIES -->
+        <div x-show="activeTab === 'policies'" class="space-y-4">
+          
+          <!-- Policy Switcher -->
+          <div class="flex gap-2">
+            <button
+              @click="selectedPolicy = 'terms'"
+              class="px-3.5 py-1.5 rounded-xl font-semibold text-xs transition-colors cursor-pointer border"
+              :class="selectedPolicy === 'terms' ? 'bg-slate-800 text-amber-300 border-amber-500/30' : 'bg-[#0A0F1A] border-slate-800 text-slate-400 hover:text-slate-200'"
+            >
+              📜 Terms (/terms)
+            </button>
+            <button
+              @click="selectedPolicy = 'privacy'"
+              class="px-3.5 py-1.5 rounded-xl font-semibold text-xs transition-colors cursor-pointer border"
+              :class="selectedPolicy === 'privacy' ? 'bg-slate-800 text-amber-300 border-amber-500/30' : 'bg-[#0A0F1A] border-slate-800 text-slate-400 hover:text-slate-200'"
+            >
+              🔒 Privacy (/privacy)
+            </button>
+            <button
+              @click="selectedPolicy = 'about'"
+              class="px-3.5 py-1.5 rounded-xl font-semibold text-xs transition-colors cursor-pointer border"
+              :class="selectedPolicy === 'about' ? 'bg-slate-800 text-amber-300 border-amber-500/30' : 'bg-[#0A0F1A] border-slate-800 text-slate-400 hover:text-slate-200'"
+            >
+              ℹ️ About Us (/about)
+            </button>
+          </div>
+
+          <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
+            <div x-show="selectedPolicy === 'terms'">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                <h3 class="font-display text-base font-bold text-white">📜 Terms of Service Editor</h3>
+                <a href="/terms" target="_blank" class="text-amber-400 text-xs hover:underline font-semibold">Preview Live ↗</a>
+              </div>
+              <textarea
+                x-model="settings.terms_custom_text"
+                rows="12"
+                class="w-full p-3.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-mono text-slate-200 focus:outline-hidden focus:border-amber-500/50 leading-relaxed"
+                placeholder="Custom campus food rules, safety guidelines, and terms..."
+              ></textarea>
+            </div>
+
+            <div x-show="selectedPolicy === 'privacy'">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                <h3 class="font-display text-base font-bold text-white">🔒 Privacy Policy Editor</h3>
+                <a href="/privacy" target="_blank" class="text-amber-400 text-xs hover:underline font-semibold">Preview Live ↗</a>
+              </div>
+              <textarea
+                x-model="settings.privacy_custom_text"
+                rows="12"
+                class="w-full p-3.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-mono text-slate-200 focus:outline-hidden focus:border-amber-500/50 leading-relaxed"
+                placeholder="Custom student data protection and privacy clauses..."
+              ></textarea>
+            </div>
+
+            <div x-show="selectedPolicy === 'about'">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                <h3 class="font-display text-base font-bold text-white">ℹ️ About Us & Campus Mission</h3>
+                <a href="/about" target="_blank" class="text-amber-400 text-xs hover:underline font-semibold">Preview Live ↗</a>
+              </div>
+              <textarea
+                x-model="settings.about_custom_text"
+                rows="12"
+                class="w-full p-3.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-mono text-slate-200 focus:outline-hidden focus:border-amber-500/50 leading-relaxed"
+                placeholder="Describe the campus food ecosystem, student story, and discovery mission..."
+              ></textarea>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TAB 3: FOOTER BRANDING -->
+        <div x-show="activeTab === 'footer'" class="bg-[#101726] border border-slate-800/80 rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
+          <div class="pb-3 border-b border-slate-800">
+            <h3 class="font-display text-base font-bold text-white">🏷️ Global Footer Branding</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Controls text and links rendered across the bottom of public pages</p>
+          </div>
+
+          <div class="space-y-3.5">
+            <div>
+              <label class="text-xs font-semibold text-slate-300 block mb-1">Footer Tagline</label>
+              <input type="text" x-model="settings.footer_tagline" class="w-full px-3.5 py-2.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-hidden focus:border-amber-500/50" />
+            </div>
+
+            <div>
+              <label class="text-xs font-semibold text-slate-300 block mb-1">Footer Custom Highlight Note</label>
+              <input type="text" x-model="settings.footer_custom_note" class="w-full px-3.5 py-2.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-hidden focus:border-amber-500/50" />
+            </div>
+
+            <div>
+              <label class="text-xs font-semibold text-slate-300 block mb-1">Copyright Line</label>
+              <input type="text" x-model="settings.footer_copyright" class="w-full px-3.5 py-2.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-hidden focus:border-amber-500/50" />
+            </div>
+          </div>
+        </div>
+
       </main>
 
       <!-- ➕ CREATE / EDIT CUSTOM PAGE MODAL -->
       <div
         x-show="showAddModal"
         x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto"
       >
         <div
           @click.outside="showAddModal = false"
-          class="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-5 shadow-2xl border border-nitkkr-orange/30 text-nitkkr-dark"
+          class="bg-[#101726] rounded-2xl p-6 sm:p-7 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl border border-slate-800 text-slate-200"
         >
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
             <div>
-              <span class="text-[11px] font-bold text-nitkkr-orange uppercase tracking-wider block">Custom Page Studio</span>
-              <h3 class="font-display text-xl font-bold text-nitkkr-dark" x-text="editingPage ? 'Edit Page: ' + editingPage.title : 'Create New Custom Page'"></h3>
+              <span class="text-[10px] font-semibold text-amber-300 uppercase tracking-wider block">Custom Page Studio</span>
+              <h3 class="font-display text-lg font-bold text-white" x-text="editingPage ? 'Edit Page: ' + editingPage.title : 'Create New Custom Page'"></h3>
             </div>
-            <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">✕</button>
+            <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-200 text-lg cursor-pointer">✕</button>
           </div>
 
-          <div class="space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="space-y-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div class="sm:col-span-3">
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Page Title *</label>
+                <label class="text-xs font-semibold text-slate-300 block mb-1">Page Title *</label>
                 <input
                   type="text"
                   x-model="pageForm.title"
                   @input="autoGenerateSlug()"
-                  placeholder="e.g. Hostel Late-Night Food Rules"
-                  class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden"
+                  placeholder="e.g. Hostel Late-Night Food Delivery Rules"
+                  class="w-full px-3.5 py-2.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-amber-500/50"
                 />
               </div>
 
               <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Icon</label>
+                <label class="text-xs font-semibold text-slate-300 block mb-1">Icon</label>
                 <input
                   type="text"
                   x-model="pageForm.icon"
                   placeholder="🌙"
-                  class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark text-center focus:outline-hidden"
+                  class="w-full px-3.5 py-2.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 text-center focus:outline-hidden focus:border-amber-500/50"
                 />
               </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">URL Slug * (Live at /p/[slug])</label>
+                <label class="text-xs font-semibold text-slate-300 block mb-1">URL Slug * (Live at /p/[slug])</label>
                 <input
                   type="text"
                   x-model="pageForm.slug"
                   placeholder="hostel-rules"
-                  class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-mono font-semibold text-nitkkr-dark focus:outline-hidden"
+                  class="w-full px-3.5 py-2.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-mono text-amber-300 placeholder-slate-500 focus:outline-hidden focus:border-amber-500/50"
                 />
               </div>
 
               <div>
-                <label class="text-xs font-bold text-nitkkr-dark block mb-1">Footer Section</label>
-                <select x-model="pageForm.category" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden">
+                <label class="text-xs font-semibold text-slate-300 block mb-1">Footer Section</label>
+                <select x-model="pageForm.category" class="w-full px-3.5 py-2.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-medium text-slate-200 focus:outline-hidden focus:border-amber-500/50">
                   <option value="Explore">Explore Column</option>
                   <option value="Trust & Legal">Trust & Legal Column</option>
                   <option value="Campus Info">Campus Info Column</option>
@@ -541,40 +543,39 @@ import AdminSidebar from '../../components/AdminSidebar.astro';
             </div>
 
             <div>
-              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Page Body Content (Markdown supported) *</label>
+              <label class="text-xs font-semibold text-slate-300 block mb-1">Page Markdown Content *</label>
               <textarea
                 x-model="pageForm.content"
                 rows="8"
-                class="w-full p-4 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-2xl text-xs font-mono text-nitkkr-dark focus:outline-hidden focus:border-nitkkr-orange leading-relaxed"
+                class="w-full p-3.5 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs font-mono text-slate-200 focus:outline-hidden focus:border-amber-500/50 leading-relaxed"
                 placeholder="# Welcome to our campus guide...&#10;&#10;Here are the details for NITKKR students:&#10;- Delivery timings: 10 PM to 3 AM&#10;- Direct vendor WhatsApp connect"
               ></textarea>
             </div>
 
-
-            <div class="flex flex-wrap items-center gap-6 pt-2">
+            <div class="flex flex-wrap items-center gap-5 pt-1">
               <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" x-model="pageForm.showInFooter" class="rounded text-nitkkr-orange" />
-                <span class="text-xs font-bold text-nitkkr-dark">Show link in website footer</span>
+                <input type="checkbox" x-model="pageForm.showInFooter" class="rounded text-amber-500 bg-[#0A0F1A] border-slate-700" />
+                <span class="text-xs font-medium text-slate-300">Show link in footer</span>
               </label>
 
               <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" x-model="pageForm.isPublished" class="rounded text-emerald-600" />
-                <span class="text-xs font-bold text-emerald-700">Published (Visible to students)</span>
+                <input type="checkbox" x-model="pageForm.isPublished" class="rounded text-emerald-500 bg-[#0A0F1A] border-slate-700" />
+                <span class="text-xs font-medium text-emerald-400">Published (Visible to students)</span>
               </label>
             </div>
           </div>
 
-          <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-2.5">
             <button
               @click="showAddModal = false"
-              class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+              class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 cursor-pointer"
             >
               Cancel
             </button>
             <button
               @click="saveCustomPage()"
               :disabled="saving"
-              class="px-6 py-2.5 bg-nitkkr-orange hover:bg-nitkkr-orange-dark text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+              class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
             >
               <span x-text="saving ? 'Saving...' : (editingPage ? 'Save Changes' : 'Publish Page')"></span>
             </button>
