@@ -380,14 +380,14 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               <p class="text-xs text-slate-500 flex items-center gap-1.5 min-w-0">
                 <span
                   class="w-2 h-2 rounded-full flex-shrink-0"
-                  :class="getVendorTiming(vendor).isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"
+                  :class="(getVendorTiming(vendor) && getVendorTiming(vendor).isOpen) ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"
                   aria-hidden="true"
                 ></span>
                 <span
                   class="truncate font-medium"
-                  :class="getVendorTiming(vendor).isUrgent ? 'text-amber-600 font-semibold' : 'text-slate-500'"
-                  x-text="getVendorTiming(vendor).statusText"
-                ></span>
+                  :class="(getVendorTiming(vendor) && getVendorTiming(vendor).isUrgent) ? 'text-amber-600 font-semibold' : 'text-slate-500'"
+                  x-text="getVendorTiming(vendor) ? getVendorTiming(vendor).statusText : 'Open Today'"
+                >Open Today</span>
               </p>
 
               <!-- Actions Group -->
