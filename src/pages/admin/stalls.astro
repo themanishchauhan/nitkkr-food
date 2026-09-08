@@ -110,7 +110,7 @@ const initialCategories = await getCategories();
           phone: v.phone || '',
           whatsapp: v.whatsapp || '',
           address: v.address || '',
-          description: v.description || '',
+          description: v.description || v.notice || '',
           image: v.image || '',
           opensAt: v.opensAt || '09:00',
           closesAt: v.closesAt || '23:00',
@@ -349,6 +349,11 @@ const initialCategories = await getCategories();
                 <label class="text-xs font-bold text-nitkkr-dark block mb-1">Closes At</label>
                 <input type="time" x-model="form.closesAt" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
               </div>
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-nitkkr-dark block mb-1">Special Note / Notice (Displayed on menu)</label>
+              <input type="text" x-model="form.description" placeholder="e.g. Closed on Tuesdays • Call directly for bulk orders" class="w-full px-4 py-2.5 bg-nitkkr-cream/40 border border-nitkkr-orange/30 rounded-xl text-xs font-semibold text-nitkkr-dark focus:outline-hidden" />
             </div>
 
             <div class="flex items-center gap-4 pt-2">

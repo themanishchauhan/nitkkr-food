@@ -89,13 +89,44 @@ export interface VendorTimingStatus {
 export function getVendorTimingStatus(
   opensAt: string | null | undefined,
   closesAt: string | null | undefined,
-  now?: Date
+  now?: Date,
+  closedDays?: string[] | string | null
 ): VendorTimingStatus {
   if (!opensAt || !closesAt) {
     return { isOpen: true, statusText: 'Open Today', isUrgent: false };
   }
 
   const currentDate = now || new Date();
+  // Compute IST date (UTC + 5:30)
+  const istOffsetMs = 330 * 60 * 1000;
+  const istTimeMs = currentDate.getTime() + (currentDate.getTimezoneOffset() * 60 * 1000) + istOffsetMs;
+  const istDate = new Date(istTimeMs);
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const currentDayName = dayNames[istDate.getDay()];
+
+  // Check if today is a scheduled weekly closed day
+  let closedDaysList: string[] = [];
+  if (Array.isArray(closedDays)) {
+    closedDaysList = closedDays;
+  } else if (typeof closedDays === 'string' && closedDays.trim()) {
+    try {
+      const parsed = JSON.parse(closedDays);
+      if (Array.isArray(parsed)) closedDaysList = parsed;
+      else closedDaysList = [closedDays];
+    } catch {
+      closedDaysList = closedDays.split(',').map(s => s.trim());
+    }
+  }
+
+  const isClosedToday = closedDaysList.some(d => d.trim().toLowerCase() === currentDayName.toLowerCase());
+  if (isClosedToday) {
+    return {
+      isOpen: false,
+      statusText: `Closed on ${currentDayName}s`,
+      isUrgent: false,
+    };
+  }
+
   // Compute IST minutes accurately
   const utcMinutes = currentDate.getUTCHours() * 60 + currentDate.getUTCMinutes() + 330;
   const currentTotal = (utcMinutes % 1440 + 1440) % 1440;

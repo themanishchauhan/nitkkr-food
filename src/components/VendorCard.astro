@@ -18,7 +18,8 @@ interface Props {
 }
 
 const { vendor } = Astro.props;
-const timing = getVendorTimingStatus(vendor.opensAt, vendor.closesAt);
+const closedDays = (vendor as any).closedDays || ((vendor.slug === 'the-hangry-club' || vendor.slug === 'hangry-club') ? ['Tuesday'] : null);
+const timing = getVendorTimingStatus(vendor.opensAt, vendor.closesAt, undefined, closedDays);
 const optimizedImg = getOptimizedImageUrl(vendor.image || '/placeholder-vendor.svg', { width: 160, quality: 80, format: 'auto' });
 const telHref = cleanTelHref(vendor.phone);
 ---
