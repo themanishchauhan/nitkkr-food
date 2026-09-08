@@ -376,19 +376,25 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
 
             <!-- Bottom Row: Dynamic Timing on Left, Actions (Call, WhatsApp, Shortened Menu) on Right -->
             <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100/90 w-full flex-wrap sm:flex-nowrap">
-              <!-- Dynamic Timing Status (Same methodology as home page: "Until 11:30 PM", "Closing soon", "Opens at 9:00 AM") -->
-              <p class="text-xs text-slate-500 flex items-center gap-1.5 min-w-0">
+              <!-- Dynamic Timing Status Pill Badge (Matches visual pill styling from vendor header) -->
+              <div class="flex items-center min-w-0">
                 <span
-                  class="w-2 h-2 rounded-full flex-shrink-0"
-                  :class="(getVendorTiming(vendor) && getVendorTiming(vendor).isOpen) ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"
-                  aria-hidden="true"
-                ></span>
-                <span
-                  class="truncate font-medium"
-                  :class="(getVendorTiming(vendor) && getVendorTiming(vendor).isUrgent) ? 'text-amber-600 font-semibold' : 'text-slate-500'"
-                  x-text="getVendorTiming(vendor) ? getVendorTiming(vendor).statusText : 'Open Today'"
-                >Open Today</span>
-              </p>
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-2xs whitespace-nowrap"
+                  :class="(getVendorTiming(vendor) && getVendorTiming(vendor).isOpen) 
+                    ? ((getVendorTiming(vendor) && getVendorTiming(vendor).isUrgent) ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
+                    : 'bg-slate-100 text-slate-600 border-slate-200'"
+                >
+                  <span
+                    class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    :class="(getVendorTiming(vendor) && getVendorTiming(vendor).isOpen) ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"
+                    aria-hidden="true"
+                  ></span>
+                  <span
+                    class="truncate"
+                    x-text="getVendorTiming(vendor) ? getVendorTiming(vendor).statusText : 'Open Today'"
+                  >Open Today</span>
+                </span>
+              </div>
 
               <!-- Actions Group -->
               <div class="flex items-center gap-1.5 flex-shrink-0 ml-auto">
@@ -452,9 +458,24 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
             <div class="flex items-center gap-3 min-w-0">
               <span class="text-2xl">🏪</span>
               <div class="min-w-0">
-                <p class="text-xs text-amber-800 font-semibold">Matching Vendor</p>
+                <p class="text-xs text-amber-800 font-semibold">Matching Food Spot</p>
                 <h4 class="font-bold text-sm text-nitkkr-dark truncate" x-text="matchingVendor.name"></h4>
-                <p class="text-[11px] text-nitkkr-gray truncate" x-text="matchingVendor.address"></p>
+                <div class="flex items-center gap-2 flex-wrap mt-1">
+                  <span
+                    class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs whitespace-nowrap"
+                    :class="(getVendorTiming(matchingVendor) && getVendorTiming(matchingVendor).isOpen) 
+                      ? ((getVendorTiming(matchingVendor) && getVendorTiming(matchingVendor).isUrgent) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300')
+                      : 'bg-slate-200 text-slate-700 border-slate-300'"
+                  >
+                    <span
+                      class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      :class="(getVendorTiming(matchingVendor) && getVendorTiming(matchingVendor).isOpen) ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"
+                      aria-hidden="true"
+                    ></span>
+                    <span x-text="getVendorTiming(matchingVendor) ? getVendorTiming(matchingVendor).statusText : 'Open Today'"></span>
+                  </span>
+                  <p class="text-[11px] text-nitkkr-gray truncate" x-text="matchingVendor.address"></p>
+                </div>
               </div>
             </div>
             <a

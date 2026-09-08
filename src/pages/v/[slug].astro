@@ -161,6 +161,10 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
               <span class={`w-2 h-2 rounded-full ${timing.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
               <span>{timing.statusText}</span>
             </span>
+            <span class="text-xs font-medium text-slate-500 flex items-center gap-1 bg-slate-100/80 px-2.5 py-1 rounded-full border border-slate-200/60">
+              <span>🕒</span>
+              <span>{formattedHours}</span>
+            </span>
           </div>
         </div>
 
