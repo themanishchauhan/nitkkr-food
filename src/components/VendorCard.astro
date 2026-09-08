@@ -23,25 +23,30 @@ const optimizedImg = getOptimizedImageUrl(vendor.image || '/placeholder-vendor.s
 
 <a
   href={`/v/${vendor.slug}`}
-  class="flex items-center gap-3.5 bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90
-         hover:border-nitkkr-orange hover:shadow-md active:scale-[0.99] transition-all duration-200 group shadow-2xs"
+  class={`flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 group shadow-2xs ${
+    timing.isOpen
+      ? 'bg-white border-slate-200/90 hover:border-nitkkr-orange hover:shadow-md active:scale-[0.99]'
+      : 'bg-slate-50/70 border-slate-200 opacity-75 grayscale-[40%] hover:grayscale-0 hover:opacity-100'
+  }`}
 >
   <img
     src={optimizedImg}
     alt={vendor.name}
     width="64"
     height="64"
-    class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-slate-100 bg-slate-50"
+    class={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-slate-100 bg-slate-50 ${
+      !timing.isOpen ? 'grayscale opacity-80' : ''
+    }`}
     loading="lazy"
     decoding="async"
   />
   <div class="flex-1 min-w-0">
     <div class="flex items-center gap-2">
-      <p class="font-bold text-sm sm:text-base truncate text-slate-900 group-hover:text-nitkkr-orange transition-colors">{vendor.name}</p>
+      <p class={`font-bold text-sm sm:text-base truncate transition-colors ${timing.isOpen ? 'text-slate-900 group-hover:text-nitkkr-orange' : 'text-slate-600'}`}>{vendor.name}</p>
     </div>
     <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
       <span
-        class={`w-2 h-2 rounded-full flex-shrink-0 ${timing.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}
+        class={`w-2 h-2 rounded-full flex-shrink-0 ${timing.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}
         aria-hidden="true"
       ></span>
       <span class={`truncate font-medium ${timing.isUrgent ? 'text-amber-600 font-semibold' : 'text-slate-500'}`}>
