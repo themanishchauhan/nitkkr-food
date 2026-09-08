@@ -105,6 +105,12 @@ const initialReviews = await getAllReviews();
         } catch (e) {
           alert('Network error');
         }
+      },
+
+      async logout() {
+        if (!confirm('Log out from Founder Panel?')) return;
+        await fetch('/api/admin/auth', { method: 'DELETE' });
+        window.location.href = '/admin/login';
       }
     }));
   });
