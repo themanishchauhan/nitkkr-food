@@ -110,15 +110,17 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
 
       <!-- Top Navigation Bar over Hero -->
       <div class="absolute top-4 left-0 right-0 max-w-2xl mx-auto px-4 flex items-center justify-between z-10">
-        <a
-          href="/"
-          class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/60 transition-all active:scale-95 shadow-md"
-          aria-label="Back to home"
+        <button
+          type="button"
+          onclick="if (document.referrer && document.referrer.includes(window.location.host)) { history.back(); } else if (window.history.length > 1) { history.back(); } else { window.location.href = '/'; }"
+          class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/60 transition-all active:scale-95 shadow-md cursor-pointer"
+          aria-label="Go back to previous page"
+          title="Back"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
           </svg>
-        </a>
+        </button>
       </div>
 
       <!-- Hero Vendor Info Content -->
