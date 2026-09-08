@@ -48,7 +48,7 @@ export default defineConfig({
         manifest: {
           name: 'Orandus',
           short_name: 'Orandus',
-          description: 'Find food around NIT Kurukshetra instantly',
+          description: 'Find food spots and menus instantly',
           theme_color: '#FF6B35',
           background_color: '#FFF8F0',
           display: 'standalone',

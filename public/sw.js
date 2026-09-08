@@ -1,8 +1,5 @@
-const CACHE_NAME = 'nitkkr-food-v2';
+const CACHE_NAME = 'orandus-v4';
 const STATIC_ASSETS = [
-  '/',
-  '/search',
-  '/how-it-works',
   '/offline',
   '/manifest.webmanifest',
   '/favicon.ico',
@@ -16,12 +13,20 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
         })
       )
     )
@@ -32,24 +37,31 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Pass through admin and dynamic API calls
+  // Pass through admin, ops, and API endpoints
   if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/api') || url.pathname.startsWith('/ops-manish-770')) {
     return;
   }
 
-  // Network first with cache fallback for HTML pages
+  // Network first for all HTML page navigation (never serve stale SSR data)
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(async () => {
-        const cached = await caches.match(event.request);
-        return cached || caches.match('/offline');
+        const cachedOffline = await caches.match('/offline');
+        return cachedOffline || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
       })
     );
     return;
   }
 
+  // Network first for search-engine script and dynamic assets
+  if (url.pathname.includes('/scripts/search-engine.js')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
-  // Stale-while-revalidate for static assets
+  // Stale-while-revalidate for truly static icons/fonts/images
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {

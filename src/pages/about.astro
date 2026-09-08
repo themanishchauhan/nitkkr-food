@@ -10,154 +10,120 @@ const brandName = settingsObj.site_title || settingsObj.brand_name || 'Orandus';
 const customAbout = settingsObj.about_custom_text || '';
 ---
 
-<Layout title={`About Us - ${brandName}`} description={`Learn why we built ${brandName} to make student life easier and support local food spots.`}>
+<Layout title={`About - ${brandName}`} description={`Learn how ${brandName} helps students discover food spots, menus, and prices across campus in one simple place.`}>
   <section class="min-h-screen bg-nitkkr-cream/60 py-10 sm:py-14 px-4">
     <div class="max-w-3xl mx-auto space-y-8">
       
-      <!-- Back Link -->
-      <div>
-        <a href="/" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-nitkkr-orange transition-colors group">
-          <svg class="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span>Back to Home</span>
-        </a>
-      </div>
-
       <!-- Hero Header -->
-      <div class="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-2xs space-y-4">
+      <div class="bg-white rounded-3xl p-6 sm:p-10 border border-amber-200/80 shadow-xs space-y-4">
         <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-[11px] font-bold text-amber-900 uppercase tracking-wider">
-          <span>🌱</span> Our Story
+          <span>🌱</span> Our Mission
         </div>
         
         <h1 class="font-display text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-          Making student life a little easier.
+          Finding campus food, simplified.
         </h1>
 
         <div class="space-y-4 text-sm sm:text-base text-slate-700 leading-relaxed pt-2">
           <p>
-            We started with a simple observation: around every campus, there are tons of food spots students use daily — but finding them is a pain.
+            Around campus, dozens of popular food spots serve students every single day — yet finding updated menus, accurate prices, and operating hours has always been harder than it needs to be.
           </p>
           <p>
-            Food spots have great menus but zero online presence. Everything runs on WhatsApp or word of mouth. You end up asking friends, digging through old chats, or walking around hoping something's open.
+            Most eateries rely purely on word-of-mouth or fragmented chat messages. Students end up guessing what is open, asking around for menu photos, or settling for whatever is closest.
           </p>
           <p class="font-semibold text-slate-900">
-            That's honestly ridiculous.
+            We built <span class="text-nitkkr-orange">{brandName}</span> to make discovery seamless.
           </p>
           <p>
-            <strong class="text-nitkkr-orange font-bold">{brandName}</strong> exists to fix that. One simple place to discover food spots, check menus, see real prices, and contact vendors directly. No account to create. Just open Orandus and start searching.
+            One centralized platform to browse authentic menus, verify transparent prices, check live opening hours, and reach food spots directly. No sign-ups or downloads required — just open and explore.
           </p>
-          <div class="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 text-amber-950 text-xs sm:text-sm font-medium">
-            ✨ <strong>Step one:</strong> bring useful local info together in one fast, easy-to-use platform.
+          <div class="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 text-amber-950 text-xs sm:text-sm font-medium">
+            ✨ <strong>Core principle:</strong> Fast, accurate, and completely free discovery for students and food lovers alike.
           </div>
         </div>
       </div>
 
       {customAbout && (
-        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-2xs space-y-2">
-          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Campus Note</h3>
+        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-amber-200/80 shadow-xs space-y-2">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Notice</h3>
           <p class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">{customAbout}</p>
         </div>
       )}
 
       <!-- What We Stand For -->
       <div class="space-y-4">
-        <h2 class="font-display font-bold text-lg text-slate-900">What We Stand For</h2>
+        <h2 class="font-display font-bold text-xl text-slate-900">What We Stand For</h2>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           
           <!-- 1: Built for Students -->
-          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-3">
+          <div class="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs space-y-3">
             <div class="w-10 h-10 rounded-xl bg-amber-100/70 border border-amber-200 flex items-center justify-center text-lg">
               🎓
             </div>
-            <h3 class="font-display font-bold text-base text-slate-900">Built for students</h3>
+            <h3 class="font-display font-bold text-base text-slate-900">Built for Students</h3>
             <p class="text-sm text-slate-600 leading-relaxed">
-              No complicated apps. No 5-minute onboarding. Open, find what you need, get on with your day.
+              No mandatory account creation. No lengthy onboarding. Open the catalog, find the dish you crave, and place your inquiry in seconds.
             </p>
             <div class="pt-2 flex flex-wrap items-center gap-2 text-xs font-bold text-nitkkr-orange">
-              <span>⚡ Fast</span>
+              <span>⚡ Instant</span>
               <span class="text-slate-300">·</span>
-              <span>✨ Simple</span>
+              <span>✨ Intuitive</span>
               <span class="text-slate-300">·</span>
-              <span>🎯 Useful</span>
+              <span>🎯 Accurate</span>
             </div>
           </div>
 
           <!-- 2: Supporting Local Food Spots -->
-          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-3">
+          <div class="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs space-y-3">
             <div class="w-10 h-10 rounded-xl bg-emerald-100/70 border border-emerald-200 flex items-center justify-center text-lg">
               🏪
             </div>
-            <h3 class="font-display font-bold text-base text-slate-900">Supporting local food spots</h3>
+            <h3 class="font-display font-bold text-base text-slate-900">Empowering Local Vendors</h3>
             <p class="text-sm text-slate-600 leading-relaxed">
-              Most spots students rely on are small — run on WhatsApp, cash, word of mouth. No time, money, or tech skills for websites.
-            </p>
-            <p class="text-sm text-slate-600 leading-relaxed">
-              We help them get discovered without the hassle. We handle the menus and info so they don't have to.
+              Local food spots often lack dedicated digital platforms. We provide them with free, verified digital menu listings so students can easily discover their specialties.
             </p>
             <p class="text-xs text-slate-500 italic pt-1">
-              Long term: give spots their own tools to manage menus, offers, and student interactions.
+              Zero listing fees. Zero commissions. 100% direct vendor support.
             </p>
           </div>
 
-          <!-- 3: Start Small, Think Big -->
-          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-3">
+          <!-- 3: Transparent Information -->
+          <div class="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs space-y-3">
             <div class="w-10 h-10 rounded-xl bg-indigo-100/70 border border-indigo-200 flex items-center justify-center text-lg">
-              🚀
+              📋
             </div>
-            <h3 class="font-display font-bold text-base text-slate-900">Start small, think big</h3>
+            <h3 class="font-display font-bold text-base text-slate-900">Transparent Pricing</h3>
             <p class="text-sm text-slate-600 leading-relaxed">
-              One campus first — that's where we get it. But the vision is bigger: a network where students easily discover food, services, opportunities around them.
+              Real menu prices directly from the counter. No hidden delivery fees, inflated markups, or surprise service charges.
             </p>
             <p class="text-xs font-bold text-indigo-700 pt-1">
-              📍 One campus at a time.
+              🔍 Verified menu items and prices.
             </p>
           </div>
 
           <!-- 4: Simple Over Complex -->
-          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-3">
+          <div class="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-xs space-y-3">
             <div class="w-10 h-10 rounded-xl bg-rose-100/70 border border-rose-200 flex items-center justify-center text-lg">
               💡
             </div>
-            <h3 class="font-display font-bold text-base text-slate-900">Simple > Complex</h3>
+            <h3 class="font-display font-bold text-base text-slate-900">Simplicity First</h3>
             <p class="text-sm text-slate-600 leading-relaxed">
-              Not every food spot needs fancy tech. Sometimes a clean menu, accurate prices, a phone number, and an easy way to find them changes everything.
+              Great discovery does not require complicated algorithms. Clear categories, smart dietary filters, and direct contact numbers are all you need.
             </p>
             <p class="text-xs font-bold text-slate-800 pt-1">
-              🤝 That's what we're building.
+              🤝 Focused on genuine utility.
             </p>
           </div>
 
-        </div>
-      </div>
-
-      <!-- The Team Behind Orandus -->
-      <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
-        <h2 class="font-display font-bold text-lg text-slate-900 mb-3 flex items-center gap-2">
-          <span>🎓</span> Who's Behind Orandus
-        </h2>
-        <div class="flex items-start gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center text-2xl flex-shrink-0">
-            🤝
-          </div>
-          <div class="space-y-1">
-            <p class="font-bold text-slate-900 text-sm sm:text-base">NIT Kurukshetra Students & Alumni Collective</p>
-            <p class="text-xs text-slate-600 leading-relaxed">
-              We are a collective of NIT Kurukshetra students and alumni dedicated to building practical, transparent tools for campus life.
-            </p>
-            <p class="text-xs text-slate-500 leading-relaxed pt-0.5">
-              Built collectively to solve daily dining hassles, verify food spot menus, and connect students directly with local vendors.
-            </p>
-          </div>
         </div>
       </div>
 
       <!-- Quick Action Bar -->
       <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="space-y-1 text-center sm:text-left">
-          <h3 class="font-display font-extrabold text-lg sm:text-xl">Ready to explore campus food?</h3>
-          <p class="text-xs text-white/90">Find dishes, food spots, prices, and ways to contact vendors.</p>
+          <h3 class="font-display font-extrabold text-lg sm:text-xl">Ready to explore?</h3>
+          <p class="text-xs text-white/90">Find dishes, food spots, prices, and direct contact details.</p>
         </div>
         <div class="flex items-center gap-2">
           <a

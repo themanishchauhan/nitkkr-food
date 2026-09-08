@@ -264,7 +264,7 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
             <li><a href="/terms" class="hover:text-nitkkr-orange transition-colors">📜 Terms of Service</a></li>
             <li><a href="/privacy" class="hover:text-nitkkr-orange transition-colors">🔒 Privacy Policy</a></li>
             <li><a href="/contact" class="hover:text-nitkkr-orange transition-colors">📍 Drop Your Food Outlet</a></li>
-            <li><a href={`mailto:${siteSettingsObj.company_support_email || 'support@orandus.in'}?subject=Suggestion%20-%20Orandus&body=Hey%20Orandus%20team%2C%0A%0AI%20have%20a%20suggestion%3A%0A%0A`} class="hover:text-nitkkr-orange transition-colors">💡 Have a Suggestion?</a></li>
+            <li><a href={`mailto:${siteSettingsObj.company_support_email || 'm.chauhan@zohomail.in'}?subject=Suggestion%20-%20Orandus&body=Hi%2C%0A%0AI%20have%20a%20suggestion%3A%0A%0A`} class="hover:text-nitkkr-orange transition-colors">💡 Have a Suggestion?</a></li>
             {customFooterPages.filter(p => p.category !== 'Explore').map((p: any) => (
               <li><a href={`/p/${p.slug}`} class="hover:text-nitkkr-orange transition-colors">{p.icon || '📄'} {p.title}</a></li>
             ))}
@@ -284,9 +284,53 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
 
 
   <script is:inline defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
-  <script>
+  <script is:inline>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      let refreshing = false;
+
+      // Automatically reload the page seamlessly when a new service worker takes control
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then((reg) => {
+          // Immediately check for updates
+          reg.update().catch(() => {});
+
+          // Auto-check for updates whenever user returns to the tab or unlocks phone
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+              reg.update().catch(() => {});
+            }
+          });
+
+          // Periodic check every 15 minutes if page stays open
+          setInterval(() => {
+            reg.update().catch(() => {});
+          }, 15 * 60 * 1000);
+
+          // If a new worker is waiting, activate immediately
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+
+          // If a new worker is found installing, activate as soon as it's installed
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            }
+          });
+        }).catch(() => {});
+      });
     }
   </script>
 </body>

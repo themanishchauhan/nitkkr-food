@@ -12,7 +12,7 @@ import { BAKERS_BITE_KKR_VENDOR, BAKERS_BITE_KKR_MENU_ITEMS } from '../../../lib
 import { ASHU_FAST_FOOD_VENDOR, ASHU_FAST_FOOD_MENU_ITEMS } from '../../../lib/ashu-fast-food-data';
 import { THE_SPICE_CHAMBER_VENDOR, THE_SPICE_CHAMBER_MENU_ITEMS } from '../../../lib/the-spice-chamber-data';
 import { CAFE_AROMA_VENDOR, CAFE_AROMA_MENU_ITEMS } from '../../../lib/cafe-aroma-data';
-import { ANTY_JI_TEA_STALL_VENDOR, ANTY_JI_TEA_STALL_MENU_ITEMS } from '../../../lib/anty-ji-tea-stall-data';
+import { AUNTY_JI_TEA_STALL_VENDOR, AUNTY_JI_TEA_STALL_MENU_ITEMS } from '../../../lib/aunty-ji-tea-stall-data';
 import { AMAN_FAST_FOOD_VENDOR, AMAN_FAST_FOOD_MENU_ITEMS } from '../../../lib/aman-fast-food-data';
 import { YUMMY_TUMMY_FOODS_VENDOR, YUMMY_TUMMY_FOODS_MENU_ITEMS } from '../../../lib/yummy-tummy-foods-data';
 import { PIZZA_KING_VENDOR, PIZZA_KING_MENU_ITEMS } from '../../../lib/pizza-king-data';
@@ -56,7 +56,7 @@ export const POST: APIRoute = async ({ locals }) => {
       ASHU_FAST_FOOD_VENDOR,
       THE_SPICE_CHAMBER_VENDOR,
       CAFE_AROMA_VENDOR,
-      ANTY_JI_TEA_STALL_VENDOR,
+      AUNTY_JI_TEA_STALL_VENDOR,
       AMAN_FAST_FOOD_VENDOR,
       YUMMY_TUMMY_FOODS_VENDOR,
       PIZZA_KING_VENDOR,
@@ -100,7 +100,7 @@ export const POST: APIRoute = async ({ locals }) => {
       ...ASHU_FAST_FOOD_MENU_ITEMS,
       ...THE_SPICE_CHAMBER_MENU_ITEMS,
       ...CAFE_AROMA_MENU_ITEMS,
-      ...ANTY_JI_TEA_STALL_MENU_ITEMS,
+      ...AUNTY_JI_TEA_STALL_MENU_ITEMS,
       ...AMAN_FAST_FOOD_MENU_ITEMS,
       ...YUMMY_TUMMY_FOODS_MENU_ITEMS,
       ...PIZZA_KING_MENU_ITEMS,

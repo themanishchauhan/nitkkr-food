@@ -238,6 +238,91 @@
     return item;
   }
 
+  function formatTime12h(timeStr) {
+    if (!timeStr) return '';
+    var clean = String(timeStr).trim();
+    var parts = clean.split(':');
+    if (parts.length < 2) return clean;
+    var hour = parseInt(parts[0], 10);
+    var minute = parts[1].slice(0, 2).padStart(2, '0');
+    if (isNaN(hour)) return clean;
+    var ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    return hour + ':' + minute + ' ' + ampm;
+  }
+
+  function getVendorTimingStatus(opensAt, closesAt) {
+    if (!opensAt || !closesAt) {
+      return { isOpen: true, statusText: 'Open Today', isUrgent: false };
+    }
+    var currentTotal = getCurrentIstMinutes();
+    var oParts = String(opensAt).split(':');
+    var cParts = String(closesAt).split(':');
+    var openTotal = parseInt(oParts[0], 10) * 60 + parseInt(oParts[1], 10);
+    var closeTotal = parseInt(cParts[0], 10) * 60 + parseInt(cParts[1], 10);
+    if (isNaN(openTotal) || isNaN(closeTotal)) {
+      return { isOpen: true, statusText: 'Open Today', isUrgent: false };
+    }
+
+    var openTimeFormatted = formatTime12h(opensAt);
+    var closeTimeFormatted = formatTime12h(closesAt);
+
+    // Normal same-day hours (e.g., 08:00 to 23:00)
+    if (openTotal < closeTotal) {
+      var isOpen = currentTotal >= openTotal && currentTotal < closeTotal;
+      if (isOpen) {
+        var minutesUntilClose = closeTotal - currentTotal;
+        if (minutesUntilClose <= 45) {
+          return { isOpen: true, statusText: 'Closing soon', isUrgent: true };
+        }
+        if (minutesUntilClose <= 75) {
+          return { isOpen: true, statusText: 'Closes in ~1 hour', isUrgent: true };
+        }
+        return { isOpen: true, statusText: 'Until ' + closeTimeFormatted, isUrgent: false };
+      } else {
+        var minutesUntilOpen;
+        if (currentTotal < openTotal) {
+          minutesUntilOpen = openTotal - currentTotal;
+        } else {
+          minutesUntilOpen = (1440 - currentTotal) + openTotal;
+        }
+        if (minutesUntilOpen <= 60) {
+          return { isOpen: false, statusText: 'Opens in an hour', isUrgent: false };
+        }
+        return { isOpen: false, statusText: 'Opens at ' + openTimeFormatted, isUrgent: false };
+      }
+    }
+
+    // Overnight hours (e.g., 18:00 to 02:00 next day)
+    if (openTotal > closeTotal) {
+      var isOpenOvernight = currentTotal >= openTotal || currentTotal < closeTotal;
+      if (isOpenOvernight) {
+        var minutesUntilCloseOvernight = currentTotal >= openTotal
+          ? (1440 - currentTotal) + closeTotal
+          : closeTotal - currentTotal;
+        if (minutesUntilCloseOvernight <= 45) {
+          return { isOpen: true, statusText: 'Closing soon', isUrgent: true };
+        }
+        if (minutesUntilCloseOvernight <= 75) {
+          return { isOpen: true, statusText: 'Closes in ~1 hour', isUrgent: true };
+        }
+        return { isOpen: true, statusText: 'Until ' + closeTimeFormatted, isUrgent: false };
+      } else {
+        var minutesUntilOpenOvernight = openTotal - currentTotal;
+        if (minutesUntilOpenOvernight <= 60) {
+          return { isOpen: false, statusText: 'Opens in an hour', isUrgent: false };
+        }
+        return { isOpen: false, statusText: 'Opens at ' + openTimeFormatted, isUrgent: false };
+      }
+    }
+
+    return { isOpen: true, statusText: 'Open 24 Hours', isUrgent: false };
+  }
+
+  window.getVendorTimingStatus = getVendorTimingStatus;
+  window.formatTime12h = formatTime12h;
+
   // Global search component definition for Alpine.js
   window.searchPage = function (config) {
     config = config || {};
@@ -447,16 +532,15 @@
         return this._vendorMap;
       },
 
+
+
       isVendorOpen: function (opensAt, closesAt) {
-        if (!opensAt || !closesAt) return true;
-        var curTotal = getCurrentIstMinutes();
-        var oParts = opensAt.split(':');
-        var cParts = closesAt.split(':');
-        var openTotal = parseInt(oParts[0], 10) * 60 + parseInt(oParts[1], 10);
-        var closeTotal = parseInt(cParts[0], 10) * 60 + parseInt(cParts[1], 10);
-        if (openTotal < closeTotal) return curTotal >= openTotal && curTotal < closeTotal;
-        if (openTotal > closeTotal) return curTotal >= openTotal || curTotal < closeTotal;
-        return true;
+        return getVendorTimingStatus(opensAt, closesAt).isOpen;
+      },
+
+      getVendorTiming: function (vendor) {
+        if (!vendor) return { isOpen: true, statusText: 'Open Today', isUrgent: false };
+        return getVendorTimingStatus(vendor.opensAt, vendor.closesAt);
       },
 
       isItemVendorOpen: function (item) {

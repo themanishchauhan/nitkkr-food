@@ -359,7 +359,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span class="truncate" x-text="vendor.address || 'NITKKR Campus'"></span>
+                  <span class="truncate" x-text="vendor.address || 'Campus Area'"></span>
                 </p>
 
                 <!-- Search Matching Badge if applicable -->
@@ -374,15 +374,20 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
               </div>
             </div>
 
-            <!-- Bottom Row: Hours on Left, Actions (Call, WhatsApp, Shortened Menu) on Right -->
+            <!-- Bottom Row: Dynamic Timing on Left, Actions (Call, WhatsApp, Shortened Menu) on Right -->
             <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100/90 w-full flex-wrap sm:flex-nowrap">
-              <!-- Operating Hours -->
-              <p class="text-[11px] text-slate-400 flex items-center gap-1 min-w-0">
-                <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span class="font-medium text-slate-600">Hours:</span>
-                <span class="truncate" x-text="(vendor.opensAt || '09:00') + ' – ' + (vendor.closesAt || '23:00')"></span>
+              <!-- Dynamic Timing Status (Same methodology as home page: "Until 11:30 PM", "Closing soon", "Opens at 9:00 AM") -->
+              <p class="text-xs text-slate-500 flex items-center gap-1.5 min-w-0">
+                <span
+                  class="w-2 h-2 rounded-full flex-shrink-0"
+                  :class="getVendorTiming(vendor).isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"
+                  aria-hidden="true"
+                ></span>
+                <span
+                  class="truncate font-medium"
+                  :class="getVendorTiming(vendor).isUrgent ? 'text-amber-600 font-semibold' : 'text-slate-500'"
+                  x-text="getVendorTiming(vendor).statusText"
+                ></span>
               </p>
 
               <!-- Actions Group -->

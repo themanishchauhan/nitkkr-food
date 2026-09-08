@@ -4,8 +4,8 @@ import Layout from '../../layouts/Layout.astro';
 import CategoryTabs from '../../components/CategoryTabs.astro';
 import AdBanner from '../../components/AdBanner.astro';
 import ReviewModal from '../../components/ReviewModal.astro';
-import { getVendorBySlug, getMenuItemsWithReviewStats, getReviewsByVendor, getCategories, isVendorOpenNow, getAllSiteSettings } from '../../lib/queries';
-import { formatOperatingHours, cleanTelHref, cleanDisplayPhone, cleanWhatsAppHref, formatRating } from '../../lib/utils';
+import { getVendorBySlug, getMenuItemsWithReviewStats, getReviewsByVendor, getCategories, getAllSiteSettings } from '../../lib/queries';
+import { formatOperatingHours, cleanTelHref, cleanDisplayPhone, cleanWhatsAppHref, formatRating, getVendorTimingStatus } from '../../lib/utils';
 import { getOptimizedImageUrl, getResponsiveSrcSet } from '../../lib/images';
 
 const { slug } = Astro.params;
@@ -25,7 +25,8 @@ const [menuItems, allCategories, vendorReviews, settings] = await Promise.all([
 const categories = allCategories.filter((c: any) => 
   menuItems.some((item: any) => item.categoryId === c.id || item.categorySlug === c.slug)
 );
-const isOpen = isVendorOpenNow(vendor.opensAt, vendor.closesAt);
+const timing = getVendorTimingStatus(vendor.opensAt, vendor.closesAt);
+const isOpen = timing.isOpen;
 const vendorReviewCount = vendorReviews.length;
 const vendorAvgRating = vendorReviewCount > 0
   ? formatRating(vendorReviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / vendorReviewCount)
@@ -150,12 +151,12 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
         <div class="flex flex-wrap items-center justify-between gap-3">
           <!-- Status & Hours -->
           <div class="flex items-center gap-2 flex-wrap">
-            <span class={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${isOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
-              <span class={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-              <span>{isOpen ? 'Open Now' : 'Closed'}</span>
+            <span class={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${timing.isOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+              <span class={`w-2 h-2 rounded-full ${timing.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+              <span>{timing.statusText}</span>
             </span>
 
-            <span class="text-xs font-semibold text-slate-600 flex items-center gap-1 bg-slate-100/80 px-2.5 py-1 rounded-full border border-slate-200/60">
+            <span class="text-xs font-medium text-slate-500 flex items-center gap-1 bg-slate-100/80 px-2.5 py-1 rounded-full border border-slate-200/60">
               <span>🕒</span>
               <span>{formattedHours}</span>
             </span>
@@ -174,8 +175,8 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
       {adEnabled && (
         <AdBanner
           badge={settingsObj.ad_banner_badge || '⚡ SPONSORED DEAL'}
-          title={settingsObj.ad_banner_title || 'Kurukshetra Protein & Shake Hub'}
-          description={settingsObj.ad_banner_description || '15% Flat Student Discount on all Whey Shakes & Healthy Bowls! Show NIT ID.'}
+          title={settingsObj.ad_banner_title || 'Fresh Protein & Shake Hub'}
+          description={settingsObj.ad_banner_description || '15% Flat Student Discount on all Whey Shakes & Healthy Bowls!'}
           image={settingsObj.ad_banner_image || ''}
           cta={settingsObj.ad_banner_cta || 'Claim Offer 💬'}
           link={settingsObj.ad_banner_link || '#'}

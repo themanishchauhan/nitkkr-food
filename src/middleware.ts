@@ -45,7 +45,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
       context.locals.admin = session;
     }
 
-    return next();
+    const response = await next();
+
+    // Prevent browser and CDN caching of dynamic HTML pages so customers always receive live SSR data
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+    }
+
+    return response;
   } catch (error) {
     console.error('Middleware error:', error);
     return next();
