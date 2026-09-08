@@ -166,6 +166,28 @@
     return finalResult;
   }
 
+  var _cachedCurrentMinute = -1;
+  var _lastCurTotal = 0;
+
+  function getCurrentIstMinutes() {
+    var nowMinute = Math.floor(Date.now() / 60000);
+    if (nowMinute === _cachedCurrentMinute) {
+      return _lastCurTotal;
+    }
+    try {
+      var istFormatter = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
+      var parts = istFormatter.format(new Date()).split(':');
+      _lastCurTotal = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    } catch (e) {
+      var d = new Date();
+      var utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      var ist = new Date(utc + (3600000 * 5.5));
+      _lastCurTotal = ist.getHours() * 60 + ist.getMinutes();
+    }
+    _cachedCurrentMinute = nowMinute;
+    return _lastCurTotal;
+  }
+
   function preIndexItem(item) {
     var name = (item.name || '').toLowerCase();
     var cat = (item.categoryName || item.categorySlug || '').toLowerCase();
@@ -181,6 +203,7 @@
     item._words = full.split(/[\s,()\/+-]+/).filter(Boolean);
     item._normTokens = normalizePhonetics(full);
     item._diet = detectDiet(item);
+    item.price = item.price != null ? Number(item.price) : 0;
     return item;
   }
 
@@ -369,6 +392,7 @@
                 self.allItems = data.items;
                 if (data.vendors && data.vendors.length > 0) {
                   self.allVendors = data.vendors;
+                  self._vendorMap = null;
                 }
               }
             })
@@ -378,22 +402,31 @@
         }
       },
 
+      _vendorMap: null,
+      _getVendorMap: function () {
+        if (!this._vendorMap) {
+          var map = {};
+          var list = this.allVendors || [];
+          for (var idx = 0; idx < list.length; idx++) {
+            var ven = list[idx];
+            if (ven.id) map[ven.id] = ven;
+            if (ven.slug) map[ven.slug.toLowerCase()] = ven;
+          }
+          this._vendorMap = map;
+        }
+        return this._vendorMap;
+      },
+
       isVendorOpen: function (opensAt, closesAt) {
         if (!opensAt || !closesAt) return true;
-        try {
-          var istFormatter = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
-          var parts = istFormatter.format(new Date()).split(':');
-          var curTotal = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-          var oParts = opensAt.split(':');
-          var cParts = closesAt.split(':');
-          var openTotal = parseInt(oParts[0], 10) * 60 + parseInt(oParts[1], 10);
-          var closeTotal = parseInt(cParts[0], 10) * 60 + parseInt(cParts[1], 10);
-          if (openTotal < closeTotal) return curTotal >= openTotal && curTotal < closeTotal;
-          if (openTotal > closeTotal) return curTotal >= openTotal || curTotal < closeTotal;
-          return true;
-        } catch (e) {
-          return true;
-        }
+        var curTotal = getCurrentIstMinutes();
+        var oParts = opensAt.split(':');
+        var cParts = closesAt.split(':');
+        var openTotal = parseInt(oParts[0], 10) * 60 + parseInt(oParts[1], 10);
+        var closeTotal = parseInt(cParts[0], 10) * 60 + parseInt(cParts[1], 10);
+        if (openTotal < closeTotal) return curTotal >= openTotal && curTotal < closeTotal;
+        if (openTotal > closeTotal) return curTotal >= openTotal || curTotal < closeTotal;
+        return true;
       },
 
       isItemVendorOpen: function (item) {
@@ -401,12 +434,11 @@
         if (item.vendorOpensAt && item.vendorClosesAt) {
           return this.isVendorOpen(item.vendorOpensAt, item.vendorClosesAt);
         }
-        for (var i = 0; i < this.allVendors.length; i++) {
-          var v = this.allVendors[i];
-          if ((item.vendorId && v.id === item.vendorId) ||
-              (item.vendorSlug && v.slug && v.slug.toLowerCase() === item.vendorSlug.toLowerCase())) {
-            return this.isVendorOpen(v.opensAt, v.closesAt);
-          }
+        var map = this._getVendorMap();
+        var v = (item.vendorId && map[item.vendorId]) ||
+                (item.vendorSlug && map[item.vendorSlug.toLowerCase()]);
+        if (v) {
+          return this.isVendorOpen(v.opensAt, v.closesAt);
         }
         return true;
       },
@@ -420,9 +452,8 @@
 
       getVendorMatchCount: function (vendorId) {
         if (!vendorId) return 0;
-        return this.filteredItems.filter(function (i) {
-          return i.vendorId === vendorId || i.stallId === vendorId;
-        }).length;
+        this.filteredItems;
+        return (this._vendorMatchCounts && this._vendorMatchCounts[vendorId]) || 0;
       },
 
       get matchingVendor() {
@@ -440,15 +471,15 @@
         return this.matchingVendor;
       },
 
+      _lastFilterKey: '',
+      _cachedFilteredItems: null,
+      _vendorMatchCounts: {},
+
       get filteredVendors() {
         var self = this;
-        var matchingItemVendorIds = new Set();
-        var matchedItems = this.filteredItems;
-        for (var j = 0; j < matchedItems.length; j++) {
-          var itm = matchedItems[j];
-          if (itm.vendorId) matchingItemVendorIds.add(itm.vendorId);
-          if (itm.stallId) matchingItemVendorIds.add(itm.stallId);
-        }
+        // Ensure cache is updated
+        this.filteredItems;
+        var counts = this._vendorMatchCounts || {};
 
         var vList = this.allVendors;
 
@@ -466,7 +497,7 @@
               return isFuzzyTokenMatch(t, words, full);
             });
 
-            var hasMatchingItems = matchingItemVendorIds.has(v.id);
+            var hasMatchingItems = Boolean(counts[v.id]);
             return directMatch || hasMatchingItems;
           });
         }
@@ -479,6 +510,17 @@
       },
 
       get filteredItems() {
+        var key = (this.query || '').trim().toLowerCase() + '|' +
+                  this.activeCat + '|' +
+                  this.vibeTag + '|' +
+                  this.priceBracket + '|' +
+                  this.vegFilter + '|' +
+                  this.allItems.length;
+
+        if (this._lastFilterKey === key && this._cachedFilteredItems) {
+          return this._cachedFilteredItems;
+        }
+
         var self = this;
         var list = this.allItems;
 
@@ -527,12 +569,12 @@
           });
         }
 
-        // 3. Price Filter
+        // 3. Price Filter (Optimized numeric comparison)
         if (this.priceBracket && this.priceBracket !== 'all') {
           var b = this.priceBracket;
           list = list.filter(function (i) {
-            var p = Number(i.price);
-            if (isNaN(p)) return false;
+            var p = i.price;
+            if (p == null) return false;
             if (b === 'under-50' || b === '50') return p <= 50;
             if (b === '50-100' || b === '100') return p > 50 && p <= 100;
             if (b === '100-150' || b === '150') return p > 100 && p <= 150;
@@ -550,45 +592,57 @@
         }
 
         // 5. Keyword Matching
+        var result;
         if (!this.query.trim()) {
-          return fairInterleaveByVendor(list);
-        }
+          result = fairInterleaveByVendor(list);
+        } else {
+          var rawQuery = this.query.toLowerCase().trim();
+          var tokens = rawQuery.split(/\s+/).filter(Boolean);
 
-        var rawQuery = this.query.toLowerCase().trim();
-        var tokens = rawQuery.split(/\s+/).filter(Boolean);
+          var matchingEntries = [];
+          for (var idx = 0; idx < list.length; idx++) {
+            var item = list[idx];
+            var searchTokens = item._searchTokens || '';
+            var words = item._words || [];
+            var allMatch = true;
 
-        var matchingEntries = [];
-        for (var idx = 0; idx < list.length; idx++) {
-          var item = list[idx];
-          var searchTokens = item._searchTokens || '';
-          var words = item._words || [];
-          var allMatch = true;
-
-          for (var t = 0; t < tokens.length; t++) {
-            if (!isFuzzyTokenMatch(tokens[t], words, searchTokens)) {
-              allMatch = false;
-              break;
+            for (var t = 0; t < tokens.length; t++) {
+              if (!isFuzzyTokenMatch(tokens[t], words, searchTokens)) {
+                allMatch = false;
+                break;
+              }
             }
+
+            if (!allMatch) continue;
+
+            var nameLower = (item.name || '').toLowerCase();
+            var score = 0;
+            if (nameLower === rawQuery) score += 100;
+            else if (nameLower.indexOf(rawQuery) === 0) score += 50;
+            else if (nameLower.indexOf(rawQuery) !== -1) score += 30;
+
+            for (var k = 0; k < tokens.length; k++) {
+              var tok = tokens[k];
+              if (nameLower.indexOf(tok) !== -1) score += 15;
+              else if (searchTokens.indexOf(tok) !== -1) score += 8;
+            }
+
+            matchingEntries.push({ item: item, score: score });
           }
 
-          if (!allMatch) continue;
-
-          var nameLower = (item.name || '').toLowerCase();
-          var score = 0;
-          if (nameLower === rawQuery) score += 100;
-          else if (nameLower.indexOf(rawQuery) === 0) score += 50;
-          else if (nameLower.indexOf(rawQuery) !== -1) score += 30;
-
-          for (var k = 0; k < tokens.length; k++) {
-            var tok = tokens[k];
-            if (nameLower.indexOf(tok) !== -1) score += 15;
-            else if (searchTokens.indexOf(tok) !== -1) score += 8;
-          }
-
-          matchingEntries.push({ item: item, score: score });
+          result = fairInterleaveRankedEntries(matchingEntries);
         }
 
-        return fairInterleaveRankedEntries(matchingEntries);
+        // Precompute vendor match counts once in O(N) for fast O(1) lookups
+        var countsMap = {};
+        for (var m = 0; m < result.length; m++) {
+          var vId = result[m].vendorId || result[m].stallId;
+          if (vId) countsMap[vId] = (countsMap[vId] || 0) + 1;
+        }
+        this._vendorMatchCounts = countsMap;
+        this._lastFilterKey = key;
+        this._cachedFilteredItems = result;
+        return result;
       },
 
       get visibleItems() {
@@ -675,30 +729,52 @@
         return this.menuItems.length;
       },
 
+      _lastSearchedQuery: null,
+      _cachedSearchedItems: null,
+      _catCountMap: null,
+
       get searchedItems() {
         var queryStr = (this.searchQuery || '').trim().toLowerCase();
-        if (!queryStr) return this.menuItems;
-
-        var tokens = queryStr.split(/\s+/).filter(Boolean);
-        var normTokens = tokens.map(normalizePhonetics);
-        var res = [];
-
-        for (var i = 0; i < this.menuItems.length; i++) {
-          var item = this.menuItems[i];
-          var sTokens = item._searchTokens || '';
-          var nTokens = item._normTokens || '';
-          var matchesAll = true;
-
-          for (var t = 0; t < tokens.length; t++) {
-            var tok = tokens[t];
-            var nTok = normTokens[t];
-            if (sTokens.indexOf(tok) === -1 && (!nTok || nTokens.indexOf(nTok) === -1)) {
-              matchesAll = false;
-              break;
-            }
-          }
-          if (matchesAll) res.push(item);
+        if (this._lastSearchedQuery === queryStr && this._cachedSearchedItems) {
+          return this._cachedSearchedItems;
         }
+
+        var res;
+        if (!queryStr) {
+          res = this.menuItems;
+        } else {
+          var tokens = queryStr.split(/\s+/).filter(Boolean);
+          var normTokens = tokens.map(normalizePhonetics);
+          res = [];
+
+          for (var i = 0; i < this.menuItems.length; i++) {
+            var item = this.menuItems[i];
+            var sTokens = item._searchTokens || '';
+            var nTokens = item._normTokens || '';
+            var matchesAll = true;
+
+            for (var t = 0; t < tokens.length; t++) {
+              var tok = tokens[t];
+              var nTok = normTokens[t];
+              if (sTokens.indexOf(tok) === -1 && (!nTok || nTokens.indexOf(nTok) === -1)) {
+                matchesAll = false;
+                break;
+              }
+            }
+            if (matchesAll) res.push(item);
+          }
+        }
+
+        var counts = { all: res.length };
+        for (var k = 0; k < res.length; k++) {
+          var it = res[k];
+          if (it.categorySlug) counts[it.categorySlug] = (counts[it.categorySlug] || 0) + 1;
+          if (it.categoryId) counts[String(it.categoryId)] = (counts[String(it.categoryId)] || 0) + 1;
+        }
+
+        this._catCountMap = counts;
+        this._lastSearchedQuery = queryStr;
+        this._cachedSearchedItems = res;
         return res;
       },
 
@@ -723,15 +799,8 @@
       },
 
       getCatCount: function (slug) {
-        if (slug === 'all') return this.searchedItems.length;
-        var count = 0;
-        for (var i = 0; i < this.searchedItems.length; i++) {
-          var item = this.searchedItems[i];
-          if (item.categorySlug === slug || String(item.categoryId) === slug) {
-            count++;
-          }
-        }
-        return count;
+        this.searchedItems;
+        return (this._catCountMap && this._catCountMap[slug]) || 0;
       },
 
       openDetail: function (item) {

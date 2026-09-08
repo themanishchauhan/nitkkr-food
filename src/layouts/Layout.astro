@@ -56,9 +56,14 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Orandus" />
 
+  <!-- ⚡ Optimized Google Fonts (Non-Render-Blocking via Preload) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'" />
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" />
+  </noscript>
   <style>[x-cloak] { display: none !important; }</style>
   <title>{title}</title>
   <meta name="description" content={description} />
@@ -73,9 +78,9 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
   <meta name="twitter:description" content={description} />
   <meta name="twitter:image" content={resolvedOgImage} />
 
-  <!-- 📊 Cloudflare Web Analytics (Privacy-First & Cookie-less) -->
+  <!-- 📊 Cloudflare Web Analytics (Privacy-First & Deferred) -->
   {cfAnalyticsToken && (
-    <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={`{"token": "${cfAnalyticsToken}"}`}></script>
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={`{"token": "${cfAnalyticsToken}"}`}></script>
   )}
 </head>
 

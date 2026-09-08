@@ -1,4 +1,6 @@
 ---
+import { getOptimizedImageUrl } from '../lib/images';
+
 interface Props {
   badge?: string;
   title?: string;
@@ -16,15 +18,21 @@ const {
   cta = 'Claim Offer 💬',
   link = '#',
 } = Astro.props;
+
+const optimizedImg = image ? getOptimizedImageUrl(image, { width: 120, quality: 80, format: 'auto' }) : '';
 ---
 
 <div class="my-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-bistro-500 via-bistro-400 to-bistro-500 p-0.5 shadow-md group">
   <div class="bg-gradient-to-br from-slate-900 to-slate-950 rounded-[14px] p-4 sm:p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div class="flex items-start sm:items-center gap-3.5 min-w-0">
-      {image ? (
+      {optimizedImg ? (
         <img
-          src={image}
+          src={optimizedImg}
           alt={title}
+          width="56"
+          height="56"
+          loading="lazy"
+          decoding="async"
           class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border border-white/20 flex-shrink-0 shadow-sm"
         />
       ) : (
