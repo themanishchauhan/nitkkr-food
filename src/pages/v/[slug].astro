@@ -27,7 +27,9 @@ const categories = allCategories.filter((c: any) =>
 );
 const closedDays = (vendor as any).closedDays || ((vendor.slug === 'the-hangry-club' || vendor.slug === 'hangry-club') ? ['Tuesday'] : null);
 const timing = getVendorTimingStatus(vendor.opensAt, vendor.closesAt, undefined, closedDays);
-const isOpen = timing.isOpen;
+const isBackendActive = vendor.isActive !== undefined ? Boolean(vendor.isActive) : ((vendor as any).is_active !== undefined ? Boolean((vendor as any).is_active) : true);
+const isVendorOpen = isBackendActive && timing.isOpen;
+const isOpen = isVendorOpen;
 const vendorNote = (vendor as any).notice || (vendor as any).description || ((vendor.slug === 'the-hangry-club' || vendor.slug === 'hangry-club') ? 'Closed on Tuesdays' : null);
 const vendorReviewCount = vendorReviews.length;
 const vendorAvgRating = vendorReviewCount > 0
@@ -155,41 +157,34 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
     <!-- Main Content Container -->
     <div class="max-w-2xl mx-auto px-4 -mt-3 relative z-20">
       <!-- Vendor Status & Info Card -->
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-5">
-        <div class="flex flex-wrap items-center justify-between gap-2.5">
-          <!-- Clean, unboxed status line (No bulky pill capsule) -->
-          <div class="flex items-center gap-2 text-xs sm:text-sm flex-wrap">
-            <div class="flex items-center gap-1.5 font-bold">
-              <span class={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${timing.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-              <span class={timing.isOpen ? 'text-emerald-700' : 'text-rose-600'}>
-                {timing.isOpen ? 'Open Now' : 'Closed'}
-              </span>
-            </div>
-            <span class="text-slate-300">•</span>
-            <span class="text-slate-700 font-medium">{timing.statusText}</span>
-            <span class="text-slate-300">•</span>
-            <span class="text-slate-500 flex items-center gap-1 font-medium text-xs">
-              <span>🕒</span>
-              <span>{formattedHours}</span>
-            </span>
-          </div>
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-5 space-y-3">
+        <!-- Top Row: Backend Open/Closed Tag + Operating Hours (Only these two) -->
+        <div class="flex items-center gap-3">
+          <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${isVendorOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' : 'bg-rose-50 text-rose-700 border border-rose-200/80'}`}>
+            <span class={`w-2 h-2 rounded-full ${isVendorOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+            <span>{isVendorOpen ? 'Open' : 'Closed'}</span>
+          </span>
+
+          <span class="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+            <span>🕒</span>
+            <span>{formattedHours}</span>
+          </span>
         </div>
 
         {deliversToList.length > 0 && (
-          <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
+          <div class="pt-2 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
             <span class="text-base">🛵</span>
             <span><strong class="text-slate-800 font-semibold">Delivers to:</strong> {deliversToList.join(', ')}</span>
           </div>
         )}
 
-        <!-- 📌 Small Note Section (Special Notice / Announcements about Vendor) -->
+        <!-- 📢 Simple Notice / Note Section -->
         {vendorNote && (
-          <div class="mt-3 pt-3 border-t border-slate-100 flex items-start gap-2.5 text-xs bg-amber-50/60 p-3 rounded-xl border border-amber-200/50 text-amber-950">
-            <span class="text-sm flex-shrink-0 mt-0.5">📌</span>
-            <div class="leading-relaxed">
-              <span class="font-bold text-amber-900 block text-[11px] uppercase tracking-wider mb-0.5">Notice / Note</span>
-              <span class="text-slate-800 font-medium">{vendorNote}</span>
-            </div>
+          <div class="pt-2 border-t border-slate-100 flex items-start gap-2 text-xs">
+            <span class="text-amber-600 font-bold flex items-center gap-1 flex-shrink-0">
+              <span>📢</span> Notice:
+            </span>
+            <span class="text-slate-700 font-medium">{vendorNote}</span>
           </div>
         )}
       </div>
