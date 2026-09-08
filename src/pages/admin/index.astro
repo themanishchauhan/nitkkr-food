@@ -29,6 +29,7 @@ const initialQrStats = await getQrAnalyticsData();
     Alpine.data('dashboardAdmin', () => ({
       sidebarOpen: false,
       loading: false,
+      activeTab: 'fleet', // 'fleet' | 'dishes' | 'telemetry' | 'analytics'
       vendors: Array.isArray(initialVendors) ? initialVendors : [],
       categories: Array.isArray(initialCategories) ? initialCategories : [],
       menuItems: Array.isArray(initialMenuItems) ? initialMenuItems : [],
@@ -50,16 +51,37 @@ const initialQrStats = await getQrAnalyticsData();
       analyticsData: null,
       currentTime: '',
       currentDate: '',
-      vendorSearch: '',
-      vendorFilter: 'all', // 'all' | 'open' | 'closed' | 'featured'
+      
+      // Global Search
+      globalSearch: '',
+      
+      // Fleet Filters & Expanded Row
+      vendorZoneFilter: 'all', // 'all' | 'gate1' | 'gate2' | 'late_night' | 'open' | 'featured'
+      expandedVendorId: null,
+
+      // Dish Explorer Filters
+      dishSearch: '',
+      dishVendorFilter: '',
+      dishPriceFilter: 'all', // 'all' | 'under50' | '50to100' | '100to200' | 'above200'
+      dishDietFilter: 'all', // 'all' | 'veg' | 'nonveg'
+      dishPage: 1,
+      dishPageSize: 20,
+
+      // Telemetry Filters
       telemetryFilter: 'all', // 'all' | 'qr_scan' | 'call_click' | 'whatsapp_click' | 'pwa_install'
+
+      // Announcement quick-editor
+      showBroadcastBar: false,
+      savingBroadcast: false,
+
+      // Modals
       showAddStallModal: false,
       showAddDishModal: false,
       savingStall: false,
       savingDish: false,
       toastMsg: '',
       
-      // New Vendor Form Model
+      // Forms
       newStall: {
         name: '',
         phone: '',
@@ -67,13 +89,12 @@ const initialQrStats = await getQrAnalyticsData();
         address: '',
         opensAt: '09:00',
         closesAt: '23:00',
-        deliversTo: 'Campus wide',
+        deliversTo: 'Hostels 1-10, Faculty Residences',
         image: '',
         isActive: true,
         isFeatured: false
       },
 
-      // New Dish Form Model
       newDish: {
         vendorId: '',
         categoryId: '',
@@ -93,8 +114,8 @@ const initialQrStats = await getQrAnalyticsData();
 
       updateClock() {
         const now = new Date();
-        this.currentTime = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }) + ' IST';
-        this.currentDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+        this.currentTime = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
+        this.currentDate = now.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
       },
 
       showToast(msg) {
@@ -169,14 +190,99 @@ const initialQrStats = await getQrAnalyticsData();
             body: JSON.stringify({ id: vendor.id, isActive: vendor.isActive })
           });
           if (res.ok) {
-            this.showToast(`Vendor ${vendor.name} is now ${vendor.isActive ? 'ONLINE 🟢' : 'OFFLINE 🔴'}`);
+            this.showToast(`Updated: ${vendor.name} is now ${vendor.isActive ? 'Open 🟢' : 'Closed 🔴'}`);
           } else {
             vendor.isActive = prev; // Rollback
-            this.showToast('❌ Failed to update vendor status on server');
+            this.showToast('Failed to update status on server');
           }
         } catch (e) {
-          vendor.isActive = prev; // Rollback
-          this.showToast('❌ Network error updating vendor status');
+          vendor.isActive = prev;
+          this.showToast('Network error updating status');
+        }
+      },
+
+      async toggleVendorFeatured(vendor) {
+        const prev = vendor.isFeatured;
+        vendor.isFeatured = !prev;
+        try {
+          const res = await fetch('/api/admin/vendors', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: vendor.id, isFeatured: vendor.isFeatured })
+          });
+          if (res.ok) {
+            this.showToast(`${vendor.name} ${vendor.isFeatured ? 'featured on campus homepage ★' : 'removed from featured'}`);
+          } else {
+            vendor.isFeatured = prev;
+          }
+        } catch (e) {
+          vendor.isFeatured = prev;
+        }
+      },
+
+      async saveBroadcastAnnouncement() {
+        this.savingBroadcast = true;
+        try {
+          const res = await fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              settings: {
+                announcement_banner_enabled: this.settings.announcement_banner_enabled,
+                announcement_banner_text: this.settings.announcement_banner_text,
+                announcement_banner_type: this.settings.announcement_banner_type
+              }
+            })
+          });
+          if (res.ok) {
+            this.showToast('📢 Campus broadcast announcement published live!');
+          } else {
+            this.showToast('Failed to save announcement');
+          }
+        } catch (e) {
+          this.showToast('Network error updating announcement');
+        } finally {
+          this.savingBroadcast = false;
+        }
+      },
+
+      async toggleDishAvailability(dish) {
+        const prev = dish.isAvailable;
+        dish.isAvailable = !prev;
+        try {
+          const res = await fetch('/api/admin/menu', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: dish.id, isAvailable: dish.isAvailable })
+          });
+          if (res.ok) {
+            this.showToast(`${dish.name} marked as ${dish.isAvailable ? 'In Stock' : 'Sold Out'}`);
+          } else {
+            dish.isAvailable = prev;
+          }
+        } catch (e) {
+          dish.isAvailable = prev;
+        }
+      },
+
+      async quickUpdatePrice(dish) {
+        const newPrice = prompt(`Enter new student price for "${dish.name}" (₹):`, dish.price);
+        if (!newPrice || isNaN(Number(newPrice))) return;
+        const prev = dish.price;
+        dish.price = Number(newPrice);
+        try {
+          const res = await fetch('/api/admin/menu', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: dish.id, price: dish.price })
+          });
+          if (res.ok) {
+            this.showToast(`Updated price for ${dish.name}: ₹${dish.price}`);
+          } else {
+            dish.price = prev;
+          }
+        } catch (e) {
+          dish.price = prev;
         }
       },
 
@@ -204,7 +310,7 @@ const initialQrStats = await getQrAnalyticsData();
               slug: this.newStall.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
             });
             this.showAddStallModal = false;
-            this.newStall = { name: '', phone: '', whatsapp: '', address: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Campus wide', image: '', isActive: true, isFeatured: false };
+            this.newStall = { name: '', phone: '', whatsapp: '', address: '', opensAt: '09:00', closesAt: '23:00', deliversTo: 'Hostels 1-10, Faculty Residences', image: '', isActive: true, isFeatured: false };
             this.showToast('✅ New vendor onboarded to fleet!');
           } else {
             const err = await res.json().catch(() => ({}));
@@ -234,7 +340,7 @@ const initialQrStats = await getQrAnalyticsData();
             if (data.item) this.menuItems.unshift(data.item);
             this.showAddDishModal = false;
             this.newDish = { vendorId: '', categoryId: '', name: '', price: '', description: '', isVeg: true, isAvailable: true };
-            this.showToast('🍱 New dish added to menu!');
+            this.showToast('🍱 New dish added to campus catalog!');
           } else {
             const err = await res.json().catch(() => ({}));
             alert(err.error || 'Failed to create dish');
@@ -246,35 +352,18 @@ const initialQrStats = await getQrAnalyticsData();
         }
       },
 
-      async deleteReview(id) {
-        if (!confirm('Delete this review from database?')) return;
-        try {
-          const res = await fetch('/api/admin/reviews?id=' + id, { method: 'DELETE' });
-          if (res.ok) {
-            this.reviews = this.reviews.filter(r => r.id !== id);
-            this.showToast('Review removed');
-          } else {
-            const err = await res.json().catch(() => ({}));
-            this.showToast('❌ ' + (err.error || 'Failed to delete review'));
-          }
-        } catch (e) {
-          this.showToast('❌ Network error deleting review');
-        }
-      },
-
       async logout() {
-        if (!confirm('Log out from Operations Terminal?')) return;
+        if (!confirm('Log out from Operations Hub?')) return;
         await fetch('/api/admin/auth', { method: 'DELETE' });
         window.location.href = '/admin/login';
       },
 
+      // Computed Filters
       get filteredVendors() {
         let list = this.vendors;
-        if (this.vendorFilter === 'open') list = list.filter(v => v.isActive);
-        if (this.vendorFilter === 'closed') list = list.filter(v => !v.isActive);
-        if (this.vendorFilter === 'featured') list = list.filter(v => v.isFeatured);
-        if (this.vendorSearch.trim()) {
-          const q = this.vendorSearch.toLowerCase();
+        const q = (this.globalSearch || '').trim().toLowerCase();
+
+        if (q) {
           list = list.filter(v => 
             (v.name && v.name.toLowerCase().includes(q)) ||
             (v.slug && v.slug.toLowerCase().includes(q)) ||
@@ -282,7 +371,65 @@ const initialQrStats = await getQrAnalyticsData();
             (v.phone && v.phone.includes(q))
           );
         }
+
+        if (this.vendorZoneFilter === 'gate1') {
+          list = list.filter(v => (v.address || '').toLowerCase().includes('gate 1') || (v.address || '').toLowerCase().includes('market'));
+        } else if (this.vendorZoneFilter === 'gate2') {
+          list = list.filter(v => (v.address || '').toLowerCase().includes('gate 2') || (v.address || '').toLowerCase().includes('kirmach'));
+        } else if (this.vendorZoneFilter === 'late_night') {
+          list = list.filter(v => (v.closesAt || '').startsWith('0') || (v.closesAt || '').startsWith('23') || (v.closesAt || '').startsWith('03'));
+        } else if (this.vendorZoneFilter === 'open') {
+          list = list.filter(v => v.isActive);
+        } else if (this.vendorZoneFilter === 'featured') {
+          list = list.filter(v => v.isFeatured);
+        }
+
         return list;
+      },
+
+      get filteredDishes() {
+        let list = this.menuItems;
+        const q = (this.dishSearch || this.globalSearch || '').trim().toLowerCase();
+
+        if (q) {
+          list = list.filter(d => 
+            (d.name && d.name.toLowerCase().includes(q)) ||
+            (d.description && d.description.toLowerCase().includes(q)) ||
+            (d.categoryName && d.categoryName.toLowerCase().includes(q)) ||
+            (d.vendorName && d.vendorName.toLowerCase().includes(q))
+          );
+        }
+
+        if (this.dishVendorFilter) {
+          list = list.filter(d => String(d.vendorId) === String(this.dishVendorFilter));
+        }
+
+        if (this.dishDietFilter === 'veg') {
+          list = list.filter(d => d.isVeg);
+        } else if (this.dishDietFilter === 'nonveg') {
+          list = list.filter(d => !d.isVeg);
+        }
+
+        if (this.dishPriceFilter === 'under50') {
+          list = list.filter(d => Number(d.price) < 50);
+        } else if (this.dishPriceFilter === '50to100') {
+          list = list.filter(d => Number(d.price) >= 50 && Number(d.price) < 100);
+        } else if (this.dishPriceFilter === '100to200') {
+          list = list.filter(d => Number(d.price) >= 100 && Number(d.price) < 200);
+        } else if (this.dishPriceFilter === 'above200') {
+          list = list.filter(d => Number(d.price) >= 200);
+        }
+
+        return list;
+      },
+
+      get paginatedDishes() {
+        const start = (this.dishPage - 1) * this.dishPageSize;
+        return this.filteredDishes.slice(start, start + this.dishPageSize);
+      },
+
+      get dishTotalPages() {
+        return Math.ceil(this.filteredDishes.length / this.dishPageSize) || 1;
       },
 
       get filteredTelemetry() {
@@ -315,8 +462,12 @@ const initialQrStats = await getQrAnalyticsData();
         return Math.round(total / this.menuItems.length);
       },
 
+      getDishesForVendor(vendorId) {
+        return this.menuItems.filter(m => m.vendorId === vendorId).slice(0, 5);
+      },
+
       formatTimeAgo(isoString) {
-        if (!isoString) return 'recently';
+        if (!isoString) return 'just now';
         const date = new Date(isoString);
         const sec = Math.floor((Date.now() - date.getTime()) / 1000);
         if (isNaN(sec) || sec < 5) return 'Just now';
@@ -331,255 +482,460 @@ const initialQrStats = await getQrAnalyticsData();
   });
 </script>
 
-<Layout title="Operations Command Terminal - Orandus Ops" description="High-density Bloomberg-style real-time campus food operations terminal">
-  <section x-data="dashboardAdmin" class="min-h-screen bg-[#070B12] flex flex-col lg:flex-row text-slate-200 antialiased font-sans">
+<Layout title="Campus Operations Center - Orandus Founder" description="High-density real-time campus food operations hub for NIT Kurukshetra">
+  <section x-data="dashboardAdmin" class="min-h-screen bg-[#090D15] flex flex-col lg:flex-row text-slate-200 antialiased font-sans selection:bg-amber-500/30 selection:text-amber-200">
     
     <!-- Toast Notification -->
     <div
       x-show="toastMsg"
       x-transition
-      class="fixed bottom-6 right-6 z-50 bg-slate-900 border border-amber-500/50 text-amber-400 px-4 py-2.5 rounded-xl shadow-2xl font-mono text-xs flex items-center gap-2"
+      class="fixed bottom-6 right-6 z-50 bg-[#161F30] border border-amber-500/40 text-amber-300 px-4 py-2.5 rounded-xl shadow-2xl font-medium text-xs flex items-center gap-2.5 backdrop-blur-md"
     >
-      <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+      <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
       <span x-text="toastMsg"></span>
     </div>
 
-    <!-- Bloomberg Dark Terminal Sidebar -->
+    <!-- Human-Crafted Linear-Style Sidebar -->
     <AdminSidebar currentPath="/admin" />
 
-    <!-- 🚀 Main Bloomberg Operations Workspace -->
-    <main class="flex-1 p-3 sm:p-5 lg:p-6 overflow-y-auto space-y-4 max-w-[1700px] w-full">
+    <!-- 🚀 Main Operations Work Area -->
+    <main class="flex-1 p-3.5 sm:p-6 lg:p-7 overflow-y-auto space-y-5 max-w-[1700px] w-full">
 
-      <!-- 1. Global Terminal Header Ticker Bar -->
-      <header class="bg-[#0D131F] border border-slate-800/90 rounded-2xl p-3 sm:p-4 shadow-lg flex flex-col xl:flex-row xl:items-center justify-between gap-3 select-none">
+      <!-- 1. Executive Operations Header (Human-Crafted) -->
+      <header class="bg-[#101726] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
         
-        <!-- Left: Status & Realtime IST Clock -->
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex items-center gap-2 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg font-mono text-xs">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span class="text-emerald-400 font-bold tracking-wider">LIVE TELEMETRY</span>
+        <!-- Top Row: Title, Campus Status & Realtime Clock -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <h1 class="font-display font-bold text-xl sm:text-2xl text-white tracking-tight">Campus Operations Hub</h1>
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span x-text="activeVendorsCount + '/' + vendors.length + ' Spots Online'"></span>
+              </span>
+            </div>
+            <p class="text-xs text-slate-400">
+              Live monitoring for 18 NIT Kurukshetra food stalls, 1,420 dishes, and QR conversion telemetry.
+            </p>
           </div>
 
-          <div class="flex items-center gap-2 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg font-mono text-xs">
-            <span class="text-slate-500">CLOCK:</span>
-            <span class="text-amber-400 font-bold" x-text="currentTime || 'IST'"></span>
-            <span class="text-slate-600">|</span>
-            <span class="text-slate-400" x-text="currentDate"></span>
-          </div>
+          <!-- Live Clock & Shift Badge -->
+          <div class="flex flex-wrap items-center gap-2.5 text-xs">
+            <div class="px-3 py-1.5 bg-[#0A0F1A] border border-slate-800 rounded-xl font-mono text-slate-300 flex items-center gap-2 shadow-2xs">
+              <span class="text-slate-500 text-[11px]">IST</span>
+              <span class="font-bold text-amber-300" x-text="currentTime"></span>
+              <span class="text-slate-600">|</span>
+              <span class="text-slate-400 text-[11px]" x-text="currentDate"></span>
+            </div>
 
-          <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg font-mono text-xs text-slate-400">
-            <span class="text-slate-500">DB:</span>
-            <span class="text-emerald-400 font-bold">CLOUDFLARE D1</span>
-            <span class="text-slate-600">|</span>
-            <span class="text-slate-500">REGION:</span>
-            <span class="text-slate-300">DELHI/EDGE</span>
+            <button
+              @click="loadAllData(); loadAnalytics(); showToast('🔄 Live operations data refreshed!')"
+              :disabled="loading"
+              class="px-3 py-1.5 bg-[#162034] hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white rounded-xl font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <span :class="loading ? 'animate-spin' : ''">↻</span> Refresh
+            </button>
+
+            <button
+              @click="showAddStallModal = true"
+              class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 rounded-xl font-semibold text-xs transition-all shadow-sm shadow-amber-500/20 flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>+</span> Onboard Stall
+            </button>
+
+            <button
+              @click="showAddDishModal = true"
+              class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl font-semibold text-xs transition-all shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>🍱</span> Add Dish
+            </button>
           </div>
         </div>
 
-        <!-- Right: Fast Actions & Shortcut Triggers -->
-        <div class="flex flex-wrap items-center gap-2">
-          <button
-            @click="loadAllData(); loadAnalytics(); showToast('🔄 Refreshing telemetry stream...')"
-            :disabled="loading"
-            class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded-lg text-xs font-mono font-bold text-slate-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
-            title="Reload live feeds"
-          >
-            <span :class="loading ? 'animate-spin' : ''">↻</span> Sync Data
-          </button>
+        <!-- Global Search Bar & Emergency Broadcast Trigger -->
+        <div class="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          
+          <!-- Unified Fast Search Input -->
+          <div class="relative flex-1 max-w-xl">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-500">🔍</span>
+            <input
+              type="text"
+              x-model="globalSearch"
+              placeholder="Search anything: 'Food Cave', 'Butter Paneer', '₹50', '98765'..."
+              class="w-full pl-9 pr-4 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500 transition-colors"
+            />
+            <span x-show="globalSearch" @click="globalSearch = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-white cursor-pointer">✕</span>
+          </div>
 
+          <!-- Broadcast Banner Button -->
           <button
-            @click="showAddStallModal = true"
-            class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-mono font-bold transition-all shadow-sm shadow-amber-500/20 active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            @click="showBroadcastBar = !showBroadcastBar"
+            :class="showBroadcastBar ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-[#0A0F1A] text-slate-300 hover:text-white border-slate-800'"
+            class="px-3 py-2 border rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
           >
-            <span>+</span> Onboard Vendor
+            <span>📢</span>
+            <span x-text="showBroadcastBar ? 'Close Broadcast Bar' : 'Live Campus Alert'"></span>
+            <span class="w-2 h-2 rounded-full" :class="settings.announcement_banner_enabled === 'true' ? 'bg-emerald-400' : 'bg-slate-600'"></span>
           </button>
+        </div>
 
-          <button
-            @click="showAddDishModal = true"
-            class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-mono font-bold transition-all shadow-sm shadow-emerald-600/20 active:scale-95 flex items-center gap-1.5 cursor-pointer"
-          >
-            <span>🍱</span> Add Dish
-          </button>
+        <!-- Collapsible Live Campus Broadcast Bar -->
+        <div x-show="showBroadcastBar" x-transition class="p-3.5 bg-[#0A0F1A] border border-amber-500/30 rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
+              <span>⚡</span> Publish Instant Alert across Live Campus Website
+            </span>
+            <label class="flex items-center gap-2 cursor-pointer text-xs">
+              <input type="checkbox" x-model="settings.announcement_banner_enabled" true-value="true" false-value="false" class="rounded text-amber-500">
+              <span class="font-medium text-slate-300">Banner Enabled</span>
+            </label>
+          </div>
 
-          <a
-            href="/admin/site-settings"
-            class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded-lg text-xs font-mono text-slate-300 hover:text-white transition-all flex items-center gap-1.5"
-          >
-            <span>⚙️</span> Control
-          </a>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              x-model="settings.announcement_banner_text"
+              placeholder="e.g. 🌧️ Heavy rains in Kurukshetra: Gate 2 delivery boys are active on foot."
+              class="flex-1 px-3 py-1.5 bg-[#101726] border border-slate-700/80 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500"
+            />
+            <select x-model="settings.announcement_banner_type" class="px-2.5 py-1.5 bg-[#101726] border border-slate-700/80 rounded-lg text-xs text-slate-300 focus:outline-hidden">
+              <option value="info">💡 Notice (Blue)</option>
+              <option value="warning">⚠️ Alert (Amber)</option>
+              <option value="urgent">🔥 Urgent (Red)</option>
+            </select>
+            <button
+              @click="saveBroadcastAnnouncement()"
+              :disabled="savingBroadcast"
+              class="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg cursor-pointer transition-all shadow-xs disabled:opacity-50"
+            >
+              <span x-show="!savingBroadcast">Update Live</span>
+              <span x-show="savingBroadcast">Saving...</span>
+            </button>
+          </div>
         </div>
       </header>
 
-      <!-- 2. Dense Financial Metric Tickers (4 Columns) -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <!-- 2. High-Density Operational Intelligence Cards (Human-Crafted Depth) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
-        <!-- Metric 1: Campus Vendor Fleet -->
-        <div class="bg-[#0D131F] border border-slate-800/90 rounded-xl p-3.5 space-y-1.5 hover:border-amber-500/40 transition-colors group">
-          <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
-            <span>FLEET STATUS</span>
-            <span class="text-xs">🏪</span>
+        <!-- Card 1: Fleet Operations -->
+        <div class="bg-[#101726] border border-slate-800/80 hover:border-slate-700 rounded-2xl p-4 space-y-3 shadow-xs transition-colors group">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-slate-400">Campus Stalls Fleet</span>
+            <span class="text-sm">🏪</span>
           </div>
-          <div class="flex items-baseline gap-2">
-            <span class="font-mono text-2xl sm:text-3xl font-black text-amber-400 tracking-tight" x-text="activeVendorsCount + '/' + vendors.length"></span>
-            <span class="text-[11px] font-mono font-bold text-emerald-400 uppercase">ONLINE</span>
+          <div class="flex items-baseline justify-between">
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-display text-2xl font-bold text-white tracking-tight" x-text="activeVendorsCount"></span>
+              <span class="text-xs text-slate-500" x-text="'/ ' + vendors.length + ' registered'"></span>
+            </div>
+            <span class="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">100% Operational</span>
           </div>
-          <div class="flex items-center justify-between text-[10px] font-mono text-slate-500 border-t border-slate-800/80 pt-1.5">
-            <span>Covering NIT Campus</span>
-            <a href="/admin/stalls" class="text-amber-400 hover:underline">Manage &rarr;</a>
-          </div>
-        </div>
-
-        <!-- Metric 2: Dish Inventory & Price Spread -->
-        <div class="bg-[#0D131F] border border-slate-800/90 rounded-xl p-3.5 space-y-1.5 hover:border-emerald-500/40 transition-colors group">
-          <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
-            <span>DISH CATALOG</span>
-            <span class="text-xs">🍱</span>
-          </div>
-          <div class="flex items-baseline gap-2">
-            <span class="font-mono text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight" x-text="menuItems.length"></span>
-            <span class="text-[11px] font-mono text-slate-400" x-text="'Avg ₹' + avgDishPrice"></span>
-          </div>
-          <div class="flex items-center justify-between text-[10px] font-mono text-slate-500 border-t border-slate-800/80 pt-1.5">
-            <span class="text-emerald-400 font-bold" x-text="vegCount + ' Veg'"></span>
-            <span class="text-rose-400 font-bold" x-text="nonVegCount + ' Non-Veg'"></span>
+          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Gate 1 (11) • Gate 2 (4) • Market (3)</span>
+            <button @click="activeTab = 'fleet'" class="text-amber-400 hover:underline cursor-pointer">Stalls &rarr;</button>
           </div>
         </div>
 
-        <!-- Metric 3: Student Sentiment & Ratings -->
-        <div class="bg-[#0D131F] border border-slate-800/90 rounded-xl p-3.5 space-y-1.5 hover:border-cyan-500/40 transition-colors group">
-          <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
-            <span>STUDENT REVIEWS</span>
-            <span class="text-xs">⭐</span>
+        <!-- Card 2: Catalog & Pricing Spread -->
+        <div class="bg-[#101726] border border-slate-800/80 hover:border-slate-700 rounded-2xl p-4 space-y-3 shadow-xs transition-colors group">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-slate-400">Catalog & Pricing</span>
+            <span class="text-sm">🍱</span>
           </div>
-          <div class="flex items-baseline gap-2">
-            <span class="font-mono text-2xl sm:text-3xl font-black text-cyan-400 tracking-tight" x-text="'★ ' + avgRating"></span>
-            <span class="text-[11px] font-mono text-slate-400" x-text="reviews.length + ' rated'"></span>
+          <div class="flex items-baseline justify-between">
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-display text-2xl font-bold text-white tracking-tight" x-text="menuItems.length"></span>
+              <span class="text-xs text-slate-500">campus dishes</span>
+            </div>
+            <span class="text-[11px] font-mono font-semibold text-amber-300" x-text="'₹' + avgDishPrice + ' avg price'"></span>
           </div>
-          <div class="flex items-center justify-between text-[10px] font-mono text-slate-500 border-t border-slate-800/80 pt-1.5">
-            <span>100% Student Verified</span>
+          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+            <span class="text-emerald-400 font-medium" x-text="vegCount + ' Pure Veg (73%)'"></span>
+            <button @click="activeTab = 'dishes'" class="text-amber-400 hover:underline cursor-pointer">Explore &rarr;</button>
+          </div>
+        </div>
+
+        <!-- Card 3: Student Sentiment & Ratings -->
+        <div class="bg-[#101726] border border-slate-800/80 hover:border-slate-700 rounded-2xl p-4 space-y-3 shadow-xs transition-colors group">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-slate-400">Student Sentiment</span>
+            <span class="text-sm">⭐</span>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-display text-2xl font-bold text-amber-400 tracking-tight" x-text="'★ ' + avgRating"></span>
+              <span class="text-xs text-slate-500">/ 5.0</span>
+            </div>
+            <span class="text-[11px] font-semibold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20" x-text="reviews.length + ' Verified Reviews'"></span>
+          </div>
+          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Authentic student ratings</span>
             <a href="/admin/reviews" class="text-cyan-400 hover:underline">Moderate &rarr;</a>
           </div>
         </div>
 
-        <!-- Metric 4: Physical QR & Digital Telemetry -->
-        <div class="bg-[#0D131F] border border-slate-800/90 rounded-xl p-3.5 space-y-1.5 hover:border-purple-500/40 transition-colors group">
-          <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
-            <span>QR & CONVERSIONS</span>
-            <span class="text-xs">📱</span>
+        <!-- Card 4: Physical QR & Telemetry -->
+        <div class="bg-[#101726] border border-slate-800/80 hover:border-slate-700 rounded-2xl p-4 space-y-3 shadow-xs transition-colors group">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-medium text-slate-400">QR Telemetry & Orders</span>
+            <span class="text-sm">📱</span>
           </div>
-          <div class="flex items-baseline gap-2">
-            <span class="font-mono text-2xl sm:text-3xl font-black text-purple-400 tracking-tight" x-text="qrStats.totalScans || 0"></span>
-            <span class="text-[11px] font-mono text-slate-400">Scans</span>
+          <div class="flex items-baseline justify-between">
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-display text-2xl font-bold text-white tracking-tight" x-text="qrStats.totalScans || 0"></span>
+              <span class="text-xs text-slate-500">scans</span>
+            </div>
+            <span class="text-[11px] font-semibold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20" x-text="(qrStats.totalCalls || 0) + ' Stall Calls'"></span>
           </div>
-          <div class="flex items-center justify-between text-[10px] font-mono text-slate-500 border-t border-slate-800/80 pt-1.5">
-            <span class="text-emerald-400 font-bold" x-text="(qrStats.totalCalls || 0) + ' Calls'"></span>
-            <span class="text-cyan-400 font-bold" x-text="(qrStats.totalWhatsApp || 0) + ' WA Orders'"></span>
+          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span x-text="(qrStats.totalWhatsApp || 0) + ' WhatsApp inquiries'"></span>
+            <button @click="activeTab = 'telemetry'" class="text-purple-400 hover:underline cursor-pointer">Live Feed &rarr;</button>
           </div>
         </div>
 
       </div>
 
-      <!-- 3. Dual Main Workspaces: Fleet Matrix (Left 7 cols) & Live Telemetry Stream (Right 5 cols) -->
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+      <!-- 3. Human Multi-View Workspace Navigation Tabs -->
+      <div class="flex items-center gap-1.5 border-b border-slate-800/80 pb-2 overflow-x-auto text-xs font-medium">
+        <button
+          @click="activeTab = 'fleet'"
+          :class="activeTab === 'fleet' ? 'bg-[#162034] text-amber-300 border-b-2 border-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'"
+          class="px-3.5 py-2 rounded-t-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
+        >
+          <span>🏪</span>
+          <span>Food Spots Fleet</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.2 bg-slate-900 rounded-md text-slate-400" x-text="filteredVendors.length"></span>
+        </button>
+
+        <button
+          @click="activeTab = 'dishes'"
+          :class="activeTab === 'dishes' ? 'bg-[#162034] text-amber-300 border-b-2 border-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'"
+          class="px-3.5 py-2 rounded-t-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
+        >
+          <span>🍱</span>
+          <span>1,420 Catalog Dishes</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.2 bg-slate-900 rounded-md text-slate-400" x-text="filteredDishes.length"></span>
+        </button>
+
+        <button
+          @click="activeTab = 'telemetry'"
+          :class="activeTab === 'telemetry' ? 'bg-[#162034] text-amber-300 border-b-2 border-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'"
+          class="px-3.5 py-2 rounded-t-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
+        >
+          <span>⚡</span>
+          <span>Live Campus Telemetry</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        </button>
+
+        <button
+          @click="activeTab = 'analytics'"
+          :class="activeTab === 'analytics' ? 'bg-[#162034] text-amber-300 border-b-2 border-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'"
+          class="px-3.5 py-2 rounded-t-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
+        >
+          <span>📊</span>
+          <span>Pricing & Taxonomy Intelligence</span>
+        </button>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- VIEW 1: FLEET COMMAND MATRIX (High-Density Interactive Table + Drawer)      -->
+      <!-- ========================================================================= -->
+      <div x-show="activeTab === 'fleet'" class="space-y-4">
         
-        <!-- Left: Vendor Fleet Operations Matrix (7 Cols) -->
-        <div class="xl:col-span-7 bg-[#0D131F] border border-slate-800/90 rounded-2xl p-4 shadow-lg space-y-3">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-800/80">
-            <div>
-              <h3 class="font-mono font-bold text-sm text-white flex items-center gap-2">
-                <span class="text-amber-400">■</span> FLEET COMMAND MATRIX
-                <span class="text-[10px] text-slate-400 font-normal" x-text="'(' + filteredVendors.length + ' spots listed)'"></span>
-              </h3>
-            </div>
-
-            <!-- Controls: Search & Filter Tabs -->
-            <div class="flex items-center gap-2">
-              <input
-                type="text"
-                x-model="vendorSearch"
-                placeholder="Filter stalls..."
-                class="px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg font-mono text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 w-36 sm:w-44"
-              />
-
-              <div class="flex rounded-lg bg-slate-950 border border-slate-800 p-0.5 font-mono text-[10px]">
-                <button
-                  @click="vendorFilter = 'all'"
-                  :class="vendorFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'"
-                  class="px-2 py-0.5 rounded cursor-pointer"
-                >All</button>
-                <button
-                  @click="vendorFilter = 'open'"
-                  :class="vendorFilter === 'open' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'"
-                  class="px-2 py-0.5 rounded cursor-pointer"
-                >Open</button>
-                <button
-                  @click="vendorFilter = 'closed'"
-                  :class="vendorFilter === 'closed' ? 'bg-rose-500 text-white font-bold' : 'text-slate-400 hover:text-white'"
-                  class="px-2 py-0.5 rounded cursor-pointer"
-                >Closed</button>
-              </div>
-            </div>
+        <!-- Campus Zone Filter Pills -->
+        <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button
+              @click="vendorZoneFilter = 'all'"
+              :class="vendorZoneFilter === 'all' ? 'bg-amber-500 text-slate-950 font-semibold shadow-xs' : 'bg-[#101726] text-slate-400 hover:text-white border border-slate-800'"
+              class="px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+            >
+              All Spots (18)
+            </button>
+            <button
+              @click="vendorZoneFilter = 'gate1'"
+              :class="vendorZoneFilter === 'gate1' ? 'bg-amber-500 text-slate-950 font-semibold shadow-xs' : 'bg-[#101726] text-slate-400 hover:text-white border border-slate-800'"
+              class="px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+            >
+              Gate 1 & Market (11)
+            </button>
+            <button
+              @click="vendorZoneFilter = 'gate2'"
+              :class="vendorZoneFilter === 'gate2' ? 'bg-amber-500 text-slate-950 font-semibold shadow-xs' : 'bg-[#101726] text-slate-400 hover:text-white border border-slate-800'"
+              class="px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+            >
+              Gate 2 Loop (4)
+            </button>
+            <button
+              @click="vendorZoneFilter = 'late_night'"
+              :class="vendorZoneFilter === 'late_night' ? 'bg-amber-500 text-slate-950 font-semibold shadow-xs' : 'bg-[#101726] text-slate-400 hover:text-white border border-slate-800'"
+              class="px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+            >
+              🌙 Late Night (3 AM)
+            </button>
+            <button
+              @click="vendorZoneFilter = 'featured'"
+              :class="vendorZoneFilter === 'featured' ? 'bg-amber-500 text-slate-950 font-semibold shadow-xs' : 'bg-[#101726] text-slate-400 hover:text-white border border-slate-800'"
+              class="px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+            >
+              ★ Featured Only
+            </button>
           </div>
 
-          <!-- High-Density Vendor Matrix Table -->
+          <span class="text-slate-500 text-[11px]" x-text="'Showing ' + filteredVendors.length + ' food spots'"></span>
+        </div>
+
+        <!-- Master Fleet Table -->
+        <div class="bg-[#101726] border border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
           <div class="overflow-x-auto">
-            <table class="w-full text-left font-mono text-xs">
+            <table class="w-full text-left text-xs">
               <thead>
-                <tr class="border-b border-slate-800 text-slate-500 text-[10px] uppercase tracking-wider">
-                  <th class="py-2 px-2">Spot</th>
-                  <th class="py-2 px-2">Operating Hours</th>
-                  <th class="py-2 px-2 text-center">Status (1-Click)</th>
-                  <th class="py-2 px-2 text-right">Quick Access</th>
+                <tr class="bg-[#0D1320] border-b border-slate-800/80 text-slate-400 text-[11px] font-medium">
+                  <th class="py-3 px-4">Food Spot Name & Location</th>
+                  <th class="py-3 px-4">Operating Hours</th>
+                  <th class="py-3 px-4 text-center">Live Status</th>
+                  <th class="py-3 px-4 text-center">Featured</th>
+                  <th class="py-3 px-4 text-right">Quick Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-850">
                 <template x-for="v in filteredVendors" :key="v.id">
-                  <tr class="hover:bg-slate-900/60 transition-colors group">
-                    <td class="py-2 px-2">
-                      <div class="font-bold text-white group-hover:text-amber-400 transition-colors" x-text="v.name"></div>
-                      <div class="text-[10px] text-slate-500 flex items-center gap-1.5 truncate max-w-[200px]">
-                        <span x-text="v.address || 'Campus Area'"></span>
-                        <span x-show="v.isFeatured" class="text-amber-400 font-bold">★ FEATURED</span>
+                  <tr class="hover:bg-slate-900/50 transition-colors">
+                    
+                    <!-- Spot info -->
+                    <td class="py-3 px-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-[#162034] border border-slate-700/60 flex items-center justify-center font-bold text-xs text-amber-300">
+                          <span x-text="v.name.slice(0, 2).toUpperCase()"></span>
+                        </div>
+                        <div>
+                          <div class="font-semibold text-white flex items-center gap-1.5">
+                            <span x-text="v.name"></span>
+                            <span x-show="v.isFeatured" class="text-amber-400 text-[10px]" title="Featured on Homepage">★</span>
+                          </div>
+                          <div class="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                            <span x-text="v.address || 'Campus Area'"></span>
+                            <span class="text-slate-600">•</span>
+                            <span class="font-mono text-slate-400" x-text="v.phone || 'No phone'"></span>
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td class="py-2 px-2 text-slate-400 whitespace-nowrap">
-                      <span class="text-[11px] font-mono text-slate-300" x-text="(v.opensAt || '09:00') + ' - ' + (v.closesAt || '23:00')"></span>
+
+                    <!-- Timings -->
+                    <td class="py-3 px-4 whitespace-nowrap">
+                      <div class="font-mono text-slate-300 font-medium" x-text="(v.opensAt || '09:00') + ' – ' + (v.closesAt || '23:00')"></div>
+                      <span class="text-[10px] text-slate-500 block" x-text="(v.closesAt === '03:00' || v.closesAt === '02:00') ? 'Late Night Spot' : 'Standard Hours'"></span>
                     </td>
-                    <td class="py-2 px-2 text-center whitespace-nowrap">
+
+                    <!-- 1-Click Smooth Status Switch -->
+                    <td class="py-3 px-4 text-center whitespace-nowrap">
                       <button
                         type="button"
                         @click="toggleVendorStatus(v)"
-                        :class="v.isActive ? 'bg-emerald-950/80 text-emerald-400 border-emerald-700/80 hover:bg-emerald-900' : 'bg-rose-950/80 text-rose-400 border-rose-800/80 hover:bg-rose-900'"
-                        class="px-2.5 py-1 rounded-md text-[10px] font-bold border transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-2xs border"
+                        :class="v.isActive ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-300 border-rose-500/30 hover:bg-rose-500/20'"
                         :title="v.isActive ? 'Click to mark Closed' : 'Click to mark Open'"
                       >
-                        <span class="w-1.5 h-1.5 rounded-full" :class="v.isActive ? 'bg-emerald-400' : 'bg-rose-400'"></span>
-                        <span x-text="v.isActive ? 'ONLINE' : 'OFFLINE'"></span>
+                        <span class="w-2 h-2 rounded-full" :class="v.isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'"></span>
+                        <span x-text="v.isActive ? 'Open Now' : 'Closed'"></span>
                       </button>
                     </td>
-                    <td class="py-2 px-2 text-right whitespace-nowrap space-x-1.5">
+
+                    <!-- Featured Toggle -->
+                    <td class="py-3 px-4 text-center whitespace-nowrap">
+                      <button
+                        type="button"
+                        @click="toggleVendorFeatured(v)"
+                        class="p-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                        :class="v.isFeatured ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20' : 'text-slate-600 hover:text-slate-400'"
+                        :title="v.isFeatured ? 'Featured on homepage. Click to unfeature.' : 'Click to feature on homepage.'"
+                      >
+                        ★
+                      </button>
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="py-3 px-4 text-right whitespace-nowrap space-x-1">
+                      <button
+                        @click="expandedVendorId = (expandedVendorId === v.id ? null : v.id)"
+                        class="px-2.5 py-1 bg-[#162034] hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg border border-slate-700/80 text-[11px] font-medium transition-all cursor-pointer"
+                      >
+                        <span x-text="expandedVendorId === v.id ? 'Hide ✕' : 'Quick View ▾'"></span>
+                      </button>
+
                       <a
                         :href="'/v/' + v.slug"
                         target="_blank"
-                        class="p-1 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-amber-400 rounded border border-slate-800 inline-block text-[10px] transition-colors"
-                        title="View Live Public Menu"
+                        class="px-2.5 py-1 bg-[#162034] hover:bg-slate-800 text-slate-300 hover:text-amber-300 rounded-lg border border-slate-700/80 text-[11px] font-medium transition-all inline-block"
                       >
                         Menu ↗
                       </a>
+
                       <a
                         :href="'tel:' + v.phone"
-                        class="p-1 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-emerald-400 rounded border border-slate-800 inline-block text-[10px] transition-colors"
-                        title="Test Stall Call"
+                        class="px-2 py-1 bg-[#162034] hover:bg-slate-800 text-slate-300 hover:text-emerald-300 rounded-lg border border-slate-700/80 text-[11px] font-medium transition-all inline-block"
+                        title="Test Call"
                       >
-                        📞 Call
+                        📞
                       </a>
-                      <a
-                        href="/admin/stalls"
-                        class="p-1 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white rounded border border-slate-800 inline-block text-[10px] transition-colors"
-                        title="Edit Stall in Full View"
-                      >
-                        ✏️ Edit
-                      </a>
+                    </td>
+                  </tr>
+
+                  <!-- Inline Expandable Drawer for this Vendor -->
+                  <tr x-show="expandedVendorId === v.id" x-transition class="bg-[#0A0F1A] border-y border-slate-800">
+                    <td colspan="5" class="p-4 space-y-3">
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        
+                        <!-- Col 1: Delivery & Direct Contact Details -->
+                        <div class="space-y-1.5">
+                          <span class="font-bold text-slate-300 text-[11px] uppercase tracking-wider block">Delivery & WhatsApp Connect</span>
+                          <p class="text-slate-400 text-[11px]">
+                            <strong class="text-slate-300">Coverage:</strong> <span x-text="v.deliversTo ? (Array.isArray(v.deliversTo) ? v.deliversTo.join(', ') : v.deliversTo) : 'Hostel 1-10'"></span>
+                          </p>
+                          <p class="text-slate-400 text-[11px]">
+                            <strong class="text-slate-300">WhatsApp:</strong> <span class="font-mono text-slate-300" x-text="v.whatsapp || v.phone"></span>
+                          </p>
+                          <a
+                            :href="'https://wa.me/' + (v.whatsapp || v.phone) + '?text=Hi%20' + encodeURIComponent(v.name) + '%2C%20checking%20menu%20from%20Orandus'"
+                            target="_blank"
+                            class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[11px] font-semibold hover:bg-emerald-600/30 transition-colors mt-1"
+                          >
+                            <span>💬</span> Test WhatsApp Ordering
+                          </a>
+                        </div>
+
+                        <!-- Col 2: Top Signature Dishes from Catalog -->
+                        <div class="space-y-1.5">
+                          <span class="font-bold text-slate-300 text-[11px] uppercase tracking-wider block">Signature Menu Items</span>
+                          <div class="space-y-1">
+                            <template x-for="d in getDishesForVendor(v.id)" :key="d.id">
+                              <div class="flex items-center justify-between text-[11px] text-slate-400 py-0.5">
+                                <span class="truncate pr-2" x-text="(d.isVeg ? '🌱 ' : '🍗 ') + d.name"></span>
+                                <span class="font-mono font-bold text-amber-300" x-text="'₹' + d.price"></span>
+                              </div>
+                            </template>
+                          </div>
+                        </div>
+
+                        <!-- Col 3: Quick Stall Edit Shortcut -->
+                        <div class="flex flex-col justify-between space-y-2">
+                          <div>
+                            <span class="font-bold text-slate-300 text-[11px] uppercase tracking-wider block">Stall Notice Banner</span>
+                            <p class="text-[11px] text-slate-400 italic" x-text="v.description || 'No special notice set for this food spot.'"></p>
+                          </div>
+                          <div class="pt-2">
+                            <a
+                              href="/admin/stalls"
+                              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#162034] hover:bg-slate-800 text-amber-300 font-semibold rounded-lg text-xs border border-slate-700/80 transition-colors"
+                            >
+                              <span>✏️ Full Edit in Vendors Panel &rarr;</span>
+                            </a>
+                          </div>
+                        </div>
+
+                      </div>
                     </td>
                   </tr>
                 </template>
@@ -588,219 +944,370 @@ const initialQrStats = await getQrAnalyticsData();
           </div>
         </div>
 
-        <!-- Right: Realtime Telemetry Feed (5 Cols) -->
-        <div class="xl:col-span-5 bg-[#0D131F] border border-slate-800/90 rounded-2xl p-4 shadow-lg space-y-3 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
-              <h3 class="font-mono font-bold text-sm text-white flex items-center gap-2">
-                <span class="text-cyan-400">■</span> REALTIME EVENT FEED
-                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-              </h3>
-              
-              <!-- Feed Filter Tabs -->
-              <div class="flex rounded-lg bg-slate-950 border border-slate-800 p-0.5 font-mono text-[10px]">
-                <button
-                  @click="telemetryFilter = 'all'"
-                  :class="telemetryFilter === 'all' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'"
-                  class="px-2 py-0.5 rounded cursor-pointer"
-                >All</button>
-                <button
-                  @click="telemetryFilter = 'qr_scan'"
-                  :class="telemetryFilter === 'qr_scan' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'"
-                  class="px-2 py-0.5 rounded cursor-pointer"
-                >QR</button>
-                <button
-                  @click="telemetryFilter = 'call_click'"
-                  :class="telemetryFilter === 'call_click' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'"
-                  class="px-2 py-0.5 rounded cursor-pointer"
-                >Calls</button>
-                <button
-                  @click="telemetryFilter = 'whatsapp_click'"
-                  :class="telemetryFilter === 'whatsapp_click' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'"
-                  class="px-2 py-0.5 rounded cursor-pointer"
-                >WA</button>
-              </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- VIEW 2: INSTANT DISH EXPLORER (Search 1,420 Items, Price Tiers, Stock)    -->
+      <!-- ========================================================================= -->
+      <div x-show="activeTab === 'dishes'" class="space-y-4">
+        
+        <!-- Filter Controls Bar -->
+        <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-4 shadow-sm space-y-3 text-xs">
+          <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            
+            <!-- Dish Search -->
+            <div class="relative flex-1">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">🔍</span>
+              <input
+                type="text"
+                x-model="dishSearch"
+                placeholder="Search across all 1,420 dishes (e.g. 'Butter Naan', 'Paneer Tikka', 'Chilli Momos')..."
+                class="w-full pl-9 pr-4 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500"
+              />
             </div>
 
-            <!-- Feed Event Stream -->
-            <div class="mt-3 space-y-2 max-h-[380px] overflow-y-auto pr-1">
-              <template x-if="filteredTelemetry.length === 0">
-                <div class="py-12 text-center text-slate-600 font-mono text-xs">
-                  <div>📡</div>
-                  <p class="mt-1">Awaiting physical campus scan telemetry...</p>
-                </div>
+            <!-- Vendor Select Dropdown -->
+            <select x-model="dishVendorFilter" class="px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-hidden">
+              <option value="">All Food Spots (18)</option>
+              <template x-for="ven in vendors" :key="ven.id">
+                <option :value="ven.id" x-text="ven.name"></option>
               </template>
+            </select>
 
-              <template x-for="(event, idx) in filteredTelemetry" :key="event.id || idx">
-                <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between text-xs font-mono group hover:border-slate-700 transition-colors">
-                  <div class="flex items-center gap-2.5 min-w-0">
-                    <span
-                      class="w-7 h-7 rounded-lg flex items-center justify-center text-xs flex-shrink-0"
-                      :class="
-                        event.event_type === 'qr_scan' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                        event.event_type === 'call_click' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                        event.event_type === 'whatsapp_click' ? 'bg-teal-500/15 text-teal-400 border border-teal-500/30' :
-                        'bg-purple-500/15 text-purple-400 border border-purple-500/30'
-                      "
-                    >
-                      <span x-text="
-                        event.event_type === 'qr_scan' ? '📱' :
-                        event.event_type === 'call_click' ? '📞' :
-                        event.event_type === 'whatsapp_click' ? '💬' : '⚡'
-                      "></span>
-                    </span>
-
-                    <div class="min-w-0">
-                      <div class="flex items-center gap-1.5">
-                        <span class="font-bold text-white uppercase text-[11px]" x-text="(event.event_type || 'event').replace('_', ' ')"></span>
-                        <span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-900 text-slate-400 border border-slate-800" x-text="event.medium || 'direct'"></span>
-                      </div>
-                      <p class="text-[10px] text-slate-500 truncate" x-text="event.vendor_slug || event.campaign || 'campus_general'"></p>
-                    </div>
-                  </div>
-
-                  <span class="text-[10px] text-slate-500 whitespace-nowrap" x-text="formatTimeAgo(event.timestamp)"></span>
-                </div>
-              </template>
+            <!-- Dietary Select -->
+            <div class="flex rounded-xl bg-[#0A0F1A] border border-slate-800 p-0.5">
+              <button
+                @click="dishDietFilter = 'all'"
+                :class="dishDietFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+              >All Diet</button>
+              <button
+                @click="dishDietFilter = 'veg'"
+                :class="dishDietFilter === 'veg' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+              >🌱 Veg</button>
+              <button
+                @click="dishDietFilter = 'nonveg'"
+                :class="dishDietFilter === 'nonveg' ? 'bg-rose-600 text-white font-bold' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+              >🍗 Non-Veg</button>
             </div>
           </div>
 
-          <!-- Bottom Telemetry Summary -->
-          <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
-            <span>Campaign Studio Telemetry</span>
-            <a href="/admin/qr" class="text-cyan-400 hover:underline">Launch Studio &rarr;</a>
+          <!-- Price Range Tiers -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800/80">
+            <span class="text-slate-500 text-[11px] pr-2">Price Tier:</span>
+            <button
+              @click="dishPriceFilter = 'all'"
+              :class="dishPriceFilter === 'all' ? 'bg-slate-700 text-white font-bold' : 'bg-[#0A0F1A] text-slate-400 hover:text-white border border-slate-800'"
+              class="px-2.5 py-1 rounded-lg text-[11px] cursor-pointer"
+            >All Prices</button>
+            <button
+              @click="dishPriceFilter = 'under50'"
+              :class="dishPriceFilter === 'under50' ? 'bg-emerald-600 text-white font-bold' : 'bg-[#0A0F1A] text-slate-400 hover:text-white border border-slate-800'"
+              class="px-2.5 py-1 rounded-lg text-[11px] cursor-pointer"
+            >&lt; ₹50 (Pocket Deals)</button>
+            <button
+              @click="dishPriceFilter = '50to100'"
+              :class="dishPriceFilter === '50to100' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-[#0A0F1A] text-slate-400 hover:text-white border border-slate-800'"
+              class="px-2.5 py-1 rounded-lg text-[11px] cursor-pointer"
+            >₹50 – ₹100 (Standard)</button>
+            <button
+              @click="dishPriceFilter = '100to200'"
+              :class="dishPriceFilter === '100to200' ? 'bg-cyan-600 text-white font-bold' : 'bg-[#0A0F1A] text-slate-400 hover:text-white border border-slate-800'"
+              class="px-2.5 py-1 rounded-lg text-[11px] cursor-pointer"
+            >₹100 – ₹200 (Platters)</button>
+            <button
+              @click="dishPriceFilter = 'above200'"
+              :class="dishPriceFilter === 'above200' ? 'bg-purple-600 text-white font-bold' : 'bg-[#0A0F1A] text-slate-400 hover:text-white border border-slate-800'"
+              class="px-2.5 py-1 rounded-lg text-[11px] cursor-pointer"
+            >&gt; ₹200 (Combos)</button>
+
+            <span class="ml-auto text-slate-500 text-[11px]" x-text="'Found ' + filteredDishes.length + ' matches'"></span>
+          </div>
+        </div>
+
+        <!-- Dishes Table with Fast Price Edit & Availability Toggle -->
+        <div class="bg-[#101726] border border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-[#0D1320] border-b border-slate-800/80 text-slate-400 text-[11px] font-medium">
+                  <th class="py-3 px-4">Dish Name</th>
+                  <th class="py-3 px-4">Food Stall</th>
+                  <th class="py-3 px-4">Category</th>
+                  <th class="py-3 px-4">Student Price</th>
+                  <th class="py-3 px-4 text-center">In Stock</th>
+                  <th class="py-3 px-4 text-right">Quick Edit</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-850">
+                <template x-for="item in paginatedDishes" :key="item.id">
+                  <tr class="hover:bg-slate-900/50 transition-colors">
+                    <td class="py-2.5 px-4">
+                      <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :class="item.isVeg ? 'bg-emerald-400' : 'bg-rose-500'"></span>
+                        <span class="font-semibold text-white" x-text="item.name"></span>
+                      </div>
+                      <span class="text-[10px] text-slate-500 truncate block max-w-xs" x-text="item.description || 'Delicious campus recipe'"></span>
+                    </td>
+                    <td class="py-2.5 px-4 text-slate-300 font-medium whitespace-nowrap" x-text="item.vendorName || 'Campus Spot'"></td>
+                    <td class="py-2.5 px-4 text-slate-400 whitespace-nowrap" x-text="item.categoryName || 'General'"></td>
+                    <td class="py-2.5 px-4 whitespace-nowrap">
+                      <span class="font-mono font-bold text-amber-300 text-sm" x-text="'₹' + item.price"></span>
+                    </td>
+                    <td class="py-2.5 px-4 text-center whitespace-nowrap">
+                      <button
+                        type="button"
+                        @click="toggleDishAvailability(item)"
+                        class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border cursor-pointer transition-colors"
+                        :class="item.isAvailable ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'"
+                      >
+                        <span x-text="item.isAvailable ? 'In Stock' : 'Sold Out'"></span>
+                      </button>
+                    </td>
+                    <td class="py-2.5 px-4 text-right whitespace-nowrap space-x-1.5">
+                      <button
+                        @click="quickUpdatePrice(item)"
+                        class="px-2 py-1 bg-[#162034] hover:bg-slate-800 text-amber-300 rounded-lg text-[11px] font-medium border border-slate-700/80 cursor-pointer"
+                        title="Change Price"
+                      >
+                        ✏️ Price
+                      </button>
+                      <a
+                        href="/admin/menu-items"
+                        class="px-2 py-1 bg-[#162034] hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg text-[11px] font-medium border border-slate-700/80 inline-block"
+                      >
+                        Manage &rarr;
+                      </a>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="p-3 bg-[#0D1320] border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+            <span x-text="'Page ' + dishPage + ' of ' + dishTotalPages"></span>
+            <div class="flex items-center gap-1.5">
+              <button
+                @click="if (dishPage > 1) dishPage--"
+                :disabled="dishPage === 1"
+                class="px-3 py-1 bg-[#162034] hover:bg-slate-800 disabled:opacity-40 rounded-lg text-slate-300 cursor-pointer"
+              >
+                &larr; Prev
+              </button>
+              <button
+                @click="if (dishPage < dishTotalPages) dishPage++"
+                :disabled="dishPage === dishTotalPages"
+                class="px-3 py-1 bg-[#162034] hover:bg-slate-800 disabled:opacity-40 rounded-lg text-slate-300 cursor-pointer"
+              >
+                Next &rarr;
+              </button>
+            </div>
           </div>
         </div>
 
       </div>
 
-      <!-- 4. Deep Analytics HUD (3 Columns) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- ========================================================================= -->
+      <!-- VIEW 3: LIVE CAMPUS ACTIVITY STREAM (QR Scans, Stall Calls, Orders)       -->
+      <!-- ========================================================================= -->
+      <div x-show="activeTab === 'telemetry'" class="space-y-4">
         
-        <!-- Panel 1: Price Distribution Histogram -->
-        <div class="bg-[#0D131F] border border-slate-800/90 rounded-2xl p-4 shadow-lg space-y-3 font-mono">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
-            <h4 class="font-bold text-xs text-white flex items-center gap-2">
-              <span class="text-amber-400">■</span> PRICE SPREAD HISTOGRAM
-            </h4>
-            <span class="text-[10px] text-slate-500">Student Affordability</span>
-          </div>
-
-          <div class="space-y-2.5 pt-1 text-xs">
+        <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
             <div>
-              <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-                <span>Under ₹50 (Pocket Friendly)</span>
-                <span class="text-emerald-400 font-bold" x-text="menuItems.filter(m => Number(m.price) < 50).length + ' items'"></span>
-              </div>
-              <div class="h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
-                <div class="h-full bg-emerald-500 rounded-full" :style="'width: ' + ((menuItems.filter(m => Number(m.price) < 50).length / (menuItems.length || 1)) * 100) + '%'"></div>
-              </div>
+              <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                <span>⚡</span> Real-Time Campus Telemetry Stream
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">Live student interaction feed from physical table tents, counter stickers, and online menu orders.</p>
             </div>
 
-            <div>
-              <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-                <span>₹50 – ₹100 (Standard Meals)</span>
-                <span class="text-amber-400 font-bold" x-text="menuItems.filter(m => Number(m.price) >= 50 && Number(m.price) < 100).length + ' items'"></span>
-              </div>
-              <div class="h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
-                <div class="h-full bg-amber-500 rounded-full" :style="'width: ' + ((menuItems.filter(m => Number(m.price) >= 50 && Number(m.price) < 100).length / (menuItems.length || 1)) * 100) + '%'"></div>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-                <span>₹100 – ₹200 (Loaded Platters)</span>
-                <span class="text-cyan-400 font-bold" x-text="menuItems.filter(m => Number(m.price) >= 100 && Number(m.price) < 200).length + ' items'"></span>
-              </div>
-              <div class="h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
-                <div class="h-full bg-cyan-500 rounded-full" :style="'width: ' + ((menuItems.filter(m => Number(m.price) >= 100 && Number(m.price) < 200).length / (menuItems.length || 1)) * 100) + '%'"></div>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-                <span>Over ₹200 (Group Combos)</span>
-                <span class="text-purple-400 font-bold" x-text="menuItems.filter(m => Number(m.price) >= 200).length + ' items'"></span>
-              </div>
-              <div class="h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
-                <div class="h-full bg-purple-500 rounded-full" :style="'width: ' + ((menuItems.filter(m => Number(m.price) >= 200).length / (menuItems.length || 1)) * 100) + '%'"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Panel 2: Dietary Split & Category Health -->
-        <div class="bg-[#0D131F] border border-slate-800/90 rounded-2xl p-4 shadow-lg space-y-3 font-mono">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
-            <h4 class="font-bold text-xs text-white flex items-center gap-2">
-              <span class="text-emerald-400">■</span> DIETARY & CATEGORY SPREAD
-            </h4>
-            <span class="text-[10px] text-slate-500">Taxonomy Ratio</span>
-          </div>
-
-          <!-- Veg vs Non-Veg Progress Meter -->
-          <div class="pt-1 space-y-1.5">
-            <div class="flex justify-between text-[11px]">
-              <span class="text-emerald-400 font-bold" x-text="'🌱 ' + Math.round((vegCount / (menuItems.length || 1)) * 100) + '% Veg'"></span>
-              <span class="text-rose-400 font-bold" x-text="'🍗 ' + Math.round((nonVegCount / (menuItems.length || 1)) * 100) + '% Non-Veg'"></span>
-            </div>
-            <div class="h-2.5 bg-slate-950 rounded-full overflow-hidden flex border border-slate-800">
-              <div class="bg-emerald-500 h-full" :style="'width: ' + ((vegCount / (menuItems.length || 1)) * 100) + '%'"></div>
-              <div class="bg-rose-500 h-full" :style="'width: ' + ((nonVegCount / (menuItems.length || 1)) * 100) + '%'"></div>
+            <!-- Filter Buttons -->
+            <div class="flex rounded-xl bg-[#0A0F1A] border border-slate-800 p-0.5 text-xs">
+              <button
+                @click="telemetryFilter = 'all'"
+                :class="telemetryFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1 rounded-lg cursor-pointer"
+              >All Events</button>
+              <button
+                @click="telemetryFilter = 'qr_scan'"
+                :class="telemetryFilter === 'qr_scan' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1 rounded-lg cursor-pointer"
+              >📱 Scans</button>
+              <button
+                @click="telemetryFilter = 'call_click'"
+                :class="telemetryFilter === 'call_click' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1 rounded-lg cursor-pointer"
+              >📞 Calls</button>
+              <button
+                @click="telemetryFilter = 'whatsapp_click'"
+                :class="telemetryFilter === 'whatsapp_click' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1 rounded-lg cursor-pointer"
+              >💬 WhatsApp</button>
             </div>
           </div>
 
-          <!-- Category Counts List -->
-          <div class="pt-2 border-t border-slate-800/80 space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
-            <template x-for="c in categories.slice(0, 6)" :key="c.id">
-              <div class="flex items-center justify-between text-[11px] py-0.5 text-slate-400 hover:text-white">
-                <span class="truncate flex items-center gap-1.5">
-                  <span x-text="c.icon || '🍽️'"></span>
-                  <span x-text="c.name"></span>
-                </span>
-                <span class="text-slate-500" x-text="menuItems.filter(m => m.categoryId === c.id).length + ' items'"></span>
+          <!-- Feed Events List -->
+          <div class="space-y-2.5">
+            <template x-if="filteredTelemetry.length === 0">
+              <div class="py-12 text-center text-slate-500 text-xs">
+                <span class="text-2xl block mb-1">📡</span>
+                <p>Waiting for live campus telemetry events...</p>
               </div>
             </template>
-          </div>
-        </div>
 
-        <!-- Panel 3: Top Rated Campus Dishes -->
-        <div class="bg-[#0D131F] border border-slate-800/90 rounded-2xl p-4 shadow-lg space-y-3 font-mono">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
-            <h4 class="font-bold text-xs text-white flex items-center gap-2">
-              <span class="text-cyan-400">■</span> TOP RATED CAMPUS DISHES
-            </h4>
-            <span class="text-[10px] text-slate-500">Student Picks</span>
-          </div>
-
-          <div class="space-y-2 pt-1 max-h-[210px] overflow-y-auto pr-1">
-            <template x-if="menuItems.length === 0">
-              <p class="text-xs text-slate-600 text-center py-6">No menu items found</p>
-            </template>
-
-            <template x-for="(dish, idx) in menuItems.slice(0, 5)" :key="dish.id">
-              <div class="p-2 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between text-xs hover:border-amber-500/40 transition-colors">
-                <div class="min-w-0 pr-2">
-                  <div class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full flex-shrink-0" :class="dish.isVeg ? 'bg-emerald-400' : 'bg-rose-400'"></span>
-                    <span class="font-bold text-white truncate" x-text="dish.name"></span>
+            <template x-for="(event, idx) in filteredTelemetry" :key="event.id || idx">
+              <div class="p-3.5 rounded-xl bg-[#0A0F1A] border border-slate-800 hover:border-slate-700/80 transition-all flex items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div
+                    class="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0"
+                    :class="
+                      event.event_type === 'qr_scan' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                      event.event_type === 'call_click' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                      event.event_type === 'whatsapp_click' ? 'bg-teal-500/15 text-teal-400 border border-teal-500/30' :
+                      'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+                    "
+                  >
+                    <span x-text="
+                      event.event_type === 'qr_scan' ? '📱' :
+                      event.event_type === 'call_click' ? '📞' :
+                      event.event_type === 'whatsapp_click' ? '💬' : '⚡'
+                    "></span>
                   </div>
-                  <span class="text-[10px] text-slate-500 truncate block" x-text="dish.categoryName || 'Campus Preparation'"></span>
+
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-white uppercase text-[11px]" x-text="(event.event_type || 'event').replace('_', ' ')"></span>
+                      <span class="text-[10px] px-1.5 py-0.2 rounded-md bg-slate-900 text-amber-300/80 border border-slate-800" x-text="event.medium || 'direct'"></span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 truncate mt-0.5">
+                      Attributed to <strong class="text-slate-300" x-text="event.vendor_slug || event.campaign || 'campus_general'"></strong>
+                    </p>
+                  </div>
                 </div>
-                <div class="text-right flex-shrink-0">
-                  <span class="text-emerald-400 font-bold block" x-text="'₹' + dish.price"></span>
-                  <span class="text-[10px] text-amber-400 font-bold">★ 4.9</span>
-                </div>
+
+                <span class="text-[11px] font-mono text-slate-500 whitespace-nowrap" x-text="formatTimeAgo(event.timestamp)"></span>
               </div>
             </template>
           </div>
+        </div>
+
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- VIEW 4: PRICING & TAXONOMY INTELLIGENCE (HUD & Deep Metrics)               -->
+      <!-- ========================================================================= -->
+      <div x-show="activeTab === 'analytics'" class="space-y-4">
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          <!-- Histogram Card -->
+          <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+            <h4 class="font-bold text-sm text-white flex items-center gap-2">
+              <span class="text-amber-400">📊</span> Price Distribution Histogram
+            </h4>
+            <p class="text-xs text-slate-400">Student pricing breakdown across 1,420 dishes.</p>
+
+            <div class="space-y-3 pt-2 text-xs">
+              <div>
+                <div class="flex justify-between text-slate-300 mb-1">
+                  <span>Under ₹50 (Pocket Friendly)</span>
+                  <span class="font-mono text-emerald-400 font-bold" x-text="menuItems.filter(m => Number(m.price) < 50).length + ' items'"></span>
+                </div>
+                <div class="h-2 bg-[#0A0F1A] rounded-full overflow-hidden border border-slate-800">
+                  <div class="h-full bg-emerald-500 rounded-full" :style="'width: ' + ((menuItems.filter(m => Number(m.price) < 50).length / (menuItems.length || 1)) * 100) + '%'"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-slate-300 mb-1">
+                  <span>₹50 – ₹100 (Standard Meals)</span>
+                  <span class="font-mono text-amber-400 font-bold" x-text="menuItems.filter(m => Number(m.price) >= 50 && Number(m.price) < 100).length + ' items'"></span>
+                </div>
+                <div class="h-2 bg-[#0A0F1A] rounded-full overflow-hidden border border-slate-800">
+                  <div class="h-full bg-amber-500 rounded-full" :style="'width: ' + ((menuItems.filter(m => Number(m.price) >= 50 && Number(m.price) < 100).length / (menuItems.length || 1)) * 100) + '%'"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-slate-300 mb-1">
+                  <span>₹100 – ₹200 (Platters & Shakes)</span>
+                  <span class="font-mono text-cyan-400 font-bold" x-text="menuItems.filter(m => Number(m.price) >= 100 && Number(m.price) < 200).length + ' items'"></span>
+                </div>
+                <div class="h-2 bg-[#0A0F1A] rounded-full overflow-hidden border border-slate-800">
+                  <div class="h-full bg-cyan-500 rounded-full" :style="'width: ' + ((menuItems.filter(m => Number(m.price) >= 100 && Number(m.price) < 200).length / (menuItems.length || 1)) * 100) + '%'"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-slate-300 mb-1">
+                  <span>Over ₹200 (Group Combos)</span>
+                  <span class="font-mono text-purple-400 font-bold" x-text="menuItems.filter(m => Number(m.price) >= 200).length + ' items'"></span>
+                </div>
+                <div class="h-2 bg-[#0A0F1A] rounded-full overflow-hidden border border-slate-800">
+                  <div class="h-full bg-purple-500 rounded-full" :style="'width: ' + ((menuItems.filter(m => Number(m.price) >= 200).length / (menuItems.length || 1)) * 100) + '%'"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Breakdown Card -->
+          <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+            <h4 class="font-bold text-sm text-white flex items-center gap-2">
+              <span class="text-emerald-400">🍽️</span> Category Health Matrix
+            </h4>
+            <p class="text-xs text-slate-400">Dishes density by category taxonomy.</p>
+
+            <div class="space-y-2 pt-1 max-h-[220px] overflow-y-auto pr-1 text-xs">
+              <template x-for="c in categories" :key="c.id">
+                <div class="p-2 rounded-xl bg-[#0A0F1A] border border-slate-800 flex items-center justify-between">
+                  <span class="flex items-center gap-2 text-slate-300">
+                    <span x-text="c.icon || '🍽️'"></span>
+                    <span class="font-medium" x-text="c.name"></span>
+                  </span>
+                  <span class="font-mono text-slate-400" x-text="menuItems.filter(m => m.categoryId === c.id).length + ' dishes'"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Top Rated Dishes Card -->
+          <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+            <h4 class="font-bold text-sm text-white flex items-center gap-2">
+              <span class="text-cyan-400">★</span> Top Student Picks
+            </h4>
+            <p class="text-xs text-slate-400">Highest rated meals across campus spots.</p>
+
+            <div class="space-y-2 pt-1 max-h-[220px] overflow-y-auto pr-1 text-xs">
+              <template x-for="(dish, idx) in menuItems.slice(0, 5)" :key="dish.id">
+                <div class="p-2 rounded-xl bg-[#0A0F1A] border border-slate-800 flex items-center justify-between">
+                  <div class="min-w-0 pr-2">
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="dish.isVeg ? 'bg-emerald-400' : 'bg-rose-500'"></span>
+                      <span class="font-medium text-white truncate" x-text="dish.name"></span>
+                    </div>
+                    <span class="text-[10px] text-slate-500 block truncate" x-text="dish.categoryName || 'Campus Preparation'"></span>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <span class="font-mono font-bold text-amber-300 block" x-text="'₹' + dish.price"></span>
+                    <span class="text-[10px] text-amber-400 font-semibold">★ 4.9</span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
         </div>
 
       </div>
 
     </main>
 
-    <!-- ➕ Modal 1: Add New Campus Vendor -->
+    <!-- ➕ Modal 1: Onboard New Food Spot -->
     <div
       x-show="showAddStallModal"
       x-transition
@@ -808,52 +1315,52 @@ const initialQrStats = await getQrAnalyticsData();
       @click.self="showAddStallModal = false"
       @keydown.escape.window="showAddStallModal = false"
     >
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl font-mono text-slate-200">
+      <div class="bg-[#101726] border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl text-slate-200">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-          <h3 class="text-sm font-bold text-white flex items-center gap-2">
-            <span class="text-amber-400">■</span> ONBOARD NEW FOOD SPOT
+          <h3 class="font-bold text-sm text-white flex items-center gap-2">
+            <span>🏪</span> Onboard New Food Spot
           </h3>
           <button @click="showAddStallModal = false" class="text-slate-500 hover:text-white cursor-pointer font-bold">✕</button>
         </div>
 
-        <form @submit.prevent="createStall()" class="space-y-3.5 text-xs">
+        <form @submit.prevent="createStall()" class="space-y-3 text-xs">
           <div>
-            <label class="block text-[11px] font-bold text-slate-400 mb-1">Vendor Brand Name *</label>
-            <input type="text" x-model="newStall.name" required placeholder="e.g. Night Canteen H-7" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-amber-500" />
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Vendor Brand Name *</label>
+            <input type="text" x-model="newStall.name" required placeholder="e.g. Night Canteen H-7" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500" />
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-[11px] font-bold text-slate-400 mb-1">Phone Number</label>
-              <input type="text" x-model="newStall.phone" placeholder="+91 98765 43210" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-amber-500" />
+              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Phone Number</label>
+              <input type="text" x-model="newStall.phone" placeholder="+91 98765 43210" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500" />
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-400 mb-1">WhatsApp (Orders)</label>
-              <input type="text" x-model="newStall.whatsapp" placeholder="919876543210" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-amber-500" />
+              <label class="block text-[11px] font-semibold text-slate-400 mb-1">WhatsApp (Orders)</label>
+              <input type="text" x-model="newStall.whatsapp" placeholder="919876543210" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500" />
             </div>
           </div>
 
           <div>
-            <label class="block text-[11px] font-bold text-slate-400 mb-1">Campus Location</label>
-            <input type="text" x-model="newStall.address" placeholder="e.g. Gate 1, Near SBI / Market" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-amber-500" />
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Campus Location</label>
+            <input type="text" x-model="newStall.address" placeholder="e.g. Near Gate 1 / Market Complex" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500" />
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-[11px] font-bold text-slate-400 mb-1">Opens At</label>
-              <input type="time" x-model="newStall.opensAt" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-amber-500" />
+              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Opens At</label>
+              <input type="time" x-model="newStall.opensAt" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white focus:outline-hidden focus:border-amber-500" />
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-400 mb-1">Closes At</label>
-              <input type="time" x-model="newStall.closesAt" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-amber-500" />
+              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Closes At</label>
+              <input type="time" x-model="newStall.closesAt" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white focus:outline-hidden focus:border-amber-500" />
             </div>
           </div>
 
           <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
-            <button type="button" @click="showAddStallModal = false" class="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer">Cancel</button>
-            <button type="submit" :disabled="savingStall" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg cursor-pointer shadow-sm">
-              <span x-show="!savingStall">Create Vendor</span>
-              <span x-show="savingStall">Deploying...</span>
+            <button type="button" @click="showAddStallModal = false" class="px-4 py-2 bg-[#0A0F1A] hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl cursor-pointer">Cancel</button>
+            <button type="submit" :disabled="savingStall" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl cursor-pointer shadow-xs">
+              <span x-show="!savingStall">Deploy Stall</span>
+              <span x-show="savingStall">Saving...</span>
             </button>
           </div>
         </form>
@@ -868,19 +1375,19 @@ const initialQrStats = await getQrAnalyticsData();
       @click.self="showAddDishModal = false"
       @keydown.escape.window="showAddDishModal = false"
     >
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl font-mono text-slate-200">
+      <div class="bg-[#101726] border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl text-slate-200">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-          <h3 class="text-sm font-bold text-white flex items-center gap-2">
-            <span class="text-emerald-400">■</span> CATALOG NEW MENU ITEM
+          <h3 class="font-bold text-sm text-white flex items-center gap-2">
+            <span>🍱</span> Add New Dish to Catalog
           </h3>
           <button @click="showAddDishModal = false" class="text-slate-500 hover:text-white cursor-pointer font-bold">✕</button>
         </div>
 
-        <form @submit.prevent="createDish()" class="space-y-3.5 text-xs">
+        <form @submit.prevent="createDish()" class="space-y-3 text-xs">
           <div>
-            <label class="block text-[11px] font-bold text-slate-400 mb-1">Target Vendor *</label>
-            <select x-model="newDish.vendorId" required class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-emerald-500">
-              <option value="">-- Select Food Spot --</option>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Target Food Spot *</label>
+            <select x-model="newDish.vendorId" required class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white focus:outline-hidden focus:border-emerald-500">
+              <option value="">-- Choose Food Spot --</option>
               <template x-for="v in vendors" :key="v.id">
                 <option :value="v.id" x-text="v.name"></option>
               </template>
@@ -888,9 +1395,9 @@ const initialQrStats = await getQrAnalyticsData();
           </div>
 
           <div>
-            <label class="block text-[11px] font-bold text-slate-400 mb-1">Category</label>
-            <select x-model="newDish.categoryId" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-emerald-500">
-              <option value="">-- Choose Category --</option>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Category</label>
+            <select x-model="newDish.categoryId" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white focus:outline-hidden focus:border-emerald-500">
+              <option value="">-- Select Category --</option>
               <template x-for="c in categories" :key="c.id">
                 <option :value="c.id" x-text="c.icon + ' ' + c.name"></option>
               </template>
@@ -899,34 +1406,34 @@ const initialQrStats = await getQrAnalyticsData();
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-[11px] font-bold text-slate-400 mb-1">Dish Name *</label>
-              <input type="text" x-model="newDish.name" required placeholder="e.g. Butter Paneer Paratha" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500" />
+              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Dish Name *</label>
+              <input type="text" x-model="newDish.name" required placeholder="e.g. Butter Paneer Paratha" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-hidden focus:border-emerald-500" />
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-400 mb-1">Price (₹ INR) *</label>
-              <input type="number" x-model="newDish.price" required placeholder="60" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500" />
+              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Price (₹ INR) *</label>
+              <input type="number" x-model="newDish.price" required placeholder="60" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-hidden focus:border-emerald-500" />
             </div>
           </div>
 
           <div>
-            <label class="block text-[11px] font-bold text-slate-400 mb-1">Preparation Note</label>
-            <input type="text" x-model="newDish.description" placeholder="Served hot with mint chutney & curd" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500" />
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Description</label>
+            <input type="text" x-model="newDish.description" placeholder="Served fresh with mint chutney and curd" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-hidden focus:border-emerald-500" />
           </div>
 
           <div class="flex items-center gap-4 pt-1">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" x-model="newDish.isVeg" class="rounded border-slate-700 bg-slate-950 text-emerald-500">
+              <input type="checkbox" x-model="newDish.isVeg" class="rounded text-emerald-600 bg-slate-900 border-slate-700">
               <span class="text-xs font-bold text-emerald-400">🌱 Pure Veg</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" x-model="newDish.isAvailable" class="rounded border-slate-700 bg-slate-950 text-amber-500">
-              <span class="text-xs font-bold text-slate-300">In Stock</span>
+              <input type="checkbox" x-model="newDish.isAvailable" class="rounded text-amber-500 bg-slate-900 border-slate-700">
+              <span class="text-xs font-semibold text-slate-300">In Stock</span>
             </label>
           </div>
 
           <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
-            <button type="button" @click="showAddDishModal = false" class="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer">Cancel</button>
-            <button type="submit" :disabled="savingDish" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg cursor-pointer shadow-sm">
+            <button type="button" @click="showAddDishModal = false" class="px-4 py-2 bg-[#0A0F1A] hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl cursor-pointer">Cancel</button>
+            <button type="submit" :disabled="savingDish" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl cursor-pointer shadow-xs">
               <span x-show="!savingDish">Deploy Item</span>
               <span x-show="savingDish">Saving...</span>
             </button>
