@@ -1,5 +1,5 @@
 ---
-import { getVendorTimingStatus } from '../lib/utils';
+import { getVendorTimingStatus, cleanTelHref } from '../lib/utils';
 import { getOptimizedImageUrl } from '../lib/images';
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
     id: number;
     name: string;
     slug: string;
+    phone?: string | null;
     image?: string | null;
     deliversTo?: string[] | null;
     opensAt?: string | null;
@@ -19,45 +20,72 @@ interface Props {
 const { vendor } = Astro.props;
 const timing = getVendorTimingStatus(vendor.opensAt, vendor.closesAt);
 const optimizedImg = getOptimizedImageUrl(vendor.image || '/placeholder-vendor.svg', { width: 160, quality: 80, format: 'auto' });
+const telHref = cleanTelHref(vendor.phone);
 ---
 
-<a
-  href={`/v/${vendor.slug}`}
-  class={`flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 group shadow-2xs ${
+<div
+  class={`flex items-center gap-3 sm:gap-3.5 p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 group shadow-2xs ${
     timing.isOpen
-      ? 'bg-white border-slate-200/90 hover:border-nitkkr-orange hover:shadow-md active:scale-[0.99]'
+      ? 'bg-white border-slate-200/90 hover:border-nitkkr-orange hover:shadow-md'
       : 'bg-slate-50/70 border-slate-200 opacity-75 grayscale-[40%] hover:grayscale-0 hover:opacity-100'
   }`}
 >
-  <img
-    src={optimizedImg}
-    alt={vendor.name}
-    width="64"
-    height="64"
-    class={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-slate-100 bg-slate-50 ${
-      !timing.isOpen ? 'grayscale opacity-80' : ''
-    }`}
-    loading="lazy"
-    decoding="async"
-  />
-  <div class="flex-1 min-w-0">
-    <div class="flex items-center gap-2">
-      <p class={`font-bold text-sm sm:text-base truncate transition-colors ${timing.isOpen ? 'text-slate-900 group-hover:text-nitkkr-orange' : 'text-slate-600'}`}>{vendor.name}</p>
+  <!-- Main Clickable Area: Image + Details (Click opens full menu) -->
+  <a
+    href={`/v/${vendor.slug}`}
+    class="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0"
+  >
+    <img
+      src={optimizedImg}
+      alt={vendor.name}
+      width="64"
+      height="64"
+      class={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-slate-100 bg-slate-50 ${
+        !timing.isOpen ? 'grayscale opacity-80' : ''
+      }`}
+      loading="lazy"
+      decoding="async"
+    />
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2">
+        <p class={`font-bold text-sm sm:text-base truncate transition-colors ${timing.isOpen ? 'text-slate-900 group-hover:text-nitkkr-orange' : 'text-slate-600'}`}>{vendor.name}</p>
+      </div>
+      <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
+        <span
+          class={`w-2 h-2 rounded-full flex-shrink-0 ${timing.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}
+          aria-hidden="true"
+        ></span>
+        <span class={`truncate font-medium ${timing.isUrgent ? 'text-amber-600 font-semibold' : 'text-slate-500'}`}>
+          {timing.statusText}
+        </span>
+      </p>
     </div>
-    <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-      <span
-        class={`w-2 h-2 rounded-full flex-shrink-0 ${timing.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}
-        aria-hidden="true"
-      ></span>
-      <span class={`truncate font-medium ${timing.isUrgent ? 'text-amber-600 font-semibold' : 'text-slate-500'}`}>
-        {timing.statusText}
-      </span>
-    </p>
+  </a>
+
+  <!-- Right Actions Group: Call Icon Button + Sleek Arrow Navigation to Full Menu -->
+  <div class="flex items-center gap-1.5 flex-shrink-0">
+    <!-- Call Icon Button -->
+    <a
+      href={telHref}
+      class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all active:scale-95 shadow-2xs cursor-pointer border border-slate-200/60"
+      aria-label={`Call ${vendor.name}`}
+      title="Call"
+    >
+      <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+      </svg>
+    </a>
+
+    <!-- Sleek Navigation Indicator to View Full Menu -->
+    <a
+      href={`/v/${vendor.slug}`}
+      class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-nitkkr-orange group-hover:translate-x-0.5 transition-all flex-shrink-0 border border-slate-100/80 active:scale-95"
+      aria-label={`View ${vendor.name} menu`}
+      title="View Menu"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+      </svg>
+    </a>
   </div>
-  <!-- Sleek navigation indicator (Removes repetitive menu icon) -->
-  <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-nitkkr-orange group-hover:translate-x-0.5 transition-all flex-shrink-0 border border-slate-100/80">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-    </svg>
-  </div>
-</a>
+</div>

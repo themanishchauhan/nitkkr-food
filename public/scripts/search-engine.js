@@ -563,6 +563,11 @@
         return t ? t.statusText : 'Open Today';
       },
 
+      getVendorTimingUrgentClass: function (vendor) {
+        var t = this.getVendorTiming(vendor);
+        return (t && t.isUrgent) ? 'text-amber-600 font-semibold' : 'text-slate-500';
+      },
+
       getMatchingVendorBadgeClass: function (vendor) {
         var t = this.getVendorTiming(vendor);
         if (t && t.isOpen) {

@@ -309,135 +309,75 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
       <div x-show="activeTab === 'vendors'" class="space-y-3" role="list">
         <template x-for="vendor in filteredVendors" :key="vendor.id">
           <div
-            class="p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 flex flex-col gap-2.5 group"
+            class="flex items-center gap-3 sm:gap-3.5 p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 group shadow-2xs"
             :class="isVendorOpen(vendor.opensAt, vendor.closesAt)
-              ? 'bg-white border-slate-200/90 hover:border-bistro-400 shadow-2xs hover:shadow-md'
+              ? 'bg-white border-slate-200/90 hover:border-nitkkr-orange hover:shadow-md'
               : 'bg-slate-50/70 border-slate-200 opacity-75 grayscale-[40%] hover:grayscale-0 hover:opacity-100'"
           >
-            <!-- Top Content Row: Thumbnail + Info + Closed Badge (Only when closed) -->
-            <div class="flex items-start gap-3 sm:gap-3.5 min-w-0">
-              <!-- Vendor Thumbnail -->
-              <a :href="`/v/${vendor.slug}`" class="relative w-16 h-16 sm:w-18 sm:h-18 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100 shadow-2xs block">
-                <img
-                  :src="getThumbnailUrl(vendor.image, 160)"
-                  alt=""
-                  width="72"
-                  height="72"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  :class="!isVendorOpen(vendor.opensAt, vendor.closesAt) ? 'grayscale opacity-80' : ''"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </a>
-
-              <!-- Vendor Text Information -->
+            <!-- Main Clickable Area: Image + Details (Click opens full menu) -->
+            <a
+              :href="`/v/${vendor.slug}`"
+              class="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0"
+            >
+              <img
+                :src="getThumbnailUrl(vendor.image, 160)"
+                alt=""
+                width="64"
+                height="64"
+                class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-slate-100 bg-slate-50"
+                :class="!isVendorOpen(vendor.opensAt, vendor.closesAt) ? 'grayscale opacity-80' : ''"
+                loading="lazy"
+                decoding="async"
+              />
               <div class="flex-1 min-w-0">
-                <!-- Header: Vendor Name (truncated) + Top-Right Closed Badge (when closed) -->
-                <div class="flex items-start justify-between gap-2 w-full">
-                  <a :href="`/v/${vendor.slug}`" class="min-w-0 flex-1">
-                    <h3
-                      class="font-display font-bold text-sm sm:text-base truncate transition-colors"
-                      :class="isVendorOpen(vendor.opensAt, vendor.closesAt) ? 'text-slate-900 group-hover:text-bistro-600' : 'text-slate-600'"
-                      x-text="vendor.name"
-                    ></h3>
-                  </a>
-                  
-                  <!-- Show Closed Badge ONLY when restaurant is closed -->
-                  <template x-if="!isVendorOpen(vendor.opensAt, vendor.closesAt)">
-                    <div class="flex-shrink-0">
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-slate-200/80 text-slate-600 border border-slate-300/70 whitespace-nowrap shadow-2xs">
-                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                        <span>Closed</span>
-                      </span>
-                    </div>
-                  </template>
+                <div class="flex items-center gap-2">
+                  <p
+                    class="font-bold text-sm sm:text-base truncate transition-colors"
+                    :class="isVendorOpen(vendor.opensAt, vendor.closesAt) ? 'text-slate-900 group-hover:text-nitkkr-orange' : 'text-slate-600'"
+                    x-text="vendor.name"
+                  ></p>
                 </div>
-
-                <!-- Address -->
-                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1.5 truncate">
-                  <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span class="truncate" x-text="vendor.address || 'Campus Area'"></span>
-                </p>
-
-                <!-- Search Matching Badge if applicable -->
-                <template x-if="query.trim() ? (getVendorMatchCount(vendor.id) > 0) : false">
-                  <div class="mt-1">
-                    <span class="text-[10px] font-bold text-amber-800 bg-amber-50/80 border border-amber-200/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                      <span>✨</span>
-                      <span x-text="formatCount(getVendorMatchCount(vendor.id)) + ' matching items'"></span>
-                    </span>
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <!-- Bottom Row: Dynamic Timing on Left, Actions (Call, WhatsApp, Shortened Menu) on Right -->
-            <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100/90 w-full flex-wrap sm:flex-nowrap">
-              <!-- Dynamic Timing Status Pill Badge (Matches visual pill styling from vendor header) -->
-              <!-- Dynamic Timing Status Pill Badge (Matches visual pill styling from vendor header) -->
-              <div class="flex items-center min-w-0">
-                <span
-                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-2xs whitespace-nowrap"
-                  :class="getVendorTimingBadgeClass(vendor)"
-                >
+                <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
                   <span
-                    class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    class="w-2 h-2 rounded-full flex-shrink-0"
                     :class="getVendorTimingDotClass(vendor)"
                     aria-hidden="true"
                   ></span>
                   <span
-                    class="truncate"
+                    class="truncate font-medium"
+                    :class="getVendorTimingUrgentClass(vendor)"
                     x-text="getVendorTimingText(vendor)"
-                  >Open Today</span>
-                </span>
+                  ></span>
+                </p>
               </div>
+            </a>
 
-              <!-- Actions Group -->
-              <div class="flex items-center gap-1.5 flex-shrink-0 ml-auto">
-                <!-- Shortened Call Icon Button -->
-                <a
-                  :href="getTelHref(vendor.phone)"
-                  class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all active:scale-95 shadow-2xs cursor-pointer border border-slate-200/60"
-                  aria-label="Call vendor"
-                  title="Call"
-                >
-                  <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                </a>
+            <!-- Right Actions Group: Call Icon Button + Sleek Arrow Navigation to Full Menu -->
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <!-- Call Icon Button -->
+              <a
+                :href="getTelHref(vendor.phone)"
+                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all active:scale-95 shadow-2xs cursor-pointer border border-slate-200/60"
+                aria-label="Call vendor"
+                title="Call"
+              >
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </a>
 
-                <!-- WhatsApp Icon Button -->
-                <template x-if="showWhatsApp">
-                  <a
-                    :href="getWhatsAppHref(vendor.whatsapp || vendor.phone)"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-all active:scale-95 shadow-2xs cursor-pointer"
-                    aria-label="WhatsApp vendor"
-                    title="WhatsApp"
-                  >
-                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
-                    </svg>
-                  </a>
-                </template>
-
-                <!-- Shortened, Tasteful "Menu" CTA Button -->
-                <a
-                  :href="`/v/${vendor.slug}`"
-                  class="px-3 py-1.5 sm:py-2 bg-gradient-to-r from-amber-500 to-bistro-500 hover:from-amber-600 hover:to-bistro-600 text-white rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95 flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Menu</span>
-                  <svg class="w-3.5 h-3.5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                  </svg>
-                </a>
-              </div>
+              <!-- Sleek Navigation Indicator to View Full Menu -->
+              <a
+                :href="`/v/${vendor.slug}`"
+                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-nitkkr-orange group-hover:translate-x-0.5 transition-all flex-shrink-0 border border-slate-100/80 active:scale-95"
+                aria-label="View full menu"
+                title="View Menu"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+              </a>
             </div>
-
           </div>
         </template>
 
