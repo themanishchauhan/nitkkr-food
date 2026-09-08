@@ -113,12 +113,12 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
           <!-- 1. Gen-Z Cravings & Lifestyle Vibe Bar -->
           <div class="space-y-1">
             <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block px-0.5">🔥 Student Cravings & Vibes:</span>
-            <div class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs" role="group" aria-label="Filter by vibe">
+            <div class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none overscroll-x-contain touch-pan-x text-xs" role="group" aria-label="Filter by vibe">
               <button
                 type="button"
                 @click="vibeTag = 'all'; displayLimit = 20;"
                 :class="vibeTag === 'all' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-amber-400 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer text-xs"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-colors duration-150 active:scale-95 cursor-pointer text-xs"
               >
                 All Vibes
               </button>
@@ -126,7 +126,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="vibeTag = (vibeTag === 'protein' ? 'all' : 'protein'); displayLimit = 20;"
                 :class="vibeTag === 'protein' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-amber-200 hover:bg-amber-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1 text-xs"
               >
                 <span>🏋️‍♂️</span> High Protein
               </button>
@@ -134,7 +134,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="vibeTag = (vibeTag === 'late-night' ? 'all' : 'late-night'); displayLimit = 20;"
                 :class="vibeTag === 'late-night' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-indigo-200 hover:bg-indigo-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1 text-xs"
               >
                 <span>🌙</span> Late Night 2AM
               </button>
@@ -142,7 +142,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="vibeTag = (vibeTag === 'spicy' ? 'all' : 'spicy'); displayLimit = 20;"
                 :class="vibeTag === 'spicy' ? 'bg-rose-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-rose-200 hover:bg-rose-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1 text-xs"
               >
                 <span>🔥</span> Spicy & Crispy
               </button>
@@ -150,7 +150,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="vibeTag = (vibeTag === 'cheese' ? 'all' : 'cheese'); displayLimit = 20;"
                 :class="vibeTag === 'cheese' ? 'bg-yellow-500 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-yellow-200 hover:bg-yellow-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1 text-xs"
               >
                 <span>🧀</span> Cheesy Loaded
               </button>
@@ -158,7 +158,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="vibeTag = (vibeTag === 'shakes' ? 'all' : 'shakes'); displayLimit = 20;"
                 :class="vibeTag === 'shakes' ? 'bg-purple-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-purple-200 hover:bg-purple-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1 text-xs"
               >
                 <span>🧋</span> Thick Shakes
               </button>
@@ -166,7 +166,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="vibeTag = (vibeTag === 'bestseller' ? 'all' : 'bestseller'); displayLimit = 20;"
                 :class="vibeTag === 'bestseller' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-emerald-200 hover:bg-emerald-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1 text-xs"
               >
                 <span>⭐</span> Top Rated
               </button>
@@ -174,7 +174,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="vibeTag = (vibeTag === 'healthy' ? 'all' : 'healthy'); displayLimit = 20;"
                 :class="vibeTag === 'healthy' ? 'bg-teal-600 text-white font-bold shadow-xs' : 'bg-white text-slate-800 border border-teal-200 hover:bg-teal-50 font-semibold'"
-                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 text-xs"
+                class="px-2.5 py-1 rounded-xl whitespace-nowrap transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1 text-xs"
               >
                 <span>🥑</span> Healthy & Fresh
               </button>
@@ -189,7 +189,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="priceBracket = 'all'; displayLimit = 20;"
                 :class="priceBracket === 'all' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                class="px-2 py-0.5 rounded-lg transition-colors duration-150 active:scale-95 cursor-pointer text-xs"
               >
                 Any
               </button>
@@ -197,7 +197,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="priceBracket = (priceBracket === 'under-50' ? 'all' : 'under-50'); displayLimit = 20;"
                 :class="priceBracket === 'under-50' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                class="px-2 py-0.5 rounded-lg transition-colors duration-150 active:scale-95 cursor-pointer text-xs"
                 title="Pocket friendly: ₹10 - ₹50"
               >
                 ≤ ₹50
@@ -206,7 +206,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="priceBracket = (priceBracket === '50-100' ? 'all' : '50-100'); displayLimit = 20;"
                 :class="priceBracket === '50-100' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                class="px-2 py-0.5 rounded-lg transition-colors duration-150 active:scale-95 cursor-pointer text-xs"
                 title="Quick Meals: ₹51 - ₹100"
               >
                 ₹50 – ₹100
@@ -215,7 +215,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="priceBracket = (priceBracket === '100-150' ? 'all' : '100-150'); displayLimit = 20;"
                 :class="priceBracket === '100-150' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                class="px-2 py-0.5 rounded-lg transition-colors duration-150 active:scale-95 cursor-pointer text-xs"
                 title="Combos & Thalis: ₹101 - ₹150"
               >
                 ₹100 – ₹150
@@ -224,7 +224,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="priceBracket = (priceBracket === 'above-150' ? 'all' : 'above-150'); displayLimit = 20;"
                 :class="priceBracket === 'above-150' ? 'bg-bistro-500 text-white font-bold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-                class="px-2 py-0.5 rounded-lg transition-all cursor-pointer text-xs"
+                class="px-2 py-0.5 rounded-lg transition-colors duration-150 active:scale-95 cursor-pointer text-xs"
                 title="Platters & Treats: > ₹150"
               >
                 ₹150+
@@ -237,7 +237,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="vegFilter = (vegFilter === 'veg' ? 'all' : 'veg'); displayLimit = 20;"
                 :class="vegFilter === 'veg' ? 'bg-emerald-700 text-white shadow-xs font-bold' : 'bg-emerald-50/80 text-emerald-800 border border-emerald-300/80 hover:bg-emerald-100 font-semibold'"
-                class="px-2.5 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs active:scale-95"
+                class="px-2.5 py-0.5 rounded-lg transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1 text-xs"
                 title="Filter Pure Veg dishes"
               >
                 <span>🌱</span> Veg
@@ -246,7 +246,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="vegFilter = (vegFilter === 'egg' ? 'all' : 'egg'); displayLimit = 20;"
                 :class="vegFilter === 'egg' ? 'bg-amber-600 text-white shadow-xs font-bold' : 'bg-amber-50/80 text-amber-900 border border-amber-300/80 hover:bg-amber-100 font-semibold'"
-                class="px-2.5 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs active:scale-95"
+                class="px-2.5 py-0.5 rounded-lg transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1 text-xs"
                 title="Filter dishes with Egg"
               >
                 <span>🥚</span> Eggs
@@ -255,7 +255,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click="vegFilter = (vegFilter === 'nonveg' ? 'all' : 'nonveg'); displayLimit = 20;"
                 :class="vegFilter === 'nonveg' ? 'bg-rose-700 text-white shadow-xs font-bold' : 'bg-rose-50/80 text-rose-800 border border-rose-300/80 hover:bg-rose-100 font-semibold'"
-                class="px-2.5 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs active:scale-95"
+                class="px-2.5 py-0.5 rounded-lg transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1 text-xs"
                 title="Filter Non-Veg dishes"
               >
                 <span>🍗</span> Non-Veg
@@ -281,12 +281,12 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
       <!-- 4. Category Filter Pills (for Dishes) -->
       {categories.length > 0 && (
         <div x-show="activeTab === 'dishes'" class="mb-4">
-          <div class="flex gap-1.5 overflow-x-auto pb-1 px-4 sm:px-0 scrollbar-none" role="group" aria-label="Filter by category">
+          <div class="flex gap-1.5 overflow-x-auto pb-1 px-4 sm:px-0 scrollbar-none overscroll-x-contain touch-pan-x" role="group" aria-label="Filter by category">
             <button
               type="button"
               @click="activeCat = 'all'; displayLimit = 20;"
               :class="activeCat === 'all' ? 'bg-bistro-500 text-white shadow-xs font-bold' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'"
-              class="px-3 py-1 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer"
+              class="px-3 py-1 rounded-xl text-xs whitespace-nowrap transition-colors duration-150 active:scale-95 cursor-pointer"
             >
               All Categories
             </button>
@@ -295,7 +295,7 @@ const showWhatsApp = settingsObj.whatsapp_ordering_enabled === 'true' && setting
                 type="button"
                 @click={`activeCat = (activeCat === '${cat.slug}' ? 'all' : '${cat.slug}'); displayLimit = 20;`}
                 :class={`activeCat === '${cat.slug}' ? 'bg-bistro-500 text-white shadow-xs font-bold' : 'bg-white text-slate-700 border border-slate-200 hover:border-bistro-400 font-semibold'`}
-                class="px-3 py-1 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer flex items-center gap-1"
+                class="px-3 py-1 rounded-xl text-xs whitespace-nowrap transition-colors duration-150 active:scale-95 cursor-pointer flex items-center gap-1"
               >
                 <span aria-hidden="true">{cat.icon}</span>
                 <span>{cat.name}</span>

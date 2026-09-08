@@ -123,14 +123,22 @@
       vendorKeys[rand] = tmp;
     }
 
+    var bucketIndices = {};
+    for (var b = 0; b < vendorKeys.length; b++) {
+      bucketIndices[vendorKeys[b]] = 0;
+    }
+
     var result = [];
     var added = true;
     while (added) {
       added = false;
       for (var k = 0; k < vendorKeys.length; k++) {
         var vKey = vendorKeys[k];
-        if (vendorBuckets[vKey] && vendorBuckets[vKey].length > 0) {
-          result.push(vendorBuckets[vKey].shift());
+        var bucket = vendorBuckets[vKey];
+        var idx = bucketIndices[vKey];
+        if (bucket && idx < bucket.length) {
+          result.push(bucket[idx]);
+          bucketIndices[vKey] = idx + 1;
           added = true;
         }
       }
@@ -188,6 +196,16 @@
     return _lastCurTotal;
   }
 
+  var VIBE_PATTERNS = {
+    protein: /paneer|egg|chicken|soya|bhurji|protein|whey|chana|tofu|peanut/i,
+    'late-night': /maggi|roll|fries|sandwich|canteen|coffee|tea|burger/i,
+    spicy: /spicy|peri|schezwan|chilli|momo|kurkure|crispy|tandoori/i,
+    cheese: /cheese|cheesy|mozzarella|pizza|loaded|garlic bread|pasta/i,
+    shakes: /shake|smoothie|coffee|cold coffee|boba|oreo|kitkat|mojito/i,
+    healthy: /juice|fruit|salad|sprouts|green tea|coconut|curd/i,
+    bestseller: /bestseller|popular|top-rated|chef-special/i
+  };
+
   function preIndexItem(item) {
     var name = (item.name || '').toLowerCase();
     var cat = (item.categoryName || item.categorySlug || '').toLowerCase();
@@ -204,6 +222,19 @@
     item._normTokens = normalizePhonetics(full);
     item._diet = detectDiet(item);
     item.price = item.price != null ? Number(item.price) : 0;
+    item._catSlug = (item.categorySlug || '').toLowerCase();
+    item._catName = (item.categoryName || '').toLowerCase();
+
+    // Pre-calculate vibe flags for O(1) instant tag filtering
+    var vibeMap = {};
+    for (var vKey in VIBE_PATTERNS) {
+      if (vKey === 'shakes' && item._catSlug.indexOf('beverage') !== -1) {
+        vibeMap[vKey] = true;
+      } else if (VIBE_PATTERNS[vKey].test(full)) {
+        vibeMap[vKey] = true;
+      }
+    }
+    item._vibeMap = vibeMap;
     return item;
   }
 
@@ -299,60 +330,59 @@
         return 'https://wa.me/' + full;
       },
 
+      _syncTimer: null,
       syncUrl: function () {
-        try {
-          var url = new URL(window.location.href);
-          if (this.query && this.query.trim()) {
-            url.searchParams.set('q', this.query.trim());
-          } else {
-            url.searchParams.delete('q');
-          }
+        var self = this;
+        clearTimeout(this._syncTimer);
+        this._syncTimer = setTimeout(function () {
+          try {
+            var url = new URL(window.location.href);
+            if (self.query && self.query.trim()) {
+              url.searchParams.set('q', self.query.trim());
+            } else {
+              url.searchParams.delete('q');
+            }
 
-          if (this.activeCat && this.activeCat !== 'all') {
-            url.searchParams.set('category', this.activeCat);
-          } else {
-            url.searchParams.delete('category');
-          }
+            if (self.activeCat && self.activeCat !== 'all') {
+              url.searchParams.set('category', self.activeCat);
+            } else {
+              url.searchParams.delete('category');
+            }
 
-          if (this.vibeTag && this.vibeTag !== 'all') {
-            url.searchParams.set('tag', this.vibeTag);
-          } else {
-            url.searchParams.delete('tag');
-          }
+            if (self.vibeTag && self.vibeTag !== 'all') {
+              url.searchParams.set('tag', self.vibeTag);
+            } else {
+              url.searchParams.delete('tag');
+            }
 
-          if (this.priceBracket && this.priceBracket !== 'all') {
-            url.searchParams.set('maxPrice', this.priceBracket);
-          } else {
-            url.searchParams.delete('maxPrice');
-          }
+            if (self.priceBracket && self.priceBracket !== 'all') {
+              url.searchParams.set('maxPrice', self.priceBracket);
+            } else {
+              url.searchParams.delete('maxPrice');
+            }
 
-          if (this.vegFilter && this.vegFilter !== 'all') {
-            url.searchParams.set('isVeg', this.vegFilter);
-          } else {
-            url.searchParams.delete('isVeg');
-          }
+            if (self.vegFilter && self.vegFilter !== 'all') {
+              url.searchParams.set('isVeg', self.vegFilter);
+            } else {
+              url.searchParams.delete('isVeg');
+            }
 
-          if (this.activeTab === 'vendors') {
-            url.searchParams.set('tab', 'vendors');
-          } else {
-            url.searchParams.delete('tab');
-          }
+            if (self.activeTab === 'vendors') {
+              url.searchParams.set('tab', 'vendors');
+            } else {
+              url.searchParams.delete('tab');
+            }
 
-          var cleanUrl = url.pathname + (url.search ? url.search : '');
-          window.history.replaceState(null, '', cleanUrl);
-        } catch (e) {}
+            var cleanUrl = url.pathname + (url.search ? url.search : '');
+            window.history.replaceState(null, '', cleanUrl);
+          } catch (e) {}
+        }, 120);
       },
 
       init: function () {
         var self = this;
-        var debounceTimer = null;
         if (this.$watch) {
-          this.$watch('query', function () {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(function () {
-              self.syncUrl();
-            }, 150);
-          });
+          this.$watch('query', function () { self.syncUrl(); });
           this.$watch('activeCat', function () { self.syncUrl(); });
           this.$watch('vibeTag', function () { self.syncUrl(); });
           this.$watch('priceBracket', function () { self.syncUrl(); });
@@ -522,86 +552,55 @@
         }
 
         var self = this;
-        var list = this.allItems;
+        var hasQuery = Boolean(this.query && this.query.trim());
+        var rawQuery = hasQuery ? this.query.toLowerCase().trim() : '';
+        var tokens = hasQuery ? rawQuery.split(/\s+/).filter(Boolean) : [];
 
-        // 0. Exclude closed vendors
-        list = list.filter(function (i) {
-          return self.isItemVendorOpen(i);
-        });
+        var catFilter = (this.activeCat && this.activeCat !== 'all') ? this.activeCat.toLowerCase() : null;
+        var vibeFilter = (this.vibeTag && this.vibeTag !== 'all') ? this.vibeTag.toLowerCase() : null;
+        var priceBracket = (this.priceBracket && this.priceBracket !== 'all') ? this.priceBracket : null;
+        var vegFilter = (this.vegFilter && this.vegFilter !== 'all') ? this.vegFilter : null;
 
-        // 1. Category Filter
-        if (this.activeCat && this.activeCat !== 'all') {
-          var catSlug = this.activeCat.toLowerCase();
-          list = list.filter(function (i) {
-            return (i.categorySlug && i.categorySlug.toLowerCase() === catSlug) ||
-                   (i.categoryName && i.categoryName.toLowerCase() === catSlug);
-          });
-        }
+        var matchingEntries = hasQuery ? [] : null;
+        var filteredList = [];
 
-        // 2. Vibe Filter
-        if (this.vibeTag && this.vibeTag !== 'all') {
-          var vibe = this.vibeTag.toLowerCase();
-          list = list.filter(function (i) {
-            var full = i._searchTokens || '';
-            if (vibe === 'protein') {
-              return /paneer|egg|chicken|soya|bhurji|protein|whey|chana|tofu|peanut/i.test(full);
-            }
-            if (vibe === 'late-night') {
-              return /maggi|roll|fries|sandwich|canteen|coffee|tea|burger/i.test(full);
-            }
-            if (vibe === 'spicy') {
-              return /spicy|peri|schezwan|chilli|momo|kurkure|crispy|tandoori/i.test(full);
-            }
-            if (vibe === 'cheese') {
-              return /cheese|cheesy|mozzarella|pizza|loaded|garlic bread|pasta/i.test(full);
-            }
-            if (vibe === 'shakes') {
-              return (i.categorySlug && i.categorySlug.indexOf('beverage') !== -1) ||
-                     /shake|smoothie|coffee|cold coffee|boba|oreo|kitkat|mojito/i.test(full);
-            }
-            if (vibe === 'healthy') {
-              return /juice|fruit|salad|sprouts|green tea|coconut|curd/i.test(full);
-            }
-            if (vibe === 'bestseller') {
-              return /bestseller|popular|top-rated|chef-special/i.test(full);
-            }
-            return full.indexOf(vibe) !== -1;
-          });
-        }
+        for (var idx = 0; idx < this.allItems.length; idx++) {
+          var item = this.allItems[idx];
 
-        // 3. Price Filter (Optimized numeric comparison)
-        if (this.priceBracket && this.priceBracket !== 'all') {
-          var b = this.priceBracket;
-          list = list.filter(function (i) {
-            var p = i.price;
-            if (p == null) return false;
-            if (b === 'under-50' || b === '50') return p <= 50;
-            if (b === '50-100' || b === '100') return p > 50 && p <= 100;
-            if (b === '100-150' || b === '150') return p > 100 && p <= 150;
-            if (b === 'above-150' || b === '150+') return p > 150;
-            return true;
-          });
-        }
+          // 0. Exclude closed vendors (O(1) cached lookup)
+          if (!self.isItemVendorOpen(item)) continue;
 
-        // 4. Diet Filter
-        if (this.vegFilter !== 'all') {
-          var targetDiet = this.vegFilter;
-          list = list.filter(function (i) {
-            return (i._diet || detectDiet(i)) === targetDiet;
-          });
-        }
+          // 1. Category Filter (Direct string comparison)
+          if (catFilter) {
+            if (item._catSlug !== catFilter && item._catName !== catFilter) continue;
+          }
 
-        // 5. Keyword Matching
-        var result;
-        if (!this.query.trim()) {
-          result = fairInterleaveByVendor(list);
-        } else {
-          var rawQuery = this.query.toLowerCase().trim();
-          var tokens = rawQuery.split(/\s+/).filter(Boolean);
+          // 2. Vibe Filter (Instant O(1) boolean check)
+          if (vibeFilter) {
+            if (item._vibeMap) {
+              if (!item._vibeMap[vibeFilter] && item._searchTokens.indexOf(vibeFilter) === -1) continue;
+            } else if (item._searchTokens.indexOf(vibeFilter) === -1) {
+              continue;
+            }
+          }
 
-          var matchingEntries = [];
-          for (var idx = 0; idx < list.length; idx++) {
-            var item = list[idx];
+          // 3. Price Filter (Direct numeric comparison)
+          if (priceBracket) {
+            var p = item.price;
+            if (p == null) continue;
+            if ((priceBracket === 'under-50' || priceBracket === '50') && p > 50) continue;
+            if ((priceBracket === '50-100' || priceBracket === '100') && (p <= 50 || p > 100)) continue;
+            if ((priceBracket === '100-150' || priceBracket === '150') && (p <= 100 || p > 150)) continue;
+            if ((priceBracket === 'above-150' || priceBracket === '150+') && p <= 150) continue;
+          }
+
+          // 4. Diet Filter
+          if (vegFilter) {
+            if (item._diet !== vegFilter) continue;
+          }
+
+          // 5. Keyword Matching
+          if (hasQuery) {
             var searchTokens = item._searchTokens || '';
             var words = item._words || [];
             var allMatch = true;
@@ -612,7 +611,6 @@
                 break;
               }
             }
-
             if (!allMatch) continue;
 
             var nameLower = (item.name || '').toLowerCase();
@@ -628,10 +626,12 @@
             }
 
             matchingEntries.push({ item: item, score: score });
+          } else {
+            filteredList.push(item);
           }
-
-          result = fairInterleaveRankedEntries(matchingEntries);
         }
+
+        var result = hasQuery ? fairInterleaveRankedEntries(matchingEntries) : fairInterleaveByVendor(filteredList);
 
         // Precompute vendor match counts once in O(N) for fast O(1) lookups
         var countsMap = {};
