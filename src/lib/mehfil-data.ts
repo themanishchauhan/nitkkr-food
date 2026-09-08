@@ -9,7 +9,7 @@ export const MEHFIL_VENDOR = {
   longitude: '76.82321780013733',
   opensAt: '10:30',
   closesAt: '22:00',
-  deliversTo: ['NITKKR Campus', 'Gate 1', 'Gate 2', 'All Hostels'],
+  deliversTo: ['Campus wide', 'Gate 1', 'Gate 2', 'All Hostels'],
   image: 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

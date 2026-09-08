@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createDb, getRawD1Binding, schema } from '../../../lib/db';
+import { authenticateAdminRequest } from '../../../lib/auth';
 import { FOOD_CAVE_VENDOR, FOOD_CAVE_MENU_ITEMS } from '../../../lib/food-cave-data';
 import { APNA_FAST_FOOD_VENDOR, APNA_FAST_FOOD_MENU_ITEMS } from '../../../lib/apna-fast-food-data';
 import { SURAJ_VENDOR, SURAJ_MENU_ITEMS } from '../../../lib/suraj-restaurant-data';
@@ -22,7 +23,15 @@ import { MOCK_CATEGORIES } from '../../../lib/mock-data';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ locals }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
+  const admin = await authenticateAdminRequest(request);
+  if (!admin) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const d1 = (locals as any)?.db || getRawD1Binding();
     if (!d1 || typeof d1.prepare !== 'function') {

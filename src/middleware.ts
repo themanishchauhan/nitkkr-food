@@ -27,17 +27,34 @@ export const onRequest = defineMiddleware(async (context, next) => {
       return context.redirect('/admin/site-settings', 302);
     }
 
-    if (path.startsWith('/admin')) {
+    const isAdminPage = path.startsWith('/admin');
+    const isAdminApi = path.startsWith('/api/admin');
+
+    if (isAdminPage || isAdminApi) {
       const cookieHeader = context.request.headers.get('cookie') || '';
       const match = cookieHeader.match(/admin_session=([^;]+)/);
-      const token = match ? match[1] : (context.cookies.get('admin_session')?.value || null);
+      const authHeader = context.request.headers.get('authorization') || '';
+      const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+      const token = bearerToken || (match ? match[1] : (context.cookies.get('admin_session')?.value || null));
 
       if (!token) {
+        if (isAdminApi) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
         return context.redirect('/admin/login', 302);
       }
 
       const session = await verifySessionToken(token);
       if (!session) {
+        if (isAdminApi) {
+          return new Response(JSON.stringify({ error: 'Invalid or expired session' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
         return context.redirect('/admin/login', 302);
       }
 

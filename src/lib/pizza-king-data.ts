@@ -9,7 +9,7 @@ export const PIZZA_KING_VENDOR = {
   longitude: '76.82277278795115',
   opensAt: '15:00',
   closesAt: '22:30',
-  deliversTo: ['NITKKR Campus', 'Gate 1', 'All Hostels'],
+  deliversTo: ['Campus wide', 'Gate 1', 'All Hostels'],
   image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

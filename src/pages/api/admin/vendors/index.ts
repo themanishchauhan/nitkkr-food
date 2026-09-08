@@ -73,7 +73,7 @@ export const POST: APIRoute = async ({ request }) => {
       ? deliversTo 
       : typeof deliversTo === 'string' && deliversTo.trim()
         ? deliversTo.split(',').map((s: string) => s.trim()).filter(Boolean)
-        : ['NITKKR campus all'];
+        : ['Campus wide'];
 
     const rawD1 = (await import('../../../../lib/db')).getRawD1Binding();
     if (rawD1 && typeof rawD1.prepare === 'function') {
