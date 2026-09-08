@@ -9,7 +9,7 @@ export const FOOD_POINT_VENDOR = {
   longitude: '76.82279142522621',
   opensAt: '12:00',
   closesAt: '02:00',
-  deliversTo: ['NITKKR campus all'],
+  deliversTo: ['Campus wide'],
   image: 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

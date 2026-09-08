@@ -9,7 +9,7 @@ export const RAHUL_FAST_FOOD_VENDOR = {
   longitude: '76.82261820501682',
   opensAt: '12:00',
   closesAt: '02:00',
-  deliversTo: ['NITKKR campus all'],
+  deliversTo: ['Campus wide'],
   image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

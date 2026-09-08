@@ -9,7 +9,7 @@ export const AMAN_FAST_FOOD_VENDOR = {
   longitude: '76.82285948250379',
   opensAt: '08:00',
   closesAt: '23:00',
-  deliversTo: ['NITKKR campus all'],
+  deliversTo: ['Campus wide'],
   image: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

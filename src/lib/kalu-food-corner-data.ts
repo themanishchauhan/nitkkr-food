@@ -9,7 +9,7 @@ export const KALU_FOOD_CORNER_VENDOR = {
   longitude: '76.82277496008699',
   opensAt: '12:00',
   closesAt: '23:30',
-  deliversTo: ['NITKKR campus all', 'Gate 1', 'Gate 2', 'All Hostels'],
+  deliversTo: ['Campus wide', 'Gate 1', 'Gate 2', 'All Hostels'],
   image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,

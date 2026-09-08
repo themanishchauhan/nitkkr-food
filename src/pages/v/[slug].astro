@@ -59,8 +59,14 @@ if (Array.isArray(vendor.deliversTo)) {
   }
 }
 if (!deliversToList || deliversToList.length === 0) {
-  deliversToList = ['NITKKR campus all'];
+  deliversToList = ['Campus wide'];
 }
+deliversToList = deliversToList.map((s: string) =>
+  s.replace(/NITKKR\s*campus\s*all/gi, 'Campus wide')
+   .replace(/NITKKR\s*campus/gi, 'Campus wide')
+   .replace(/NITKKR/gi, 'Campus')
+   .replace(/NIT Kurukshetra/gi, 'Campus')
+);
 
 const shareUrl = new URL(`/v/${vendor.slug}`, Astro.url.origin || Astro.site || 'https://orandus.pages.dev').href;
 const shareTitle = `${vendor.name} - Orandus`;
@@ -149,16 +155,11 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
       <!-- Info & Badges Pill Card -->
       <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <!-- Status & Hours -->
+          <!-- Status -->
           <div class="flex items-center gap-2 flex-wrap">
             <span class={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${timing.isOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
               <span class={`w-2 h-2 rounded-full ${timing.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
               <span>{timing.statusText}</span>
-            </span>
-
-            <span class="text-xs font-medium text-slate-500 flex items-center gap-1 bg-slate-100/80 px-2.5 py-1 rounded-full border border-slate-200/60">
-              <span>🕒</span>
-              <span>{formattedHours}</span>
             </span>
           </div>
         </div>

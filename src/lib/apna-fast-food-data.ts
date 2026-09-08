@@ -9,7 +9,7 @@ export const APNA_FAST_FOOD_VENDOR = {
   longitude: '76.82300341999883',
   opensAt: '08:00',
   closesAt: '21:00',
-  deliversTo: ['NITKKR campus all'],
+  deliversTo: ['Campus wide'],
   image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop&q=80',
   isActive: true,
   isFeatured: true,
