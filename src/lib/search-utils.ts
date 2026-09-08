@@ -66,8 +66,10 @@ export function detectDiet(item: any): 'veg' | 'egg' | 'nonveg' {
   const full = `${name} ${desc} ${tagsText}`;
 
   const isMeat = /chicken|mutton|fish|prawn|kebab|kabab|keema|meat|tangri|kalmi|seekh|basa/i.test(full);
-  const hasEgg = /\b(egg|eggs|anda|omelet|omelette|bhurji|french toast|boiled egg)\b/i.test(full);
+  const hasEgg = /\b(egg|eggs|anda|omelet|omelette|french toast|boiled egg)\b/i.test(full) || /\b(egg\s+bhurji|anda\s+bhurji)\b/i.test(full);
+  const isExplicitlyVeg = /\b(paneer|soya|tofu|dal|mushroom|aloo|gobi|chole|rajma|veg)\b/i.test(name) && !/\b(egg|eggs|anda|chicken|mutton|fish|meat)\b/i.test(name);
 
+  if (isExplicitlyVeg && !isMeat && !hasEgg) return 'veg';
   if (hasEgg && !isMeat) return 'egg';
   if (isMeat || item.isVeg === false || item.isVeg === 0) {
     return isMeat ? 'nonveg' : (hasEgg ? 'egg' : 'nonveg');
