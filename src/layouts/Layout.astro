@@ -461,8 +461,10 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
         var med = params.get('utm_medium');
         var camp = params.get('utm_campaign');
 
-        // Check if user landed via QR scan
-        if (src === 'qr' || params.get('qr') === '1') {
+        // Check if user landed via QR scan (deduplicated per browser session)
+        var qrSessionKey = 'orandus_qr_logged_' + window.location.pathname + '_' + (camp || '');
+        if ((src === 'qr' || params.get('qr') === '1') && !sessionStorage.getItem(qrSessionKey)) {
+          sessionStorage.setItem(qrSessionKey, '1');
           sessionStorage.setItem('orandus_qr_attr', JSON.stringify({
             source: 'qr',
             medium: med || 'direct_scan',
@@ -490,6 +492,27 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
           }
         }
 
+        // Track PWA app installs
+        window.addEventListener('appinstalled', function() {
+          var pwaPayload = JSON.stringify({
+            eventType: 'pwa_install',
+            source: 'pwa',
+            medium: 'standalone',
+            campaign: 'install_prompt',
+            metadata: { path: window.location.pathname }
+          });
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon('/api/analytics/event', new Blob([pwaPayload], { type: 'application/json' }));
+          } else {
+            fetch('/api/analytics/event', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: pwaPayload,
+              keepalive: true
+            }).catch(function() {});
+          }
+        });
+
         // Global delegate for Call and WhatsApp click attribution
         document.addEventListener('click', function(e) {
           var target = e.target && e.target.closest ? e.target.closest('a') : null;
@@ -504,12 +527,20 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
               qrAttr = JSON.parse(sessionStorage.getItem('orandus_qr_attr') || 'null');
             } catch (err) {}
 
+            var vendorSlug = null;
+            if (window.location.pathname.indexOf('/v/') === 0) {
+              vendorSlug = window.location.pathname.split('/v/')[1]?.split('/')[0]?.split('?')[0] || null;
+            } else {
+              var parentVendor = target.closest('[data-vendor-slug]');
+              if (parentVendor) vendorSlug = parentVendor.getAttribute('data-vendor-slug');
+            }
+
             var payload = JSON.stringify({
               eventType: isCall ? 'call_click' : 'whatsapp_click',
               source: qrAttr ? qrAttr.source : 'web',
               medium: qrAttr ? qrAttr.medium : 'direct',
-              campaign: qrAttr ? qrAttr.campaign : 'web_organic',
-              metadata: { href: href, path: window.location.pathname }
+              campaign: qrAttr ? qrAttr.campaign : (vendorSlug || 'web_organic'),
+              metadata: { href: href, path: window.location.pathname, vendorSlug: vendorSlug }
             });
 
             if (navigator.sendBeacon) {

@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { createDb, schema, getRawD1Binding } from '../../../../lib/db';
 import { eq, desc, sql, and, gte, count, sum, avg } from 'drizzle-orm';
 import { authenticateAdminRequest } from '../../../../lib/auth';
+import { isVendorOpen } from '../../../../lib/utils';
 
 export const prerender = false;
 
@@ -163,15 +164,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         name: v.name,
         opens: v.opens_at,
         closes: v.closes_at,
-        isOpenNow: (() => {
-          const now = new Date();
-          const currentMinutes = now.getHours() * 60 + now.getMinutes();
-          const [openH, openM] = v.opens_at.split(':').map(Number);
-          const [closeH, closeM] = v.closes_at.split(':').map(Number);
-          const openMinutes = openH * 60 + openM;
-          const closeMinutes = closeH * 60 + closeM;
-          return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
-        })(),
+        isOpenNow: isVendorOpen(v.opens_at, v.closes_at),
       }));
 
     return new Response(JSON.stringify({ 
