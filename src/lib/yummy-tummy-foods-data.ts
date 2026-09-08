@@ -4,7 +4,7 @@ export const YUMMY_TUMMY_FOODS_VENDOR = {
   slug: 'yummy-tummy-foods',
   phone: '7888551903',
   whatsapp: '7888551903',
-  address: 'Opp. NIT Gate, Kirmach Road, Kurukshetra - 136118',
+  address: 'Opp. NIT Gate, Kirmach Road, Kurukshetra - 136119',
   latitude: '29.944848733790582',
   longitude: '76.82162724067666',
   opensAt: '08:00',
