@@ -188,6 +188,14 @@ export const PATCH: APIRoute = async ({ request }) => {
       });
     }
 
+    // Bulk vendor-level availability toggle (UX-2)
+    if (body.bulkAllForVendor && vendorId && typeof isAvailable === 'boolean') {
+      await db.update(schema.menuItems).set({ isAvailable }).where(eq(schema.menuItems.vendorId, Number(vendorId)));
+      return new Response(JSON.stringify({ success: true, vendorId: Number(vendorId), isAvailable }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     if (!id) {
       return new Response(JSON.stringify({ error: 'Item ID is required' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },

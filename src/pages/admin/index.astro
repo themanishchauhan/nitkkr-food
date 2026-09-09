@@ -74,12 +74,30 @@ const initialQrStats = await getQrAnalyticsData();
       showBroadcastBar: false,
       savingBroadcast: false,
 
-      // Modals
+      // Modals & Tools
       showAddStallModal: false,
       showAddDishModal: false,
       savingStall: false,
       savingDish: false,
       toastMsg: '',
+      
+      // Pro Command Palette & Shortcuts
+      commandPaletteOpen: false,
+      commandQuery: '',
+      showShortcutsModal: false,
+
+      // Fast Numeric Price Editor Modal
+      showPriceModal: false,
+      editingPriceDish: null,
+      tempPrice: 0,
+      savingPrice: false,
+
+      // Catalog Data Health & Diagnostics
+      healthData: null,
+      loadingHealth: false,
+
+      // Clipboard state
+      copiedKey: '',
       
       // Forms
       newStall: {
@@ -110,6 +128,7 @@ const initialQrStats = await getQrAnalyticsData();
         setInterval(() => this.updateClock(), 1000);
         await this.loadAllData();
         await this.loadAnalytics();
+        await this.loadHealthAudit();
       },
 
       updateClock() {
@@ -265,11 +284,31 @@ const initialQrStats = await getQrAnalyticsData();
         }
       },
 
-      async quickUpdatePrice(dish) {
-        const newPrice = prompt(`Enter new student price for "${dish.name}" (₹):`, dish.price);
-        if (!newPrice || isNaN(Number(newPrice))) return;
+      openPriceModal(dish) {
+        this.editingPriceDish = dish;
+        this.tempPrice = Number(dish.price) || 0;
+        this.showPriceModal = true;
+        this.$nextTick(() => {
+          if (this.$refs.priceInput) {
+            this.$refs.priceInput.focus();
+            this.$refs.priceInput.select();
+          }
+        });
+      },
+
+      adjustTempPrice(delta) {
+        this.tempPrice = Math.max(1, Number(this.tempPrice) + delta);
+      },
+
+      async savePriceModal() {
+        if (!this.editingPriceDish || isNaN(Number(this.tempPrice)) || Number(this.tempPrice) <= 0) {
+          this.showToast('Please enter a valid positive price');
+          return;
+        }
+        this.savingPrice = true;
+        const dish = this.editingPriceDish;
         const prev = dish.price;
-        dish.price = Number(newPrice);
+        dish.price = Number(this.tempPrice);
         try {
           const res = await fetch('/api/admin/menu', {
             method: 'PATCH',
@@ -277,13 +316,66 @@ const initialQrStats = await getQrAnalyticsData();
             body: JSON.stringify({ id: dish.id, price: dish.price })
           });
           if (res.ok) {
-            this.showToast(`Updated price for ${dish.name}: ₹${dish.price}`);
+            this.showToast(`✅ Price updated: ${dish.name} -> ₹${dish.price}`);
+            this.showPriceModal = false;
           } else {
             dish.price = prev;
+            this.showToast('Failed to update price on server');
           }
-        } catch (e) {
+        } catch (err) {
           dish.price = prev;
+          this.showToast('Network error saving price');
+        } finally {
+          this.savingPrice = false;
         }
+      },
+
+      async batchToggleVendorStock(vendorId, isAvailable) {
+        const vendor = this.vendors.find(v => v.id === vendorId);
+        const vendorName = vendor ? vendor.name : 'Vendor';
+        
+        // Optimistic update
+        this.menuItems.forEach(item => {
+          if (item.vendorId === vendorId) {
+            item.isAvailable = isAvailable;
+          }
+        });
+
+        try {
+          const res = await fetch('/api/admin/menu', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vendorId, bulkAllForVendor: true, isAvailable })
+          });
+          if (res.ok) {
+            this.showToast(`⚡ All dishes for "${vendorName}" marked as ${isAvailable ? 'In Stock 🟢' : 'Sold Out 🔴'}`);
+          } else {
+            this.showToast('Failed to update batch availability');
+          }
+        } catch (err) {
+          this.showToast('Network error updating batch availability');
+        }
+      },
+
+      async loadHealthAudit() {
+        this.loadingHealth = true;
+        try {
+          const res = await fetch('/api/admin/health-audit');
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+              this.healthData = data;
+            }
+          }
+        } catch (err) {
+          console.warn('Health audit fetch error:', err);
+        } finally {
+          this.loadingHealth = false;
+        }
+      },
+
+      async quickUpdatePrice(dish) {
+        this.openPriceModal(dish);
       },
 
       async createStall() {
@@ -477,13 +569,215 @@ const initialQrStats = await getQrAnalyticsData();
         const hr = Math.floor(min / 60);
         if (hr < 24) return `${hr}h ago`;
         return `${Math.floor(hr / 24)}d ago`;
+      },
+
+      exportAllJSON() {
+        const snapshot = {
+          exportedAt: new Date().toISOString(),
+          system: 'Orandus Operations Hub NIT Kurukshetra',
+          stats: {
+            vendorsCount: this.vendors.length,
+            dishesCount: this.menuItems.length,
+            categoriesCount: this.categories.length,
+            reviewsCount: this.reviews.length,
+          },
+          vendors: this.vendors,
+          categories: this.categories,
+          menuItems: this.menuItems,
+          reviews: this.reviews,
+          settings: this.settings,
+          healthAudit: this.healthData
+        };
+        const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `orandus_full_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showToast('💾 Full Operations JSON Backup downloaded!');
+      },
+
+      exportDishesCSV() {
+        const headers = ['ID', 'Dish Name', 'Vendor', 'Category', 'Price (INR)', 'Diet', 'Status', 'Description'];
+        const rows = this.menuItems.map(m => [
+          m.id,
+          '"' + (m.name || '').replace(/"/g, '""') + '"',
+          '"' + (m.vendorName || '').replace(/"/g, '""') + '"',
+          '"' + (m.categoryName || '').replace(/"/g, '""') + '"',
+          m.price,
+          m.isVeg ? 'Veg' : 'Non-Veg',
+          m.isAvailable ? 'In Stock' : 'Sold Out',
+          '"' + (m.description || '').replace(/"/g, '""') + '"'
+        ]);
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `orandus_dishes_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        this.showToast('📊 Menu Catalog CSV exported!');
+      },
+
+      exportVendorsCSV() {
+        const headers = ['ID', 'Vendor Name', 'Phone', 'WhatsApp', 'Address', 'Opens At', 'Closes At', 'Delivery Hostels', 'Status', 'Featured'];
+        const rows = this.vendors.map(v => [
+          v.id,
+          '"' + (v.name || '').replace(/"/g, '""') + '"',
+          v.phone || '',
+          v.whatsapp || '',
+          '"' + (v.address || '').replace(/"/g, '""') + '"',
+          v.opensAt || '',
+          v.closesAt || '',
+          '"' + (Array.isArray(v.deliversTo) ? v.deliversTo.join('; ') : (v.deliversTo || '')).replace(/"/g, '""') + '"',
+          v.isActive ? 'Open' : 'Closed',
+          v.isFeatured ? 'Yes' : 'No'
+        ]);
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `orandus_vendors_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        this.showToast('🏪 Vendors Directory CSV exported!');
+      },
+
+      copyToClipboard(text, label) {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        this.copiedKey = text;
+        setTimeout(() => { this.copiedKey = ''; }, 2000);
+        this.showToast(`📋 Copied ${label} to clipboard!`);
+      },
+
+      handleGlobalKeydown(e) {
+        const tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        const isInput = tag === 'input' || tag === 'textarea' || tag === 'select';
+
+        // Cmd + K or Ctrl + K opens/toggles Command Palette
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+          e.preventDefault();
+          this.commandPaletteOpen = !this.commandPaletteOpen;
+          if (this.commandPaletteOpen) {
+            this.$nextTick(() => { this.$refs.commandInput && this.$refs.commandInput.focus(); });
+          }
+          return;
+        }
+
+        // Escape key closes modals
+        if (e.key === 'Escape') {
+          if (this.commandPaletteOpen) { this.commandPaletteOpen = false; return; }
+          if (this.showShortcutsModal) { this.showShortcutsModal = false; return; }
+          if (this.showPriceModal) { this.showPriceModal = false; return; }
+          if (this.showAddStallModal) { this.showAddStallModal = false; return; }
+          if (this.showAddDishModal) { this.showAddDishModal = false; return; }
+        }
+
+        // Avoid firing hotkeys when user is actively filling an input field
+        if (isInput) return;
+
+        if (e.key === '/') {
+          e.preventDefault();
+          this.commandPaletteOpen = true;
+          this.$nextTick(() => { this.$refs.commandInput && this.$refs.commandInput.focus(); });
+          return;
+        }
+
+        if (e.key === '1') { this.activeTab = 'fleet'; return; }
+        if (e.key === '2') { this.activeTab = 'dishes'; return; }
+        if (e.key === '3') { this.activeTab = 'telemetry'; return; }
+        if (e.key === '4') { this.activeTab = 'analytics'; return; }
+        if (e.key === '5') { this.activeTab = 'health'; return; }
+        if (e.key === 'n' || e.key === 'N') { e.preventDefault(); this.showAddStallModal = true; return; }
+        if (e.key === 'd' || e.key === 'D') { e.preventDefault(); this.showAddDishModal = true; return; }
+        if (e.key === 'b' || e.key === 'B') { e.preventDefault(); this.showBroadcastBar = !this.showBroadcastBar; return; }
+        if (e.key === 'r' || e.key === 'R') { e.preventDefault(); this.loadAllData(); this.loadHealthAudit(); this.showToast('🔄 Operations data refreshed'); return; }
+        if (e.key === '?') { e.preventDefault(); this.showShortcutsModal = true; return; }
+      },
+
+      get commandResults() {
+        const q = (this.commandQuery || '').trim().toLowerCase();
+        
+        const navItems = [
+          { type: 'nav', title: 'Campus Vendors Fleet', subtitle: 'View & manage all stalls', icon: '🏪', tab: 'fleet' },
+          { type: 'nav', title: '1,420 Catalog Dishes', subtitle: 'Search dishes, prices, and stock', icon: '🍱', tab: 'dishes' },
+          { type: 'nav', title: 'Live Telemetry & QR', subtitle: 'Realtime scans, calls, PWA installs', icon: '⚡', tab: 'telemetry' },
+          { type: 'nav', title: 'Analytics & Pricing Intel', subtitle: 'Vendor breakdown & category coverage', icon: '📊', tab: 'analytics' },
+          { type: 'nav', title: 'Catalog Health & Audit', subtitle: 'Detect missing phones & zero prices', icon: '🛡️', tab: 'health' },
+          { type: 'nav', title: 'Food Categories', subtitle: 'Manage categories & icons', icon: '🍽️', url: '/admin/categories' },
+          { type: 'nav', title: 'Student Reviews', subtitle: 'Moderate reviews and ratings', icon: '⭐', url: '/admin/reviews' },
+          { type: 'nav', title: 'QR Marketing Studio', subtitle: 'Generate hostel posters & track scans', icon: '📱', url: '/admin/qr' },
+          { type: 'nav', title: 'Website Control Center', subtitle: 'Banners, taglines, and ad configs', icon: '⚙️', url: '/admin/site-settings' },
+          { type: 'nav', title: 'Footer Pages CMS', subtitle: 'About, privacy, terms content', icon: '📄', url: '/admin/pages' },
+        ];
+
+        const actions = [
+          { type: 'action', title: 'Onboard New Stall', subtitle: 'Add a new food spot to campus fleet', icon: '➕', action: () => { this.showAddStallModal = true; this.commandPaletteOpen = false; } },
+          { type: 'action', title: 'Add New Menu Dish', subtitle: 'Create a new dish with price and veg tag', icon: '🍱', action: () => { this.showAddDishModal = true; this.commandPaletteOpen = false; } },
+          { type: 'action', title: 'Toggle Campus Alert Bar', subtitle: 'Show or hide campus announcement banner', icon: '📢', action: () => { this.showBroadcastBar = !this.showBroadcastBar; this.commandPaletteOpen = false; } },
+          { type: 'action', title: 'Export Full JSON Backup', subtitle: 'Download complete system snapshot', icon: '💾', action: () => { this.exportAllJSON(); this.commandPaletteOpen = false; } },
+          { type: 'action', title: 'Export Dishes Catalog CSV', subtitle: 'Download all dishes as spreadsheet', icon: '📊', action: () => { this.exportDishesCSV(); this.commandPaletteOpen = false; } },
+          { type: 'action', title: 'Export Vendors CSV', subtitle: 'Download all vendors directory', icon: '🏪', action: () => { this.exportVendorsCSV(); this.commandPaletteOpen = false; } },
+          { type: 'action', title: 'View Public Campus Website', subtitle: 'Open orandus.in in new tab', icon: '↗', url: '/' },
+        ];
+
+        if (!q) {
+          return {
+            actions: actions.slice(0, 4),
+            nav: navItems.slice(0, 5),
+            vendors: this.vendors.slice(0, 4).map(v => ({
+              type: 'vendor',
+              id: v.id,
+              title: v.name,
+              subtitle: `${v.address || 'Campus'} • ${v.phone || 'No phone'}`,
+              icon: '🏪'
+            })),
+            dishes: []
+          };
+        }
+
+        const matchingActions = actions.filter(a => a.title.toLowerCase().includes(q) || a.subtitle.toLowerCase().includes(q));
+        const matchingNav = navItems.filter(n => n.title.toLowerCase().includes(q) || n.subtitle.toLowerCase().includes(q));
+        const matchingVendors = this.vendors
+          .filter(v => (v.name && v.name.toLowerCase().includes(q)) || (v.phone && v.phone.includes(q)) || (v.address && v.address.toLowerCase().includes(q)))
+          .slice(0, 5)
+          .map(v => ({
+            type: 'vendor',
+            id: v.id,
+            title: v.name,
+            subtitle: `${v.address || 'Campus'} • ${v.phone || 'No phone'} (${v.isActive ? 'Open' : 'Closed'})`,
+            icon: '🏪'
+          }));
+        const matchingDishes = this.menuItems
+          .filter(m => (m.name && m.name.toLowerCase().includes(q)) || (m.vendorName && m.vendorName.toLowerCase().includes(q)) || (m.categoryName && m.categoryName.toLowerCase().includes(q)))
+          .slice(0, 6)
+          .map(m => ({
+            type: 'dish',
+            dish: m,
+            title: (m.isVeg ? '🌱 ' : '🍗 ') + m.name,
+            subtitle: `₹${m.price} • ${m.vendorName || 'Spot'} (${m.isAvailable ? 'In Stock' : 'Sold Out'})`,
+            icon: '🍱'
+          }));
+
+        return {
+          actions: matchingActions,
+          nav: matchingNav,
+          vendors: matchingVendors,
+          dishes: matchingDishes
+        };
       }
     }));
   });
 </script>
 
 <Layout title="Campus Operations Center - Orandus Founder" description="High-density real-time campus food operations hub for NIT Kurukshetra">
-  <section x-data="dashboardAdmin" class="min-h-screen bg-[#090D15] flex flex-col lg:flex-row text-slate-200 antialiased font-sans selection:bg-amber-500/30 selection:text-amber-200">
+  <section x-data="dashboardAdmin" @keydown.window="handleGlobalKeydown($event)" class="min-h-screen bg-[#090D15] flex flex-col lg:flex-row text-slate-200 antialiased font-sans selection:bg-amber-500/30 selection:text-amber-200">
     
     <!-- Toast Notification -->
     <div
@@ -519,8 +813,8 @@ const initialQrStats = await getQrAnalyticsData();
             </p>
           </div>
 
-          <!-- Live Clock & Shift Badge -->
-          <div class="flex flex-wrap items-center gap-2.5 text-xs">
+          <!-- Live Clock & Quick Actions -->
+          <div class="flex flex-wrap items-center gap-2 text-xs">
             <div class="px-3 py-1.5 bg-[#0A0F1A] border border-slate-800 rounded-xl font-mono text-slate-300 flex items-center gap-2 shadow-2xs">
               <span class="text-slate-500 text-[11px]">IST</span>
               <span class="font-bold text-amber-300" x-text="currentTime"></span>
@@ -528,26 +822,70 @@ const initialQrStats = await getQrAnalyticsData();
               <span class="text-slate-400 text-[11px]" x-text="currentDate"></span>
             </div>
 
+            <!-- Command Palette Trigger Button -->
             <button
-              @click="loadAllData(); loadAnalytics(); showToast('🔄 Live operations data refreshed!')"
-              :disabled="loading"
-              class="px-3 py-1.5 bg-[#162034] hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white rounded-xl font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              @click="commandPaletteOpen = true"
+              class="px-2.5 py-1.5 bg-[#162034] hover:bg-slate-800 border border-slate-700/80 text-amber-300 hover:text-white rounded-xl font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              title="Global Command Palette (Cmd + K or /)"
             >
-              <span :class="loading ? 'animate-spin' : ''">↻</span> Refresh
+              <span class="text-[10px] font-mono px-1 py-0.5 bg-slate-900 border border-slate-700 rounded text-slate-300">⌘K</span>
+              <span>Command</span>
+            </button>
+
+            <!-- Refresh Button -->
+            <button
+              @click="loadAllData(); loadAnalytics(); loadHealthAudit(); showToast('🔄 Operations data refreshed!')"
+              :disabled="loading"
+              class="px-2.5 py-1.5 bg-[#162034] hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white rounded-xl font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              title="Refresh all metrics (R)"
+            >
+              <span :class="loading ? 'animate-spin' : ''">↻</span>
+              <span class="hidden sm:inline">Sync</span>
+            </button>
+
+            <!-- Keyboard Shortcuts Button -->
+            <button
+              @click="showShortcutsModal = true"
+              class="px-2.5 py-1.5 bg-[#0A0F1A] hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white rounded-xl text-xs font-mono transition-colors cursor-pointer"
+              title="Keyboard Shortcuts Cheat Sheet (?)"
+            >
+              ⌨️ [?]
+            </button>
+
+            <!-- Backup Dropdown / Button -->
+            <button
+              @click="exportAllJSON()"
+              class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-[#0A0F1A] hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-amber-300 rounded-xl text-xs font-medium transition-colors cursor-pointer"
+              title="Download Full Operations JSON Backup"
+            >
+              <span>💾</span>
+              <span class="hidden md:inline">Backup</span>
+            </button>
+
+            <!-- Export Dishes CSV -->
+            <button
+              @click="exportDishesCSV()"
+              class="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-[#0A0F1A] hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-emerald-300 rounded-xl text-xs font-medium transition-colors cursor-pointer"
+              title="Export Menu Catalog CSV"
+            >
+              <span>📊</span>
+              <span>Dishes CSV</span>
             </button>
 
             <button
               @click="showAddStallModal = true"
               class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 rounded-xl font-semibold text-xs transition-all shadow-sm shadow-amber-500/20 flex items-center gap-1.5 cursor-pointer"
+              title="Onboard Stall (N)"
             >
-              <span>+</span> Onboard Stall
+              <span>+</span> Stall
             </button>
 
             <button
               @click="showAddDishModal = true"
               class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl font-semibold text-xs transition-all shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer"
+              title="Add Dish (D)"
             >
-              <span>🍱</span> Add Dish
+              <span>🍱</span> Dish
             </button>
           </div>
         </div>
@@ -555,16 +893,19 @@ const initialQrStats = await getQrAnalyticsData();
         <!-- Global Search Bar & Emergency Broadcast Trigger -->
         <div class="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           
-          <!-- Unified Fast Search Input -->
+          <!-- Unified Fast Search Input with Hotkey Hint -->
           <div class="relative flex-1 max-w-xl">
             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-500">🔍</span>
             <input
               type="text"
               x-model="globalSearch"
-              placeholder="Search anything: 'Food Cave', 'Butter Paneer', '₹50', '98765'..."
-              class="w-full pl-9 pr-4 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500 transition-colors"
+              placeholder="Search stalls, dishes, prices, phones... (or press / or ⌘K)"
+              class="w-full pl-9 pr-14 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500 transition-colors"
             />
-            <span x-show="globalSearch" @click="globalSearch = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-white cursor-pointer">✕</span>
+            <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <span x-show="globalSearch" @click="globalSearch = ''" class="text-xs text-slate-500 hover:text-white cursor-pointer mr-1">✕</span>
+              <kbd class="hidden sm:inline-block text-[10px] font-mono px-1 py-0.2 bg-slate-900 border border-slate-800 text-slate-500 rounded">/</kbd>
+            </div>
           </div>
 
           <!-- Broadcast Banner Button -->
@@ -702,7 +1043,9 @@ const initialQrStats = await getQrAnalyticsData();
           @click="activeTab = 'fleet'"
           :class="activeTab === 'fleet' ? 'bg-[#162034] text-amber-300 border-b-2 border-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'"
           class="px-3.5 py-2 rounded-t-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
+          title="Shortcut: Press 1"
         >
+          <span class="font-mono text-[10px] px-1 py-0.2 bg-slate-900 border border-slate-800 rounded text-slate-500">1</span>
           <span>🏪</span>
           <span>Food Spots Fleet</span>
           <span class="text-[10px] font-mono px-1.5 py-0.2 bg-slate-900 rounded-md text-slate-400" x-text="filteredVendors.length"></span>
@@ -712,7 +1055,9 @@ const initialQrStats = await getQrAnalyticsData();
           @click="activeTab = 'dishes'"
           :class="activeTab === 'dishes' ? 'bg-[#162034] text-amber-300 border-b-2 border-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'"
           class="px-3.5 py-2 rounded-t-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
+          title="Shortcut: Press 2"
         >
+          <span class="font-mono text-[10px] px-1 py-0.2 bg-slate-900 border border-slate-800 rounded text-slate-500">2</span>
           <span>🍱</span>
           <span>1,420 Catalog Dishes</span>
           <span class="text-[10px] font-mono px-1.5 py-0.2 bg-slate-900 rounded-md text-slate-400" x-text="filteredDishes.length"></span>
@@ -722,9 +1067,11 @@ const initialQrStats = await getQrAnalyticsData();
           @click="activeTab = 'telemetry'"
           :class="activeTab === 'telemetry' ? 'bg-[#162034] text-amber-300 border-b-2 border-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'"
           class="px-3.5 py-2 rounded-t-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
+          title="Shortcut: Press 3"
         >
+          <span class="font-mono text-[10px] px-1 py-0.2 bg-slate-900 border border-slate-800 rounded text-slate-500">3</span>
           <span>⚡</span>
-          <span>Live Campus Telemetry</span>
+          <span>Live Telemetry</span>
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
         </button>
 
@@ -732,9 +1079,28 @@ const initialQrStats = await getQrAnalyticsData();
           @click="activeTab = 'analytics'"
           :class="activeTab === 'analytics' ? 'bg-[#162034] text-amber-300 border-b-2 border-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'"
           class="px-3.5 py-2 rounded-t-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
+          title="Shortcut: Press 4"
         >
+          <span class="font-mono text-[10px] px-1 py-0.2 bg-slate-900 border border-slate-800 rounded text-slate-500">4</span>
           <span>📊</span>
-          <span>Pricing & Taxonomy Intelligence</span>
+          <span>Pricing & Taxonomy</span>
+        </button>
+
+        <button
+          @click="activeTab = 'health'"
+          :class="activeTab === 'health' ? 'bg-[#162034] text-amber-300 border-b-2 border-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'"
+          class="px-3.5 py-2 rounded-t-xl transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
+          title="Shortcut: Press 5"
+        >
+          <span class="font-mono text-[10px] px-1 py-0.2 bg-slate-900 border border-slate-800 rounded text-slate-500">5</span>
+          <span>🛡️</span>
+          <span>Data Health & Audit</span>
+          <span
+            x-show="healthData && healthData.stats && healthData.stats.issueCount > 0"
+            class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-md"
+            :class="healthData && healthData.stats && healthData.stats.errorCount > 0 ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'"
+            x-text="healthData ? healthData.stats.issueCount : 0"
+          ></span>
         </button>
       </div>
 
@@ -890,19 +1256,38 @@ const initialQrStats = await getQrAnalyticsData();
                         
                         <!-- Col 1: Delivery & Direct Contact Details -->
                         <div class="space-y-1.5">
-                          <span class="font-bold text-slate-300 text-[11px] uppercase tracking-wider block">Delivery & WhatsApp Connect</span>
+                          <span class="font-bold text-slate-300 text-[11px] uppercase tracking-wider block">Delivery & Direct Connect</span>
                           <p class="text-slate-400 text-[11px]">
                             <strong class="text-slate-300">Coverage:</strong> <span x-text="v.deliversTo ? (Array.isArray(v.deliversTo) ? v.deliversTo.join(', ') : v.deliversTo) : 'Hostel 1-10'"></span>
                           </p>
-                          <p class="text-slate-400 text-[11px]">
-                            <strong class="text-slate-300">WhatsApp:</strong> <span class="font-mono text-slate-300" x-text="v.whatsapp || v.phone"></span>
-                          </p>
+                          <div class="flex items-center gap-2 text-slate-400 text-[11px]">
+                            <strong class="text-slate-300">Phone:</strong>
+                            <span class="font-mono text-slate-300" x-text="v.phone || 'No phone'"></span>
+                            <button
+                              @click="copyToClipboard(v.phone, 'Phone')"
+                              class="text-[10px] text-slate-400 hover:text-amber-300 px-1 py-0.2 bg-[#162034] rounded border border-slate-700 cursor-pointer"
+                              title="Copy Phone Number"
+                            >
+                              <span x-text="copiedKey === v.phone ? '✓ Copied' : 'Copy'"></span>
+                            </button>
+                          </div>
+                          <div class="flex items-center gap-2 text-slate-400 text-[11px]">
+                            <strong class="text-slate-300">WhatsApp:</strong>
+                            <span class="font-mono text-slate-300" x-text="v.whatsapp || v.phone"></span>
+                            <button
+                              @click="copyToClipboard(v.whatsapp || v.phone, 'WhatsApp')"
+                              class="text-[10px] text-slate-400 hover:text-emerald-300 px-1 py-0.2 bg-[#162034] rounded border border-slate-700 cursor-pointer"
+                              title="Copy WhatsApp"
+                            >
+                              <span x-text="copiedKey === (v.whatsapp || v.phone) ? '✓ Copied' : 'Copy'"></span>
+                            </button>
+                          </div>
                           <a
                             :href="'https://wa.me/' + (v.whatsapp || v.phone) + '?text=Hi%20' + encodeURIComponent(v.name) + '%2C%20checking%20menu%20from%20Orandus'"
                             target="_blank"
-                            class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[11px] font-semibold hover:bg-emerald-600/30 transition-colors mt-1"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[11px] font-semibold hover:bg-emerald-600/30 transition-colors mt-1"
                           >
-                            <span>💬</span> Test WhatsApp Ordering
+                            <span>💬</span> WhatsApp Test
                           </a>
                         </div>
 
@@ -919,18 +1304,41 @@ const initialQrStats = await getQrAnalyticsData();
                           </div>
                         </div>
 
-                        <!-- Col 3: Quick Stall Edit Shortcut -->
+                        <!-- Col 3: Batch Operations & Quick Edit -->
                         <div class="flex flex-col justify-between space-y-2">
                           <div>
-                            <span class="font-bold text-slate-300 text-[11px] uppercase tracking-wider block">Stall Notice Banner</span>
-                            <p class="text-[11px] text-slate-400 italic" x-text="v.description || 'No special notice set for this food spot.'"></p>
+                            <span class="font-bold text-slate-300 text-[11px] uppercase tracking-wider block">⚡ Batch Menu Controls</span>
+                            <p class="text-[10px] text-slate-500 mb-2">Instant emergency stock toggle for entire kitchen</p>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                              <button
+                                @click="batchToggleVendorStock(v.id, true)"
+                                class="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                                title="Mark all dishes for this stall In Stock"
+                              >
+                                <span>🟢</span> All In Stock
+                              </button>
+                              <button
+                                @click="batchToggleVendorStock(v.id, false)"
+                                class="px-2 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                                title="Mark all dishes for this stall Sold Out"
+                              >
+                                <span>🔴</span> All Sold Out
+                              </button>
+                            </div>
                           </div>
-                          <div class="pt-2">
+                          <div class="pt-2 flex items-center gap-2">
+                            <button
+                              @click="copyToClipboard('https://orandus.in/v/' + v.slug, 'Store Link')"
+                              class="px-2.5 py-1 bg-[#162034] hover:bg-slate-800 text-slate-300 text-[11px] font-medium rounded-lg border border-slate-700/80 cursor-pointer"
+                              title="Copy Public Link"
+                            >
+                              🔗 Share Link
+                            </button>
                             <a
                               href="/admin/stalls"
-                              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#162034] hover:bg-slate-800 text-amber-300 font-semibold rounded-lg text-xs border border-slate-700/80 transition-colors"
+                              class="inline-flex items-center gap-1 px-3 py-1 bg-[#162034] hover:bg-slate-800 text-amber-300 font-semibold rounded-lg text-xs border border-slate-700/80 transition-colors"
                             >
-                              <span>✏️ Full Edit in Vendors Panel &rarr;</span>
+                              <span>✏️ Full Edit &rarr;</span>
                             </a>
                           </div>
                         </div>
@@ -1068,7 +1476,7 @@ const initialQrStats = await getQrAnalyticsData();
                     </td>
                     <td class="py-2.5 px-4 text-right whitespace-nowrap space-x-1.5">
                       <button
-                        @click="quickUpdatePrice(item)"
+                        @click="openPriceModal(item)"
                         class="px-2 py-1 bg-[#162034] hover:bg-slate-800 text-amber-300 rounded-lg text-[11px] font-medium border border-slate-700/80 cursor-pointer"
                         title="Change Price"
                       >
@@ -1305,6 +1713,135 @@ const initialQrStats = await getQrAnalyticsData();
 
       </div>
 
+      <!-- ========================================================================= -->
+      <!-- VIEW 5: CATALOG DATA HEALTH & DIAGNOSTICS MATRIX                         -->
+      <!-- ========================================================================= -->
+      <div x-show="activeTab === 'health'" class="space-y-4">
+        
+        <!-- Health Score Header Card -->
+        <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                  <span>🛡️</span> Catalog Data Health & Integrity Monitor
+                </h3>
+                <span
+                  class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono border"
+                  :class="healthData && healthData.healthScore >= 90 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : healthData && healthData.healthScore >= 70 ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'"
+                  x-text="healthData ? healthData.healthScore + '/100 ' + healthData.status : 'Auditing...'"
+                ></span>
+              </div>
+              <p class="text-xs text-slate-400">
+                Automated real-time scanner for phone numbers, pricing anomalies, empty menus, and missing taxonomy.
+              </p>
+            </div>
+
+            <button
+              @click="loadHealthAudit(); showToast('🛡️ Health audit completed!')"
+              :disabled="loadingHealth"
+              class="px-3.5 py-1.5 bg-[#162034] hover:bg-slate-800 border border-slate-700/80 text-amber-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer transition-all self-start md:self-auto"
+            >
+              <span :class="loadingHealth ? 'animate-spin' : ''">↻</span>
+              <span x-text="loadingHealth ? 'Scanning Database...' : 'Run New Scan'"></span>
+            </button>
+          </div>
+
+          <!-- Quick Health Counters -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-800/80 text-xs">
+            <div class="p-3 bg-[#0A0F1A] rounded-xl border border-slate-800/80">
+              <span class="text-slate-500 block text-[11px]">Total Audited</span>
+              <div class="text-lg font-bold text-white mt-0.5">
+                <span x-text="vendors.length"></span> spots • <span x-text="menuItems.length"></span> dishes
+              </div>
+            </div>
+            <div class="p-3 bg-[#0A0F1A] rounded-xl border border-slate-800/80">
+              <span class="text-rose-400 block text-[11px]">Critical Errors</span>
+              <div class="text-lg font-bold text-rose-400 mt-0.5" x-text="healthData ? healthData.stats.errorCount : 0"></div>
+            </div>
+            <div class="p-3 bg-[#0A0F1A] rounded-xl border border-slate-800/80">
+              <span class="text-amber-400 block text-[11px]">Actionable Warnings</span>
+              <div class="text-lg font-bold text-amber-400 mt-0.5" x-text="healthData ? healthData.stats.warningCount : 0"></div>
+            </div>
+            <div class="p-3 bg-[#0A0F1A] rounded-xl border border-slate-800/80">
+              <span class="text-sky-400 block text-[11px]">Info & Recommendations</span>
+              <div class="text-lg font-bold text-sky-400 mt-0.5" x-text="healthData ? healthData.stats.infoCount : 0"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detected Issues Table -->
+        <div class="bg-[#101726] border border-slate-800/80 rounded-2xl overflow-hidden shadow-sm">
+          <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+            <h4 class="font-bold text-xs text-slate-200 flex items-center gap-2">
+              <span>📋</span> Detected Health Issues & Recommended Fixes
+            </h4>
+            <span class="text-slate-500 text-[11px]" x-text="healthData ? healthData.issues.length + ' issues found' : ''"></span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-[#0D1320] border-b border-slate-800/80 text-slate-400 text-[11px] font-medium">
+                  <th class="py-3 px-4">Severity</th>
+                  <th class="py-3 px-4">Category</th>
+                  <th class="py-3 px-4">Issue Description</th>
+                  <th class="py-3 px-4">Suggested Action</th>
+                  <th class="py-3 px-4 text-right">Fix</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-850">
+                <template x-if="!healthData || healthData.issues.length === 0">
+                  <tr>
+                    <td colspan="5" class="py-8 text-center text-slate-500 text-xs">
+                      🎉 No catalog or integrity issues detected! Everything is in peak operational health.
+                    </td>
+                  </tr>
+                </template>
+                <template x-for="(iss, idx) in (healthData ? healthData.issues : [])" :key="idx">
+                  <tr class="hover:bg-slate-900/50 transition-colors">
+                    <td class="py-3 px-4 whitespace-nowrap">
+                      <span
+                        class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                        :class="iss.type === 'error' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : iss.type === 'warning' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'"
+                        x-text="iss.type"
+                      ></span>
+                    </td>
+                    <td class="py-3 px-4 text-slate-300 font-mono text-[11px] uppercase tracking-wider whitespace-nowrap" x-text="iss.category"></td>
+                    <td class="py-3 px-4">
+                      <span class="font-semibold text-white block" x-text="iss.title"></span>
+                      <span class="text-slate-400 text-[11px]" x-text="iss.description"></span>
+                    </td>
+                    <td class="py-3 px-4 text-slate-300 text-[11px]">
+                      <span class="text-amber-300/90 font-medium" x-text="iss.suggestedFix"></span>
+                    </td>
+                    <td class="py-3 px-4 text-right whitespace-nowrap">
+                      <template x-if="iss.category === 'phone' || iss.category === 'hours'">
+                        <a
+                          href="/admin/stalls"
+                          class="px-2.5 py-1 bg-[#162034] hover:bg-slate-800 text-amber-300 font-semibold rounded-lg text-[11px] border border-slate-700/80 inline-block"
+                        >
+                          Edit Stall &rarr;
+                        </a>
+                      </template>
+                      <template x-if="iss.category === 'catalog' || iss.category === 'pricing' || iss.category === 'taxonomy'">
+                        <a
+                          href="/admin/menu-items"
+                          class="px-2.5 py-1 bg-[#162034] hover:bg-slate-800 text-emerald-300 font-semibold rounded-lg text-[11px] border border-slate-700/80 inline-block"
+                        >
+                          Edit Dishes &rarr;
+                        </a>
+                      </template>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
     </main>
 
     <!-- ➕ Modal 1: Onboard New Food Spot -->
@@ -1439,6 +1976,272 @@ const initialQrStats = await getQrAnalyticsData();
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ✏️ Modal 3: Fast Numeric Price Editor -->
+    <div
+      x-show="showPriceModal"
+      x-transition
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      @click.self="showPriceModal = false"
+      @keydown.escape.window="showPriceModal = false"
+    >
+      <div class="bg-[#101726] border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl text-slate-200" @keydown.enter="savePriceModal()">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
+              <span>✏️</span> Quick Price Adjuster
+            </h3>
+            <span class="text-[11px] text-slate-400 truncate block max-w-xs" x-text="editingPriceDish ? editingPriceDish.name : ''"></span>
+          </div>
+          <button @click="showPriceModal = false" class="text-slate-500 hover:text-white cursor-pointer font-bold">✕</button>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Student Price (₹ INR)</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-base font-bold text-amber-300">₹</span>
+              <input
+                type="number"
+                x-model="tempPrice"
+                x-ref="priceInput"
+                min="1"
+                step="1"
+                class="w-full pl-8 pr-4 py-2.5 bg-[#0A0F1A] border border-slate-700 rounded-xl text-lg font-mono font-bold text-white focus:outline-hidden focus:border-amber-500"
+              />
+            </div>
+          </div>
+
+          <!-- Quick delta chips -->
+          <div class="space-y-1.5">
+            <span class="text-[10px] text-slate-500 uppercase tracking-wider block">Quick Adjustments</span>
+            <div class="grid grid-cols-5 gap-1.5 text-center font-mono text-xs">
+              <button @click="adjustTempPrice(-10)" class="py-1 bg-[#162034] hover:bg-slate-800 rounded-lg text-rose-300 border border-slate-700/80 cursor-pointer">-₹10</button>
+              <button @click="adjustTempPrice(-5)" class="py-1 bg-[#162034] hover:bg-slate-800 rounded-lg text-rose-300 border border-slate-700/80 cursor-pointer">-₹5</button>
+              <button @click="adjustTempPrice(5)" class="py-1 bg-[#162034] hover:bg-slate-800 rounded-lg text-emerald-300 border border-slate-700/80 cursor-pointer">+₹5</button>
+              <button @click="adjustTempPrice(10)" class="py-1 bg-[#162034] hover:bg-slate-800 rounded-lg text-emerald-300 border border-slate-700/80 cursor-pointer">+₹10</button>
+              <button @click="adjustTempPrice(20)" class="py-1 bg-[#162034] hover:bg-slate-800 rounded-lg text-emerald-300 border border-slate-700/80 cursor-pointer">+₹20</button>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+            <button type="button" @click="showPriceModal = false" class="px-3 py-1.5 bg-[#0A0F1A] hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl cursor-pointer">Cancel</button>
+            <button
+              type="button"
+              @click="savePriceModal()"
+              :disabled="savingPrice"
+              class="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl cursor-pointer shadow-xs"
+            >
+              <span x-show="!savingPrice">Save Price (↵)</span>
+              <span x-show="savingPrice">Saving...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⚡ Modal 4: Pro Command Palette (Cmd + K or /) -->
+    <div
+      x-show="commandPaletteOpen"
+      x-transition
+      class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 sm:pt-24 bg-black/80 backdrop-blur-md"
+      @click.self="commandPaletteOpen = false"
+      @keydown.escape.window="commandPaletteOpen = false"
+    >
+      <div class="bg-[#101726] border border-slate-700/80 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden text-slate-200">
+        
+        <!-- Search Input Bar -->
+        <div class="p-3.5 border-b border-slate-800 flex items-center gap-3 bg-[#0C111D]">
+          <span class="text-slate-400 text-base">🔍</span>
+          <input
+            type="text"
+            x-model="commandQuery"
+            x-ref="commandInput"
+            placeholder="Type a command, stall name, dish, or route... (Esc to exit)"
+            class="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-hidden"
+          />
+          <kbd class="text-[10px] font-mono px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-slate-400">Esc</kbd>
+        </div>
+
+        <!-- Results Viewport -->
+        <div class="max-h-96 overflow-y-auto p-2 space-y-3 text-xs">
+          
+          <!-- Actions -->
+          <template x-if="commandResults.actions && commandResults.actions.length > 0">
+            <div>
+              <span class="px-2.5 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Quick Actions</span>
+              <div class="space-y-0.5">
+                <template x-for="(act, idx) in commandResults.actions" :key="idx">
+                  <div
+                    @click="act.action ? act.action() : (act.url ? window.open(act.url, '_blank') : null)"
+                    class="p-2.5 rounded-xl hover:bg-[#162034] flex items-center justify-between cursor-pointer group transition-colors"
+                  >
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <span class="text-sm" x-text="act.icon"></span>
+                      <div class="truncate">
+                        <span class="font-medium text-white group-hover:text-amber-300 block truncate" x-text="act.title"></span>
+                        <span class="text-[10px] text-slate-400 truncate block" x-text="act.subtitle"></span>
+                      </div>
+                    </div>
+                    <span class="text-slate-500 group-hover:text-amber-400 font-mono text-[11px]">&rarr;</span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Matching Stalls -->
+          <template x-if="commandResults.vendors && commandResults.vendors.length > 0">
+            <div>
+              <span class="px-2.5 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Matching Food Spots</span>
+              <div class="space-y-0.5">
+                <template x-for="v in commandResults.vendors" :key="v.id">
+                  <div
+                    @click="activeTab = 'fleet'; expandedVendorId = v.id; commandPaletteOpen = false;"
+                    class="p-2.5 rounded-xl hover:bg-[#162034] flex items-center justify-between cursor-pointer group transition-colors"
+                  >
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <span class="text-sm">🏪</span>
+                      <div class="truncate">
+                        <span class="font-medium text-white group-hover:text-amber-300 block truncate" x-text="v.title"></span>
+                        <span class="text-[10px] text-slate-400 truncate block" x-text="v.subtitle"></span>
+                      </div>
+                    </div>
+                    <span class="text-[11px] text-amber-400 font-medium">Inspect &rarr;</span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Matching Dishes -->
+          <template x-if="commandResults.dishes && commandResults.dishes.length > 0">
+            <div>
+              <span class="px-2.5 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Matching Dishes</span>
+              <div class="space-y-0.5">
+                <template x-for="(d, idx) in commandResults.dishes" :key="idx">
+                  <div
+                    @click="openPriceModal(d.dish); commandPaletteOpen = false;"
+                    class="p-2.5 rounded-xl hover:bg-[#162034] flex items-center justify-between cursor-pointer group transition-colors"
+                  >
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <span class="text-sm">🍱</span>
+                      <div class="truncate">
+                        <span class="font-medium text-white group-hover:text-emerald-300 block truncate" x-text="d.title"></span>
+                        <span class="text-[10px] text-slate-400 truncate block" x-text="d.subtitle"></span>
+                      </div>
+                    </div>
+                    <span class="text-[11px] text-amber-300 font-mono font-bold">Edit Price ✏️</span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Navigation Shortcuts -->
+          <template x-if="commandResults.nav && commandResults.nav.length > 0">
+            <div>
+              <span class="px-2.5 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Navigation Routes</span>
+              <div class="grid grid-cols-2 gap-1">
+                <template x-for="(n, idx) in commandResults.nav" :key="idx">
+                  <div
+                    @click="if (n.tab) { activeTab = n.tab; commandPaletteOpen = false; } else if (n.url) { window.location.href = n.url; }"
+                    class="p-2 rounded-xl hover:bg-[#162034] flex items-center gap-2 cursor-pointer group transition-colors border border-transparent hover:border-slate-700/60"
+                  >
+                    <span class="text-sm" x-text="n.icon"></span>
+                    <span class="font-medium text-slate-300 group-hover:text-white truncate" x-text="n.title"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+        </div>
+
+        <!-- Footer Shortcuts Guide -->
+        <div class="p-2.5 bg-[#0C111D] border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+          <div class="flex items-center gap-3">
+            <span>[1-5] Switch Tabs</span>
+            <span>[N] New Stall</span>
+            <span>[D] New Dish</span>
+            <span>[B] Broadcast</span>
+          </div>
+          <span>[Esc] Close</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ⌨️ Modal 5: Keyboard Shortcuts Reference Cheat Sheet -->
+    <div
+      x-show="showShortcutsModal"
+      x-transition
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      @click.self="showShortcutsModal = false"
+      @keydown.escape.window="showShortcutsModal = false"
+    >
+      <div class="bg-[#101726] border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl text-slate-200">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <h3 class="font-bold text-sm text-white flex items-center gap-2">
+            <span>⌨️</span> Bloomberg Operations Hotkeys
+          </h3>
+          <button @click="showShortcutsModal = false" class="text-slate-500 hover:text-white cursor-pointer font-bold">✕</button>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-850">
+            <span class="text-slate-300">Command Palette</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-amber-300 font-mono text-[11px]">⌘K or /</kbd>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-850">
+            <span class="text-slate-300">Food Spots Fleet Matrix</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-slate-300 font-mono text-[11px]">1</kbd>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-850">
+            <span class="text-slate-300">Catalog Dishes Explorer</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-slate-300 font-mono text-[11px]">2</kbd>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-850">
+            <span class="text-slate-300">Live Campus Telemetry</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-slate-300 font-mono text-[11px]">3</kbd>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-850">
+            <span class="text-slate-300">Pricing & Analytics Intel</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-slate-300 font-mono text-[11px]">4</kbd>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-850">
+            <span class="text-slate-300">Catalog Health & Diagnostics</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-slate-300 font-mono text-[11px]">5</kbd>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-850">
+            <span class="text-slate-300">Onboard New Stall</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-amber-400 font-mono text-[11px]">N</kbd>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-850">
+            <span class="text-slate-300">Add New Menu Dish</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-emerald-400 font-mono text-[11px]">D</kbd>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-850">
+            <span class="text-slate-300">Toggle Campus Broadcast Bar</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-slate-300 font-mono text-[11px]">B</kbd>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-850">
+            <span class="text-slate-300">Sync & Refresh Data</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-slate-300 font-mono text-[11px]">R</kbd>
+          </div>
+          <div class="flex items-center justify-between py-1.5">
+            <span class="text-slate-300">Close Active Modal</span>
+            <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-slate-400 font-mono text-[11px]">Esc</kbd>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex justify-end">
+          <button @click="showShortcutsModal = false" class="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs cursor-pointer">
+            Got it!
+          </button>
+        </div>
       </div>
     </div>
 

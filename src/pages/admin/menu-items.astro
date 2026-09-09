@@ -132,6 +132,31 @@ const initialReviews = await getAllReviews();
         document.body.removeChild(link);
       },
 
+      async batchSetVendorStock(isAvailable) {
+        if (!this.selectedVendorId) return;
+        const vendor = this.vendors.find(v => String(v.id) === String(this.selectedVendorId));
+        const vName = vendor ? vendor.name : 'Vendor';
+        this.menuItems.forEach(m => {
+          if (String(m.vendorId) === String(this.selectedVendorId)) {
+            m.isAvailable = isAvailable;
+          }
+        });
+        try {
+          const res = await fetch('/api/admin/menu', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vendorId: this.selectedVendorId, bulkAllForVendor: true, isAvailable })
+          });
+          if (res.ok) {
+            this.showToast(`⚡ All items for "${vName}" marked as ${isAvailable ? 'In Stock 🟢' : 'Sold Out 🔴'}`);
+          } else {
+            this.showToast('Failed to update batch availability');
+          }
+        } catch (e) {
+          this.showToast('Network error updating batch availability');
+        }
+      },
+
       openAdd() {
         this.editingItem = null;
         this.form = { vendorId: this.selectedVendorId || (this.vendors[0]?.id || ''), categoryId: '', name: '', price: '', description: '', image: '', isVeg: true, isAvailable: true };
@@ -382,6 +407,28 @@ const initialReviews = await getAllReviews();
                 title="Grid View"
               >
                 ⊞ Grid
+              </button>
+            </div>
+          </div>
+
+          <!-- Vendor Batch Actions Row -->
+          <div x-show="selectedVendorId" x-transition class="p-2.5 bg-[#0A0F1A] border border-amber-500/30 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <span class="text-slate-300 flex items-center gap-1.5">
+              <span>⚡</span>
+              <span>Batch kitchen availability for <strong class="text-amber-300" x-text="vendors.find(v => String(v.id) === String(selectedVendorId))?.name"></strong>:</span>
+            </span>
+            <div class="flex items-center gap-2">
+              <button
+                @click="batchSetVendorStock(true)"
+                class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>🟢</span> Mark All In Stock
+              </button>
+              <button
+                @click="batchSetVendorStock(false)"
+                class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>🔴</span> Mark All Sold Out
               </button>
             </div>
           </div>
