@@ -1,0 +1,292 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import AdminSidebar from '../../components/AdminSidebar.astro';
+---
+
+<Layout title="Narnaul Expansion Startup Report - Orandus Ops" description="Complete feasibility report, unit economics, CapEx/OpEx, and 30-day GTM roadmap for Narnaul">
+  <div class="min-h-screen bg-[#090D15] flex flex-col lg:flex-row text-slate-200 antialiased font-sans selection:bg-amber-500/30 selection:text-amber-200">
+    <AdminSidebar currentPath="/admin/narnaul-report" />
+
+    <main class="flex-1 p-4 sm:p-7 overflow-y-auto max-w-5xl w-full mx-auto space-y-6">
+      
+      <!-- Top Action Bar -->
+      <div class="bg-[#101726] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold mb-2">
+            <span>📄</span> Official Startup Expansion Report
+          </div>
+          <h1 class="text-xl sm:text-2xl font-bold font-display text-white tracking-tight">
+            Orandus Narnaul Expansion Plan &amp; Feasibility
+          </h1>
+          <p class="text-xs text-slate-400 mt-1">
+            Zero-CapEx blueprint for digitizing food commerce &amp; WhatsApp delivery fleet logistics in Tier-3/4 Haryana.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          <a
+            href="/Orandus_Narnaul_Startup_Expansion_Report.pdf"
+            download="Orandus_Narnaul_Startup_Expansion_Report.pdf"
+            class="px-4 py-2 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center gap-2"
+          >
+            <span>📥</span> Download PDF Report (6 Pages)
+          </a>
+          <button
+            onclick="window.print()"
+            class="px-3.5 py-2 bg-[#162034] hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white rounded-xl text-xs font-medium transition-colors cursor-pointer"
+          >
+            <span>🖨️</span> Print
+          </button>
+        </div>
+      </div>
+
+      <!-- PDF Preview Container / Document Card -->
+      <article class="bg-[#101726] border border-slate-800/80 rounded-2xl p-6 sm:p-10 space-y-8 shadow-xl text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+        
+        <!-- Document Meta Header -->
+        <div class="border-b border-slate-800 pb-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+            <span class="font-mono text-amber-400 uppercase tracking-wider font-semibold">Orandus Technologies • Confidential</span>
+            <span class="font-mono">September 2026 • Version 1.0</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-bold font-display text-white tracking-tight">
+            Narnaul Startup Expansion Plan &amp; Business Blueprint
+          </h2>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-xs">
+            <div class="p-3 bg-[#0A0F1A] rounded-xl border border-slate-800">
+              <span class="text-slate-500 block text-[11px]">Target City</span>
+              <strong class="text-white">Narnaul, Haryana</strong>
+            </div>
+            <div class="p-3 bg-[#0A0F1A] rounded-xl border border-slate-800">
+              <span class="text-slate-500 block text-[11px]">Initial CapEx</span>
+              <strong class="text-emerald-400">₹8,600 (Turnkey)</strong>
+            </div>
+            <div class="p-3 bg-[#0A0F1A] rounded-xl border border-slate-800">
+              <span class="text-slate-500 block text-[11px]">Month 3 Net Profit</span>
+              <strong class="text-amber-400">₹33,491 / mo</strong>
+            </div>
+            <div class="p-3 bg-[#0A0F1A] rounded-xl border border-slate-800">
+              <span class="text-slate-500 block text-[11px]">Net Margin</span>
+              <strong class="text-emerald-400">88.2% EBITDA</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 1 -->
+        <section class="space-y-3">
+          <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-2">
+            <span class="text-amber-400">1.</span> Executive Summary &amp; The "Why Narnaul" Thesis
+          </h3>
+          <p>
+            While Tier-1 metros are saturated with hyper-competitive aggregators (Swiggy, Zomato) burning millions on rider incentives and customer discounts, <strong>Tier-3 and Tier-4 district headquarters in Haryana present an underserved and highly profitable growth frontier</strong>.
+          </p>
+          <p>
+            Narnaul is the administrative headquarters of Mahendragarh district with an urban population of ~85,000+ and an influx of over 25,000+ young students and competitive exam coaching aspirants concentrated along Rewari Road and Mahavir Chowk.
+          </p>
+
+          <div class="bg-[#0A0F1A] border border-slate-800 rounded-xl p-4 space-y-2 text-xs">
+            <h4 class="font-bold text-amber-300">Why National Aggregators Fail in Narnaul:</h4>
+            <ul class="list-disc list-inside space-y-1 text-slate-300">
+              <li><strong>25%–30% Commissions:</strong> Local restaurant margins are 20–25%. Surrendering 28% forces restaurants to inflate prices or refuse to list.</li>
+              <li><strong>POS Hardware Friction:</strong> Traditional dhabas and halwais on Rewari Road or Pul Bazar do not operate POS tablets or complex merchant apps.</li>
+              <li><strong>High Delivery Charges (₹50–₹80):</strong> Completely unviable for student budgets buying a ₹60 burger or ₹80 roll.</li>
+              <li><strong>The Informal "Delivery Dude" Void:</strong> Local 2-wheeler fleets (<em>Delivery Dudes</em>, <em>Delivery Duck</em>) already operate informally via WhatsApp, but suffer from chaotic back-and-forth chat threads, blurry menu photos, and billing mistakes.</li>
+            </ul>
+          </div>
+          <p>
+            <strong>The Orandus Strategic Wedge:</strong> Orandus enters as the lightweight digital OS. We provide a lightning-fast photo menu catalog and a 1-tap WhatsApp order ticket. The partner fleet receives structured orders; rider capacity triples; and Orandus earns high-margin recurring software revenue with zero balance-sheet liability.
+          </p>
+        </section>
+
+        <!-- Section 2 -->
+        <section class="space-y-3">
+          <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-2">
+            <span class="text-amber-400">2.</span> Existing Orandus Platform Capabilities &amp; Technical Leverage
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-[#0A0F1A] text-slate-400 font-semibold border-b border-slate-800">
+                <tr>
+                  <th class="p-2.5">Platform Asset</th>
+                  <th class="p-2.5">Existing Capability</th>
+                  <th class="p-2.5">Strategic Leverage in Narnaul</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-850">
+                <tr>
+                  <td class="p-2.5 font-bold text-white">Serverless Edge Stack</td>
+                  <td class="p-2.5 text-slate-400">Astro SSR + Cloudflare Workers + D1 SQLite</td>
+                  <td class="p-2.5 text-emerald-400 font-medium">₹0 fixed server overhead up to 100k daily requests.</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-bold text-white">Phonetic Search Engine</td>
+                  <td class="p-2.5 text-slate-400">&lt;3ms keystroke indexing across 1,000+ dishes</td>
+                  <td class="p-2.5 text-slate-300">Blazing-fast discovery on congested 3G/4G market networks.</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-bold text-white">Operations Pro Hub</td>
+                  <td class="p-2.5 text-slate-400">Bloomberg keyboard controls, batch availability toggles</td>
+                  <td class="p-2.5 text-slate-300">Real-time scan telemetry and 1-click kitchen emergency closures.</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-bold text-white">QR Marketing Studio</td>
+                  <td class="p-2.5 text-slate-400">SVG/PNG dynamic QR generator with attribution</td>
+                  <td class="p-2.5 text-slate-300">Instant printable templates for coaching libraries and table stands.</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-bold text-white">Data Health Engine</td>
+                  <td class="p-2.5 text-slate-400">Automated scanner for invalid phones, zero prices</td>
+                  <td class="p-2.5 text-slate-300">Guarantees 100% catalog data integrity before launch.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Section 3 -->
+        <section class="space-y-3">
+          <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-2">
+            <span class="text-amber-400">3.</span> Financial Model: Startup Capital &amp; Unit Economics
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- CapEx -->
+            <div class="bg-[#0A0F1A] border border-slate-800 rounded-xl p-4 space-y-2 text-xs">
+              <h4 class="font-bold text-amber-300">One-Time Setup Costs (CapEx):</h4>
+              <div class="space-y-1 divide-y divide-slate-850">
+                <div class="flex justify-between py-1"><span>Cloudflare Server &amp; Database</span><strong class="text-emerald-400">₹0</strong></div>
+                <div class="flex justify-between py-1"><span>Domain &amp; SSL Multi-City Setup</span><strong class="text-emerald-400">₹0</strong></div>
+                <div class="flex justify-between py-1"><span>40 Acrylic Table Standees (@ ₹80)</span><strong class="text-white">₹3,200</strong></div>
+                <div class="flex justify-between py-1"><span>300 Waterproof Vinyl QR Posters</span><strong class="text-white">₹2,400</strong></div>
+                <div class="flex justify-between py-1"><span>20 Fleet Bike &amp; Bag Stickers</span><strong class="text-white">₹1,000</strong></div>
+                <div class="flex justify-between py-1"><span>Field Travel &amp; Menu Setup</span><strong class="text-white">₹2,000</strong></div>
+                <div class="flex justify-between pt-2 font-bold text-amber-400 border-t border-slate-700">
+                  <span>TOTAL INITIAL CAPEX</span><span>₹8,600</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- OpEx -->
+            <div class="bg-[#0A0F1A] border border-slate-800 rounded-xl p-4 space-y-2 text-xs">
+              <h4 class="font-bold text-amber-300">Monthly Operating Expenses (OpEx):</h4>
+              <div class="space-y-1 divide-y divide-slate-850">
+                <div class="flex justify-between py-1"><span>Cloudflare Edge Network</span><strong class="text-emerald-400">₹0 – ₹400</strong></div>
+                <div class="flex justify-between py-1"><span>WhatsApp Direct Deep-Link API</span><strong class="text-emerald-400">₹0</strong></div>
+                <div class="flex justify-between py-1"><span>Rider Fleet &amp; Motorbikes</span><strong class="text-emerald-400">₹0 (Outsourced)</strong></div>
+                <div class="flex justify-between py-1"><span>Local Student Ambassador</span><strong class="text-white">₹3,500</strong></div>
+                <div class="flex justify-between py-1"><span>Monthly Marketing Replenishments</span><strong class="text-white">₹1,000</strong></div>
+                <div class="flex justify-between pt-2 font-bold text-amber-400 border-t border-slate-700">
+                  <span>TOTAL MONTHLY OPEX</span><span>~ ₹4,500 – ₹4,900</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- P&L Table -->
+          <div class="pt-2">
+            <h4 class="font-bold text-white text-xs mb-2">6-Month Profit &amp; Loss Forecast:</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-[#0A0F1A] text-slate-400 font-semibold border-b border-slate-800">
+                  <tr>
+                    <th class="p-2.5">Metric</th>
+                    <th class="p-2.5">Month 1 (Launch)</th>
+                    <th class="p-2.5">Month 3 (Growth)</th>
+                    <th class="p-2.5">Month 6 (Scale)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-850">
+                  <tr>
+                    <td class="p-2.5 font-bold text-white">Daily Orders</td>
+                    <td class="p-2.5">25 orders/day</td>
+                    <td class="p-2.5 font-semibold text-amber-300">75 orders/day</td>
+                    <td class="p-2.5 font-bold text-emerald-400">150 orders/day</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">Platform Fees (₹10/order)</td>
+                    <td class="p-2.5">₹7,500</td>
+                    <td class="p-2.5">₹22,500</td>
+                    <td class="p-2.5">₹45,000</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">Featured Restaurant Subs</td>
+                    <td class="p-2.5">₹2,997 (3 spots)</td>
+                    <td class="p-2.5">₹5,994 (6 spots)</td>
+                    <td class="p-2.5">₹9,990 (10 spots)</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">Sponsor Banner Ad</td>
+                    <td class="p-2.5">₹0</td>
+                    <td class="p-2.5">₹3,500</td>
+                    <td class="p-2.5">₹6,000</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">Table QR Kits (One-Time)</td>
+                    <td class="p-2.5">₹11,994</td>
+                    <td class="p-2.5">₹5,997</td>
+                    <td class="p-2.5">₹3,998</td>
+                  </tr>
+                  <tr class="bg-slate-900/60 font-bold text-amber-300">
+                    <td class="p-2.5">Gross Revenue</td>
+                    <td class="p-2.5">₹22,491</td>
+                    <td class="p-2.5">₹37,991</td>
+                    <td class="p-2.5">₹64,988</td>
+                  </tr>
+                  <tr class="bg-emerald-950/30 font-bold text-emerald-400">
+                    <td class="p-2.5">Net Monthly Profit (EBITDA)</td>
+                    <td class="p-2.5">₹17,991 (80%)</td>
+                    <td class="p-2.5">₹33,491 (88.2%)</td>
+                    <td class="p-2.5">₹59,488 (91.5%)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 4 -->
+        <section class="space-y-3">
+          <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-2">
+            <span class="text-amber-400">4.</span> 30-Day Go-To-Market (GTM) Execution Plan
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="p-3 bg-[#0A0F1A] border border-slate-800 rounded-xl space-y-1">
+              <span class="font-mono text-amber-400 font-bold">Days 1–5: Tech &amp; Menu Seeding</span>
+              <p class="text-slate-400">Add multi-city switch in header; seed top 15 Narnaul spots (Dosti Pizza, Dev Residency, New Sardar Ji Chicken, Sheetal Dhaba, Bikaner Sweets); configure WhatsApp 1-tap dispatch engine.</p>
+            </div>
+            <div class="p-3 bg-[#0A0F1A] border border-slate-800 rounded-xl space-y-1">
+              <span class="font-mono text-amber-400 font-bold">Days 6–10: Fleet Handshake</span>
+              <p class="text-slate-400">Meet head of <strong>Delivery Dudes</strong> (9485-613-613) or <strong>Delivery Duck</strong> (98179-00121); demo live order ticket on phone; finalize flat ₹40 delivery fee and ₹10 platform split.</p>
+            </div>
+            <div class="p-3 bg-[#0A0F1A] border border-slate-800 rounded-xl space-y-1">
+              <span class="font-mono text-amber-400 font-bold">Days 11–18: Field Marketing Blitz</span>
+              <p class="text-slate-400">Install 40 acrylic QR standees on dining tables; deploy 300 vinyl QR posters across 10 study libraries, coaching centers, and student PG rooms on Rewari Road.</p>
+            </div>
+            <div class="p-3 bg-[#0A0F1A] border border-slate-800 rounded-xl space-y-1">
+              <span class="font-mono text-amber-400 font-bold">Days 19–30: Scale &amp; Monetization</span>
+              <p class="text-slate-400">Public launch campaign; process first 500 orders through fleet; sell 1st local sponsor banner slot to a coaching center/gym for ₹3,500/mo.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Footer Callout -->
+        <div class="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between text-xs">
+          <div class="space-y-0.5">
+            <strong class="text-amber-300">Ready for Execution:</strong>
+            <p class="text-slate-400">All financial models, operational sequence diagrams, and printable PDF assets are packaged and verified.</p>
+          </div>
+          <a
+            href="/Orandus_Narnaul_Startup_Expansion_Report.pdf"
+            download="Orandus_Narnaul_Startup_Expansion_Report.pdf"
+            class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg transition-colors whitespace-nowrap"
+          >
+            Download PDF ↗
+          </a>
+        </div>
+
+      </article>
+
+    </main>
+  </div>
+</Layout>
