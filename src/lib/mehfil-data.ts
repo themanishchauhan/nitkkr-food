@@ -22,7 +22,7 @@ export const MEHFIL_MENU_ITEMS = [
   {
     id: 3701,
     vendorId: 37,
-    categoryId: 3,
+    categoryId: 8,
     name: 'Tea',
     description: 'Freshly brewed aromatic hot desi chai',
     price: '20.00',

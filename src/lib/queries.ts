@@ -146,6 +146,19 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
 
     // Check if initial seeding was already completed permanently in D1
     const seedCheck = await d1.prepare(`SELECT value FROM site_settings WHERE key = 'd1_initial_seed_completed' LIMIT 1`).first().catch(() => null);
+    
+    // Data fix: ensure Tea is categorized under Chai & Snacks (category_id = 8) instead of Beverages (category_id = 3)
+    const teaCategoryFixed = await d1.prepare(`SELECT value FROM site_settings WHERE key = 'tea_category_v2_fixed' LIMIT 1`).first().catch(() => null);
+    if (!teaCategoryFixed || teaCategoryFixed.value !== 'true') {
+      await d1.prepare(`
+        UPDATE menu_items 
+        SET category_id = 8 
+        WHERE (name = 'Tea' OR name = 'Tea (Big Glass)' OR name = 'Masala Tea' OR name = 'Milk Tea' OR name = 'Lemon Tea' OR name = 'Black Tea' OR name = 'Special Kadak Chai' OR name LIKE '%Chai%') 
+          AND (category_id = 3 OR category_id IS NULL)
+      `).run().catch(() => {});
+      await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('tea_category_v2_fixed', 'true')`).run().catch(() => {});
+    }
+
     if (seedCheck && seedCheck.value === 'true') {
       hasCheckedD1Seed = true;
       return;

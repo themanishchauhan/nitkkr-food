@@ -648,7 +648,7 @@ export const KALU_FOOD_CORNER_MENU_ITEMS = [
   {
     id: 4052,
     vendorId: 38,
-    categoryId: 3,
+    categoryId: 8,
     name: 'Tea',
     description: 'Hot aromatic freshly brewed desi chai',
     price: '15.00',

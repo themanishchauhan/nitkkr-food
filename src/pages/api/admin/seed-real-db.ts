@@ -149,6 +149,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     }
 
+    await d1.prepare(`
+      UPDATE menu_items 
+      SET category_id = 8 
+      WHERE (name = 'Tea' OR name = 'Tea (Big Glass)' OR name = 'Masala Tea' OR name = 'Milk Tea' OR name = 'Lemon Tea' OR name = 'Black Tea' OR name = 'Special Kadak Chai' OR name LIKE '%Chai%') 
+        AND (category_id = 3 OR category_id IS NULL)
+    `).run().catch(() => {});
+
     await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('d1_initial_seed_completed', 'true')`).run().catch(() => {});
 
     return new Response(JSON.stringify({ 

@@ -20,12 +20,12 @@ export const FOOD_CAVE_VENDOR = {
 
 export const FOOD_CAVE_MENU_ITEMS = [
   // ================= 🧋 BEVERAGES (Category 3) =================
-  { id: 2101, vendorId: 21, categoryId: 3, name: 'Tea', description: 'Fresh hot campus chai', price: '15.00', isVeg: true, isAvailable: true, tags: ['chai', 'beverage', 'hot', 'popular'], displayOrder: 1 },
-  { id: 2102, vendorId: 21, categoryId: 3, name: 'Tea (Big Glass)', description: 'Extra large glass of hot freshly brewed tea', price: '20.00', isVeg: true, isAvailable: true, tags: ['chai', 'beverage', 'hot'], displayOrder: 2 },
-  { id: 2103, vendorId: 21, categoryId: 3, name: 'Masala Tea', description: 'Aromatic tea brewed with traditional Indian spices', price: '30.00', isVeg: true, isAvailable: true, tags: ['chai', 'masala', 'bestseller'], displayOrder: 3 },
-  { id: 2104, vendorId: 21, categoryId: 3, name: 'Milk Tea', description: 'Rich creamy milk tea', price: '25.00', isVeg: true, isAvailable: true, tags: ['chai', 'milk'], displayOrder: 4 },
-  { id: 2105, vendorId: 21, categoryId: 3, name: 'Lemon Tea', description: 'Refreshing hot lemon infused black tea', price: '20.00', isVeg: true, isAvailable: true, tags: ['tea', 'lemon', 'healthy'], displayOrder: 5 },
-  { id: 2106, vendorId: 21, categoryId: 3, name: 'Black Tea', description: 'Strong black tea without milk', price: '15.00', isVeg: true, isAvailable: true, tags: ['tea', 'black tea'], displayOrder: 6 },
+  { id: 2101, vendorId: 21, categoryId: 8, name: 'Tea', description: 'Fresh hot campus chai', price: '15.00', isVeg: true, isAvailable: true, tags: ['chai', 'tea', 'hot', 'popular'], displayOrder: 1 },
+  { id: 2102, vendorId: 21, categoryId: 8, name: 'Tea (Big Glass)', description: 'Extra large glass of hot freshly brewed tea', price: '20.00', isVeg: true, isAvailable: true, tags: ['chai', 'tea', 'hot'], displayOrder: 2 },
+  { id: 2103, vendorId: 21, categoryId: 8, name: 'Masala Tea', description: 'Aromatic tea brewed with traditional Indian spices', price: '30.00', isVeg: true, isAvailable: true, tags: ['chai', 'tea', 'masala', 'bestseller'], displayOrder: 3 },
+  { id: 2104, vendorId: 21, categoryId: 8, name: 'Milk Tea', description: 'Rich creamy milk tea', price: '25.00', isVeg: true, isAvailable: true, tags: ['chai', 'tea', 'milk'], displayOrder: 4 },
+  { id: 2105, vendorId: 21, categoryId: 8, name: 'Lemon Tea', description: 'Refreshing hot lemon infused black tea', price: '20.00', isVeg: true, isAvailable: true, tags: ['tea', 'chai', 'lemon', 'healthy'], displayOrder: 5 },
+  { id: 2106, vendorId: 21, categoryId: 8, name: 'Black Tea', description: 'Strong black tea without milk', price: '15.00', isVeg: true, isAvailable: true, tags: ['tea', 'chai', 'black tea'], displayOrder: 6 },
   { id: 2107, vendorId: 21, categoryId: 3, name: 'Cold Tea', description: 'Chilled iced tea refreshment', price: '30.00', isVeg: true, isAvailable: true, tags: ['tea', 'iced tea', 'cold'], displayOrder: 7 },
   { id: 2108, vendorId: 21, categoryId: 3, name: 'Coffee', description: 'Hot frothy campus coffee', price: '30.00', isVeg: true, isAvailable: true, tags: ['coffee', 'hot'], displayOrder: 8 },
   { id: 2109, vendorId: 21, categoryId: 3, name: 'Cold Coffee', description: 'Chilled thick blended coffee with chocolate syrup', price: '50.00', isVeg: true, isAvailable: true, tags: ['coffee', 'cold', 'bestseller'], displayOrder: 9 },
