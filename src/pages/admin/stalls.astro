@@ -350,6 +350,16 @@ const initialCategories = await getCategories();
             </div>
 
             <div>
+              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Storefront / Cover Image (URL or /vendors/name.webp)</label>
+              <div class="flex items-center gap-2">
+                <input type="text" x-model="form.image" placeholder="e.g. /vendors/pizza-king.webp or https://images.unsplash.com/..." class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500 font-mono text-[11px]" />
+                <template x-if="form.image">
+                  <img :src="form.image" alt="Preview" class="w-9 h-9 rounded-lg object-cover border border-slate-700 shrink-0" @error="$el.style.display='none'" />
+                </template>
+              </div>
+            </div>
+
+            <div>
               <label class="block text-[11px] font-semibold text-slate-400 mb-1">Special Note / Notice (Displayed on menu)</label>
               <input type="text" x-model="form.description" placeholder="e.g. Closed on Tuesdays • Bulk orders call directly" class="w-full px-3 py-2 bg-[#0A0F1A] border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500" />
             </div>
