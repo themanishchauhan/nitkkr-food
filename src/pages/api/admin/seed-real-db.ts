@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     ];
     for (const vendor of vendorsToSeed) {
       await d1.prepare(`
-        INSERT OR REPLACE INTO vendors (id, name, slug, phone, whatsapp, address, latitude, longitude, opens_at, closes_at, delivers_to, image, is_active, is_featured, display_order)
+        INSERT OR IGNORE INTO vendors (id, name, slug, phone, whatsapp, address, latitude, longitude, opens_at, closes_at, delivers_to, image, is_active, is_featured, display_order)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         vendor.id,
@@ -120,7 +120,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     for (const item of allMenuItems) {
       statements.push(
         d1.prepare(`
-          INSERT OR REPLACE INTO menu_items (id, vendor_id, category_id, name, description, price, is_veg, is_available, tags, display_order)
+          INSERT OR IGNORE INTO menu_items (id, vendor_id, category_id, name, description, price, is_veg, is_available, tags, display_order)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           item.id,
@@ -148,6 +148,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
       }
     }
+
+    await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('d1_initial_seed_completed', 'true')`).run().catch(() => {});
 
     return new Response(JSON.stringify({ 
       success: true, 

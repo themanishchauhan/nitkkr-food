@@ -144,6 +144,13 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       )
     `).run();
 
+    // Check if initial seeding was already completed permanently in D1
+    const seedCheck = await d1.prepare(`SELECT value FROM site_settings WHERE key = 'd1_initial_seed_completed' LIMIT 1`).first().catch(() => null);
+    if (seedCheck && seedCheck.value === 'true') {
+      hasCheckedD1Seed = true;
+      return;
+    }
+
     // 1. Ensure Categories exist in D1
     for (const cat of MOCK_CATEGORIES) {
       await d1.prepare(`
@@ -152,7 +159,7 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       `).bind(cat.id, cat.name, cat.slug, cat.icon, cat.displayOrder).run();
     }
 
-    // 2. Ensure Vendors exist in Real D1 Database
+    // 2. Ensure Vendors exist in Real D1 Database (Never overwrite existing user/admin edits)
     const vendorsToSeed = [
       FOOD_CAVE_VENDOR, 
       APNA_FAST_FOOD_VENDOR, 
@@ -179,7 +186,6 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
         .first();
 
       if (!check) {
-        console.log(`🌱 Inserting ${vendor.name} into Real D1 Database...`);
         await d1.prepare(`
           INSERT INTO vendors (id, name, slug, phone, whatsapp, address, latitude, longitude, opens_at, closes_at, delivers_to, image, is_active, is_featured, display_order)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -200,14 +206,10 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
           vendor.isFeatured ? 1 : 0,
           vendor.displayOrder
         ).run();
-      } else {
-        await d1.prepare(`UPDATE vendors SET name = ?, slug = ?, phone = ?, whatsapp = ?, address = ?, latitude = ?, longitude = ?, delivers_to = ?, opens_at = ?, closes_at = ? WHERE id = ? OR slug = ?`)
-          .bind(vendor.name, vendor.slug, vendor.phone, vendor.whatsapp, vendor.address, vendor.latitude, vendor.longitude, JSON.stringify(vendor.deliversTo), vendor.opensAt, vendor.closesAt, vendor.id, vendor.slug)
-          .run();
       }
     }
 
-    // 3. Ensure Menu Items exist
+    // 3. Ensure Menu Items exist (INSERT OR IGNORE preserves admin price and availability changes)
     const allDishes = [
       ...FOOD_CAVE_MENU_ITEMS, 
       ...APNA_FAST_FOOD_MENU_ITEMS, 
@@ -223,13 +225,16 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       ...CAFE_AROMA_MENU_ITEMS, 
       ...AUNTY_JI_TEA_STALL_MENU_ITEMS,
       ...AMAN_FAST_FOOD_MENU_ITEMS,
-      ...YUMMY_TUMMY_FOODS_MENU_ITEMS
+      ...YUMMY_TUMMY_FOODS_MENU_ITEMS,
+      ...PIZZA_KING_MENU_ITEMS,
+      ...MEHFIL_MENU_ITEMS,
+      ...KALU_FOOD_CORNER_MENU_ITEMS
     ];
     const statements: any[] = [];
     for (const item of allDishes) {
       statements.push(
         d1.prepare(`
-          INSERT OR REPLACE INTO menu_items (id, vendor_id, category_id, name, description, price, is_veg, is_available, tags, display_order)
+          INSERT OR IGNORE INTO menu_items (id, vendor_id, category_id, name, description, price, is_veg, is_available, tags, display_order)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           item.id,
@@ -257,6 +262,9 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
         }
       }
     }
+    
+    // Mark D1 initial seed as permanently completed so it never re-runs or blocks future requests
+    await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('d1_initial_seed_completed', 'true')`).run().catch(() => {});
     hasCheckedD1Seed = true;
   } catch (err) {
     console.error('Database populate error:', err);
