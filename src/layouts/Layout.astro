@@ -114,14 +114,15 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
 <body class={`font-body ${isAdminPage ? 'bg-[#090D15] text-slate-200' : 'bg-nitkkr-cream text-nitkkr-dark'} min-h-screen flex flex-col antialiased`}>
 
   <!-- 📲 Smart PWA Install Top Banner -->
+  <!-- 📲 Smart PWA Install Top Banner & Universal Install Guide Modal -->
   {!isAdminPage && (
   <div
     x-data="{
       showBanner: false,
+      showInstallModal: false,
+      deviceTab: 'android',
+      hasNativePrompt: false,
       deferredPrompt: null,
-      isIOS: false,
-      showIOSGuide: false,
-      showManualGuide: false,
       isStandalone() {
         try {
           if (localStorage.getItem('pwa_installed') === 'true') return true;
@@ -139,7 +140,54 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
         }
         return false;
       },
+      detectDevice() {
+        const ua = (navigator.userAgent || '').toLowerCase();
+        if (/iphone|ipad|ipod/.test(ua)) return 'ios';
+        if (/android/.test(ua)) return 'android';
+        if (/macintosh|mac os x/.test(ua) && !('ontouchend' in document)) return 'mac';
+        if (/windows/.test(ua)) return 'windows';
+        return 'android';
+      },
       init() {
+        this.deviceTab = this.detectDevice();
+
+        // Listen for global footer or custom trigger events
+        window.addEventListener('trigger-pwa-install', () => {
+          this.installPWA();
+        });
+
+        // Listen for successful install event to immediately hide banner and modal
+        window.addEventListener('pwa-installed-success', () => {
+          this.showBanner = false;
+          this.showInstallModal = false;
+        });
+
+        window.addEventListener('appinstalled', () => {
+          try { localStorage.setItem('pwa_installed', 'true'); } catch (e) {}
+          this.showBanner = false;
+          this.showInstallModal = false;
+        });
+
+        // Pick up early captured prompt if available
+        if (window.__pwaDeferredPrompt) {
+          this.deferredPrompt = window.__pwaDeferredPrompt;
+          this.hasNativePrompt = true;
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          this.deferredPrompt = e;
+          window.__pwaDeferredPrompt = e;
+          this.hasNativePrompt = true;
+        });
+
+        window.addEventListener('pwa-prompt-available', () => {
+          if (window.__pwaDeferredPrompt) {
+            this.deferredPrompt = window.__pwaDeferredPrompt;
+            this.hasNativePrompt = true;
+          }
+        });
+
         // If user already added to home screen, never show banner
         if (this.isStandalone()) {
           this.showBanner = false;
@@ -154,58 +202,10 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
           }
         } catch (e) {}
 
-        // Listen for global footer or custom trigger events
-        window.addEventListener('trigger-pwa-install', () => {
-          this.installPWA();
-        });
-
-        // Listen for successful install event to immediately hide banner
-        window.addEventListener('pwa-installed-success', () => {
-          this.showBanner = false;
-        });
-
-        window.addEventListener('appinstalled', () => {
-          try { localStorage.setItem('pwa_installed', 'true'); } catch (e) {}
-          this.showBanner = false;
-        });
-
-        // Detect iOS
-        const isIosDevice = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-        if (isIosDevice) {
-          this.isIOS = true;
-        }
-
-        // Pick up early captured prompt if available
-        if (window.__pwaDeferredPrompt) {
-          this.deferredPrompt = window.__pwaDeferredPrompt;
-        }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-          e.preventDefault();
-          this.deferredPrompt = e;
-          window.__pwaDeferredPrompt = e;
-        });
-
-        window.addEventListener('pwa-prompt-available', () => {
-          if (window.__pwaDeferredPrompt) {
-            this.deferredPrompt = window.__pwaDeferredPrompt;
-          }
-        });
-
         // Show banner consistently on every page for non-installed users
         this.showBanner = true;
       },
-      async installPWA() {
-        if (this.isStandalone()) {
-          this.showBanner = false;
-          return;
-        }
-
-        if (this.isIOS) {
-          this.showIOSGuide = true;
-          return;
-        }
-
+      async triggerDirectInstall() {
         const promptEvent = this.deferredPrompt || window.__pwaDeferredPrompt;
         if (promptEvent) {
           try {
@@ -214,17 +214,33 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
             if (outcome === 'accepted') {
               try { localStorage.setItem('pwa_installed', 'true'); } catch (e) {}
               this.showBanner = false;
+              this.showInstallModal = false;
             }
             this.deferredPrompt = null;
             window.__pwaDeferredPrompt = null;
+            this.hasNativePrompt = false;
           } catch (err) {
-            this.showManualGuide = true;
+            this.showInstallModal = true;
           }
+        } else {
+          this.showInstallModal = true;
+        }
+      },
+      async installPWA() {
+        if (this.isStandalone()) {
+          this.showBanner = false;
           return;
         }
 
-        // If browser prompt is not active, provide clear instructions
-        this.showManualGuide = true;
+        const promptEvent = this.deferredPrompt || window.__pwaDeferredPrompt;
+        if (promptEvent) {
+          await this.triggerDirectInstall();
+          return;
+        }
+
+        // Otherwise open the easy visual guide for their device
+        this.deviceTab = this.detectDevice();
+        this.showInstallModal = true;
       },
       dismiss() {
         this.showBanner = false;
@@ -233,70 +249,256 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
         } catch (e) {}
       }
     }"
-    x-show="showBanner"
-    x-cloak
-    class="bg-gradient-to-r from-amber-600 via-nitkkr-orange to-rose-600 text-white px-4 py-2.5 shadow-md relative z-50 animate-in slide-in-from-top duration-300"
   >
-    <div class="max-w-4xl mx-auto flex items-center justify-between gap-3 text-xs sm:text-sm">
-      <div class="flex items-center gap-2 min-w-0">
-        <span class="text-base sm:text-lg flex-shrink-0 animate-bounce">📲</span>
-        <p class="font-medium truncate">
-          <strong class="font-bold">Install Orandus:</strong> Instant campus menu access & direct vendor contact!
-        </p>
-      </div>
+    <!-- Top announcement banner -->
+    <div
+      x-show="showBanner"
+      x-cloak
+      class="bg-gradient-to-r from-amber-600 via-nitkkr-orange to-rose-600 text-white px-4 py-2.5 shadow-md relative z-40 animate-in slide-in-from-top duration-300"
+    >
+      <div class="max-w-4xl mx-auto flex items-center justify-between gap-3 text-xs sm:text-sm">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="text-base sm:text-lg flex-shrink-0 animate-bounce">📲</span>
+          <p class="font-medium truncate">
+            <strong class="font-bold">Install Orandus:</strong> Instant campus menu access & direct vendor contact!
+          </p>
+        </div>
 
-      <div class="flex items-center gap-2 flex-shrink-0">
-        <button
-          @click="installPWA()"
-          class="px-3 py-1 bg-white text-nitkkr-orange font-bold text-xs rounded-lg hover:bg-amber-50 active:scale-95 shadow-sm transition-all cursor-pointer"
-        >
-          Install App
-        </button>
-        <button
-          @click="dismiss()"
-          class="text-white/80 hover:text-white font-bold text-base p-1 leading-none cursor-pointer"
-          aria-label="Dismiss banner"
-        >
-          ✕
-        </button>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button
+            @click="installPWA()"
+            class="px-3 py-1 bg-white text-nitkkr-orange font-bold text-xs rounded-lg hover:bg-amber-50 active:scale-95 shadow-sm transition-all cursor-pointer"
+          >
+            Install App
+          </button>
+          <button
+            @click="dismiss()"
+            class="text-white/80 hover:text-white font-bold text-base p-1 leading-none cursor-pointer"
+            aria-label="Dismiss banner"
+          >
+            ✕
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- iOS Add to Home Screen Instructions Modal -->
+    <!-- 🌟 Universal Device-Smart Install Guide Modal -->
     <div
-      x-show="showIOSGuide"
+      x-show="showInstallModal"
       x-cloak
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 text-slate-900"
-      @click.self="showIOSGuide = false"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 text-slate-900 animate-in fade-in duration-200"
+      @click.self="showInstallModal = false"
+      @keydown.escape.window="showInstallModal = false"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="install-modal-title"
     >
-      <div class="bg-white rounded-2xl p-5 max-w-xs w-full text-center shadow-2xl space-y-3">
-        <span class="text-3xl">📱</span>
-        <h4 class="font-bold text-sm">Install on iPhone / iPad</h4>
-        <p class="text-xs text-slate-600 leading-relaxed text-left">
-          1. Tap the <strong>Share</strong> button <span class="text-blue-500 font-bold">⎋</span> at the bottom of Safari.<br/>
-          2. Scroll down and tap <strong>"Add to Home Screen"</strong> ⊞.<br/>
-          3. Tap <strong>Add</strong> in the top right.
-        </p>
-        <button @click="showIOSGuide = false" class="w-full py-2 bg-nitkkr-orange text-white font-bold text-xs rounded-xl cursor-pointer">Got it!</button>
-      </div>
-    </div>
+      <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden text-left animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+        <!-- Modal Header -->
+        <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3 bg-gradient-to-r from-amber-50/50 via-white to-orange-50/50">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-rose-600 flex items-center justify-center text-white text-xl shadow-sm flex-shrink-0">
+              📲
+            </div>
+            <div>
+              <h3 id="install-modal-title" class="font-bold text-slate-900 text-sm sm:text-base leading-tight">
+                Install Orandus
+              </h3>
+              <p class="text-xs text-slate-500">Fast 1-tap campus food ordering</p>
+            </div>
+          </div>
+          <button
+            @click="showInstallModal = false"
+            class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer text-base"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
 
-    <!-- Android / Desktop Add to Home Screen Instructions Modal -->
-    <div
-      x-show="showManualGuide"
-      x-cloak
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 text-slate-900"
-      @click.self="showManualGuide = false"
-    >
-      <div class="bg-white rounded-2xl p-5 max-w-xs w-full text-center shadow-2xl space-y-3">
-        <span class="text-3xl">📲</span>
-        <h4 class="font-bold text-sm">Install Orandus</h4>
-        <p class="text-xs text-slate-600 leading-relaxed text-left space-y-1">
-          <span>1. Tap your browser menu <strong class="text-slate-800">⋮</strong> (or the install icon <strong class="text-slate-800">⊕</strong> in the address bar).</span><br/>
-          <span>2. Select <strong class="text-slate-800">"Install app"</strong> or <strong class="text-slate-800">"Add to Home screen"</strong>.</span><br/>
-          <span>3. Enjoy fast, full-screen campus food ordering!</span>
-        </p>
-        <button @click="showManualGuide = false" class="w-full py-2 bg-nitkkr-orange text-white font-bold text-xs rounded-xl cursor-pointer">Got it!</button>
+        <!-- Modal Body (Scrollable if needed) -->
+        <div class="p-4 sm:p-5 space-y-4 overflow-y-auto">
+          <!-- Direct 1-Click Install Button (When Browser Supports It) -->
+          <div x-show="hasNativePrompt" class="p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-xs font-bold text-amber-950">⚡ 1-Click Fast Install Available</p>
+              <span class="text-[10px] font-semibold uppercase tracking-wider bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded">Ready</span>
+            </div>
+            <button
+              @click="triggerDirectInstall()"
+              class="w-full py-2 px-3 bg-gradient-to-r from-amber-600 to-nitkkr-orange hover:from-amber-700 hover:to-orange-600 text-white font-bold text-xs rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>Tap to Install Orandus Now</span>
+            </button>
+          </div>
+
+          <!-- Device Selector Tabs -->
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Select Your Device:</p>
+            <div class="grid grid-cols-4 gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                @click="deviceTab = 'android'"
+                :class="deviceTab === 'android' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+                class="py-1.5 px-1 rounded-lg transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer"
+              >
+                <span>🤖</span>
+                <span class="text-[11px]">Android</span>
+              </button>
+              <button
+                type="button"
+                @click="deviceTab = 'ios'"
+                :class="deviceTab === 'ios' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+                class="py-1.5 px-1 rounded-lg transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer"
+              >
+                <span>🍏</span>
+                <span class="text-[11px]">iPhone</span>
+              </button>
+              <button
+                type="button"
+                @click="deviceTab = 'mac'"
+                :class="deviceTab === 'mac' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+                class="py-1.5 px-1 rounded-lg transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer"
+              >
+                <span>💻</span>
+                <span class="text-[11px]">Mac</span>
+              </button>
+              <button
+                type="button"
+                @click="deviceTab = 'windows'"
+                :class="deviceTab === 'windows' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+                class="py-1.5 px-1 rounded-lg transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer"
+              >
+                <span>🖥️</span>
+                <span class="text-[11px]">PC</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 1: Android Instructions -->
+          <div x-show="deviceTab === 'android'" class="space-y-2.5 text-xs text-slate-700">
+            <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+              <div>
+                <p class="font-bold text-slate-900">Open in Chrome & tap the 3 dots menu</p>
+                <p class="text-slate-500 mt-0.5">In the top-right corner of Chrome, tap the menu icon <kbd class="px-1.5 py-0.5 rounded bg-white border border-slate-300 font-mono text-xs font-bold text-slate-800 shadow-2xs">⋮</kbd></p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+              <div>
+                <p class="font-bold text-slate-900">Tap "Install app" or "Add to Home screen"</p>
+                <p class="text-slate-500 mt-0.5">Scroll through the menu list and tap <strong class="text-slate-800">"Install app"</strong> (or <strong class="text-slate-800">"Add to Home screen"</strong>).</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+              <div>
+                <p class="font-bold text-slate-900">Confirm "Install"</p>
+                <p class="text-slate-500 mt-0.5">Tap Install on the prompt. Orandus will appear on your phone home screen like a normal app!</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: iPhone / iPad Instructions -->
+          <div x-show="deviceTab === 'ios'" class="space-y-2.5 text-xs text-slate-700">
+            <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-blue-500 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+              <div>
+                <p class="font-bold text-slate-900">Tap the Share button in Safari</p>
+                <p class="text-slate-500 mt-0.5">At the bottom bar of Safari (top on iPad), tap the Share icon <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200 font-bold text-xs">⎋ Share</span></p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-blue-500 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+              <div>
+                <p class="font-bold text-slate-900">Tap "Add to Home Screen"</p>
+                <p class="text-slate-500 mt-0.5">Scroll down slightly in the share menu and select <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-white border border-slate-300 font-bold text-slate-800 text-[11px] shadow-2xs">⊞ Add to Home Screen</span></p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-blue-500 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+              <div>
+                <p class="font-bold text-slate-900">Tap "Add" in top-right corner</p>
+                <p class="text-slate-500 mt-0.5">Done! Orandus is now on your home screen with zero App Store download needed.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Mac (Safari & Chrome) Instructions -->
+          <div x-show="deviceTab === 'mac'" class="space-y-2.5 text-xs text-slate-700">
+            <!-- Safari on Mac -->
+            <div class="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/60 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <p class="font-bold text-amber-950 flex items-center gap-1.5">
+                  <span>🧭</span> If using Safari on Mac:
+                </p>
+                <span class="text-[10px] font-semibold bg-white border border-amber-300 text-amber-800 px-1.5 py-0.5 rounded">Recommended</span>
+              </div>
+              <p class="text-slate-600 text-[11px] leading-relaxed">
+                1. In the top Apple menu bar, click <kbd class="px-1.5 py-0.5 rounded bg-white border border-slate-300 font-bold text-slate-800 text-[11px]">File</kbd> (or the Share button <strong class="text-blue-600">⎋</strong> in Safari toolbar).<br/>
+                2. Click <kbd class="px-1.5 py-0.5 rounded bg-white border border-slate-300 font-bold text-slate-800 text-[11px]">Add to Dock...</kbd><br/>
+                3. Click <strong class="text-blue-600">Add</strong>. Orandus opens as a standalone desktop app right from your Mac Dock!
+              </p>
+            </div>
+
+            <!-- Chrome/Brave on Mac -->
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+              <p class="font-bold text-slate-900 flex items-center gap-1.5">
+                <span>🌐</span> If using Chrome / Brave / Edge on Mac:
+              </p>
+              <p class="text-slate-500 text-[11px] leading-relaxed">
+                Look at the right side of the address/URL bar and click the <kbd class="px-1.5 py-0.5 rounded bg-white border border-slate-300 font-bold text-slate-800 text-[11px]">⊕ Install</kbd> icon, then click <strong class="text-slate-800">Install</strong>.
+              </p>
+            </div>
+          </div>
+
+          <!-- TAB 4: Windows & PC Instructions -->
+          <div x-show="deviceTab === 'windows'" class="space-y-2.5 text-xs text-slate-700">
+            <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+              <div>
+                <p class="font-bold text-slate-900">Look at the right side of the address bar</p>
+                <p class="text-slate-500 mt-0.5">In Chrome or Edge, find the <kbd class="px-1.5 py-0.5 rounded bg-white border border-slate-300 font-bold text-slate-800 text-[11px] shadow-2xs">⊕</kbd> or <kbd class="px-1.5 py-0.5 rounded bg-white border border-slate-300 font-bold text-slate-800 text-[11px] shadow-2xs">💻</kbd> install icon.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+              <div>
+                <p class="font-bold text-slate-900">Click "Install Orandus"</p>
+                <p class="text-slate-500 mt-0.5">Click <strong class="text-slate-800">Install</strong> to create a desktop app shortcut on your taskbar and desktop.</p>
+              </div>
+            </div>
+
+            <p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+              💡 <em>Alternative: Click <kbd class="px-1 py-0.5 bg-white border border-slate-300 rounded font-bold">⋮</kbd> in Chrome ➔ <strong>Save and share</strong> ➔ <strong>Install Orandus</strong>.</em>
+            </p>
+          </div>
+
+          <!-- Perks / Value Badges -->
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-around text-[10px] text-slate-500 font-medium text-center">
+            <span class="flex items-center gap-1">⚡ Instant Load</span>
+            <span>•</span>
+            <span class="flex items-center gap-1">📴 Offline Menus</span>
+            <span>•</span>
+            <span class="flex items-center gap-1">🚀 Zero Storage (<1MB)</span>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-3 sm:p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+          <button
+            @click="showInstallModal = false"
+            class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl cursor-pointer transition-all active:scale-[0.99] shadow-sm"
+          >
+            Got it, thanks!
+          </button>
+        </div>
       </div>
     </div>
   </div>
