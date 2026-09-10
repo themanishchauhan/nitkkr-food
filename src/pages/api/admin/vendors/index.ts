@@ -78,6 +78,9 @@ export const POST: APIRoute = async ({ request }) => {
     const rawD1 = (await import('../../../../lib/db')).getRawD1Binding();
     if (rawD1 && typeof rawD1.prepare === 'function') {
       try {
+        try { await rawD1.prepare(`ALTER TABLE vendors ADD COLUMN description TEXT`).run(); } catch (e) {}
+        try { await rawD1.prepare(`ALTER TABLE vendors ADD COLUMN notice TEXT`).run(); } catch (e) {}
+        try { await rawD1.prepare(`ALTER TABLE vendors ADD COLUMN closed_days TEXT DEFAULT '[]'`).run(); } catch (e) {}
         await rawD1.prepare(`
           INSERT INTO vendors (name, slug, phone, whatsapp, address, latitude, longitude, opens_at, closes_at, delivers_to, image, description, is_active, is_featured, display_order)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -188,6 +191,11 @@ export const PATCH: APIRoute = async ({ request }) => {
 
     if (rawD1 && typeof rawD1.prepare === 'function') {
       try {
+        try { await rawD1.prepare(`ALTER TABLE vendors ADD COLUMN description TEXT`).run(); } catch (e) {}
+        try { await rawD1.prepare(`ALTER TABLE vendors ADD COLUMN notice TEXT`).run(); } catch (e) {}
+        try { await rawD1.prepare(`ALTER TABLE vendors ADD COLUMN closed_days TEXT DEFAULT '[]'`).run(); } catch (e) {}
+        try { await rawD1.prepare(`UPDATE vendors SET closed_days = '[]' WHERE closed_days IS NULL OR closed_days = 'closed_days' OR closed_days = ''`).run(); } catch (e) {}
+
         const check = await rawD1.prepare(`SELECT id FROM vendors WHERE id = ? LIMIT 1`).bind(vendorId).first();
         if (!check) {
           const { FOOD_CAVE_VENDOR } = await import('../../../../lib/food-cave-data');

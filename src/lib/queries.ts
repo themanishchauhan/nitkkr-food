@@ -144,6 +144,12 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       )
     `).run();
 
+    // Ensure vendor table columns exist in D1 and sanitize corrupted closed_days values
+    try { await d1.prepare(`ALTER TABLE vendors ADD COLUMN description TEXT`).run(); } catch (e) {}
+    try { await d1.prepare(`ALTER TABLE vendors ADD COLUMN notice TEXT`).run(); } catch (e) {}
+    try { await d1.prepare(`ALTER TABLE vendors ADD COLUMN closed_days TEXT DEFAULT '[]'`).run(); } catch (e) {}
+    try { await d1.prepare(`UPDATE vendors SET closed_days = '[]' WHERE closed_days IS NULL OR closed_days = 'closed_days' OR closed_days = ''`).run(); } catch (e) {}
+
     // Check if initial seeding was already completed permanently in D1
     const seedCheck = await d1.prepare(`SELECT value FROM site_settings WHERE key = 'd1_initial_seed_completed' LIMIT 1`).first().catch(() => null);
     
