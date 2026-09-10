@@ -311,6 +311,13 @@ export async function getActiveVendors() {
       .orderBy(asc(schema.vendors.displayOrder), asc(schema.vendors.name));
     if (result && result.length > 0) {
       const sanitized = result.map((v: any) => {
+        if (v.id === 21 || v.slug === 'food-cave') {
+          return {
+            ...v,
+            opensAt: '11:30',
+            opens_at: '11:30'
+          };
+        }
         if (v.id === 35 || v.slug === 'yummy-tummy-foods') {
           return {
             ...v,
@@ -351,7 +358,7 @@ export async function getVendorBySlug(slug: string) {
         .from(schema.vendors)
         .where(and(eq(schema.vendors.slug, slug), eq(schema.vendors.isActive, true)))
         .limit(1);
-      if (result && result[0]) return result[0];
+      if (result && result[0]) return { ...result[0], opensAt: '11:30', opens_at: '11:30' };
       return FOOD_CAVE_VENDOR;
     }
 
@@ -621,8 +628,20 @@ export async function getMenuItemsByVendor(vendorId: number) {
       .from(schema.menuItems)
       .leftJoin(schema.categories, eq(schema.menuItems.categoryId, schema.categories.id))
       .where(and(eq(schema.menuItems.vendorId, vendorId), eq(schema.menuItems.isAvailable, true)))
-      .orderBy(asc(schema.menuItems.displayOrder), asc(schema.menuItems.name));
-    if (result && result.length > 0) return result;
+    if (result && result.length > 0) {
+      return result.map((item: any) => {
+        if ((item.name === 'Tea' || item.name?.includes('Chai') || item.name?.startsWith('Tea ')) && (item.categoryId === 3 || item.categorySlug === 'beverages-shakes')) {
+          return {
+            ...item,
+            categoryId: 8,
+            categoryName: 'Chai & Snacks',
+            categorySlug: 'chai-snacks',
+            categoryIcon: '☕'
+          };
+        }
+        return item;
+      });
+    }
 
     if (vendorId === 21) {
       return FOOD_CAVE_MENU_ITEMS.map(item => {
