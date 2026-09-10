@@ -1135,5 +1135,115 @@ export const HANGRY_CLUB_MENU_ITEMS = [
     isAvailable: true,
     tags: ['cold coffee', 'shake', 'beverage', 'bestseller'],
     displayOrder: 91
+  },
+
+  // ================= 🍱 THE HANGRY CLUB - COMBOS =================
+  {
+    id: 2592,
+    vendorId: 25,
+    categoryId: 7,
+    name: 'Any Roll (Non-Veg) Combo',
+    description: 'Choice of Chicken Tikka Kathi Roll / Chicken Seekh Roll / Chicken Malai Roll + Coke + French Fries',
+    price: '349.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['combo', 'non veg roll combo', 'chicken tikka roll', 'chicken seekh roll', 'chicken malai roll', 'coke', 'fries', 'meal', 'bestseller'],
+    displayOrder: 92
+  },
+  {
+    id: 2593,
+    vendorId: 25,
+    categoryId: 7,
+    name: 'Egg Roll Combo',
+    description: 'Freshly rolled egg kathi roll + Coke + Crispy French Fries',
+    price: '259.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['combo', 'egg roll combo', 'egg roll', 'coke', 'fries', 'meal'],
+    displayOrder: 93
+  },
+  {
+    id: 2594,
+    vendorId: 25,
+    categoryId: 7,
+    name: 'Any Roll (Veg) Combo',
+    description: 'Choice of Paneer Kathi Roll / Paneer Malai Tikka Roll + Coke + French Fries',
+    price: '329.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['combo', 'veg roll combo', 'paneer kathi roll', 'paneer malai tikka roll', 'coke', 'fries', 'meal', 'bestseller'],
+    displayOrder: 94
+  },
+  {
+    id: 2595,
+    vendorId: 25,
+    categoryId: 1,
+    name: 'Chicken Burger or Chicken Sandwich Combo',
+    description: 'Choice of crispy Chicken Burger or grilled Chicken Sandwich + French Fries + Coke',
+    price: '249.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['combo', 'chicken burger combo', 'chicken sandwich combo', 'burger', 'sandwich', 'coke', 'fries', 'bestseller'],
+    displayOrder: 95
+  },
+  {
+    id: 2596,
+    vendorId: 25,
+    categoryId: 1,
+    name: 'Veg Burger or Veg Sandwich Combo',
+    description: 'Choice of loaded Veg Burger or fresh Veg Sandwich + French Fries + Coke',
+    price: '199.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['combo', 'veg burger combo', 'veg sandwich combo', 'burger', 'sandwich', 'coke', 'fries', 'under-200', 'bestseller'],
+    displayOrder: 96
+  },
+  {
+    id: 2597,
+    vendorId: 25,
+    categoryId: 1,
+    name: 'Paneer Sandwich Combo',
+    description: 'Grilled spiced paneer stuffed sandwich + French Fries + Coke',
+    price: '209.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['combo', 'paneer sandwich combo', 'paneer sandwich', 'coke', 'fries', 'meal'],
+    displayOrder: 97
+  },
+  {
+    id: 2598,
+    vendorId: 25,
+    categoryId: 4,
+    name: 'Any Paratha Combo',
+    description: 'Choice of fresh hot stuffed Paratha + fresh Curd + Coffee or Coke',
+    price: '149.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['combo', 'paratha combo', 'paratha', 'curd', 'coffee', 'coke', 'breakfast', 'under-150', 'bestseller'],
+    displayOrder: 98
+  },
+  {
+    id: 2599,
+    vendorId: 25,
+    categoryId: 4,
+    name: 'Veg Thali Combo',
+    description: 'Dal + Paneer + 2 Butter Roti + Salad + Rice + Raita + Pickle',
+    price: '220.00',
+    isVeg: true,
+    isAvailable: true,
+    tags: ['combo', 'veg thali', 'thali', 'dal', 'paneer', 'butter roti', 'rice', 'raita', 'meal', 'bestseller'],
+    displayOrder: 99
+  },
+  {
+    id: 2600,
+    vendorId: 25,
+    categoryId: 4,
+    name: 'Non-Veg Thali Combo',
+    description: 'Chicken Curry + Rice + 2 Butter Roti + Salad + Raita + Pickle',
+    price: '270.00',
+    isVeg: false,
+    isAvailable: true,
+    tags: ['combo', 'non veg thali', 'chicken thali', 'thali', 'chicken curry', 'butter roti', 'rice', 'raita', 'meal', 'bestseller'],
+    displayOrder: 100
   }
 ];

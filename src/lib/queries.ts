@@ -172,6 +172,29 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('food_cave_time_1130_fixed', 'true')`).run().catch(() => {});
     }
 
+    // Ensure Hangry Club new combos exist in D1
+    const hangryCombosFixed = await d1.prepare(`SELECT value FROM site_settings WHERE key = 'hangry_combos_v1_fixed' LIMIT 1`).first().catch(() => null);
+    if (!hangryCombosFixed || hangryCombosFixed.value !== 'true') {
+      for (const item of HANGRY_CLUB_MENU_ITEMS.filter(i => i.id >= 2592)) {
+        await d1.prepare(`
+          INSERT OR REPLACE INTO menu_items (id, vendor_id, category_id, name, description, price, is_veg, is_available, tags, display_order)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          item.id,
+          item.vendorId,
+          item.categoryId,
+          item.name,
+          item.description,
+          parseFloat(item.price),
+          item.isVeg ? 1 : 0,
+          item.isAvailable ? 1 : 0,
+          JSON.stringify(item.tags),
+          item.displayOrder
+        ).run().catch(() => {});
+      }
+      await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('hangry_combos_v1_fixed', 'true')`).run().catch(() => {});
+    }
+
     if (seedCheck && seedCheck.value === 'true') {
       hasCheckedD1Seed = true;
       return;
