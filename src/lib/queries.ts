@@ -165,6 +165,13 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('tea_category_v2_fixed', 'true')`).run().catch(() => {});
     }
 
+    // Timing fix: ensure Food Cave opens at 11:30
+    const foodCaveTimeFixed = await d1.prepare(`SELECT value FROM site_settings WHERE key = 'food_cave_time_1130_fixed' LIMIT 1`).first().catch(() => null);
+    if (!foodCaveTimeFixed || foodCaveTimeFixed.value !== 'true') {
+      await d1.prepare(`UPDATE vendors SET opens_at = '11:30' WHERE slug = 'food-cave' OR id = 21`).run().catch(() => {});
+      await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('food_cave_time_1130_fixed', 'true')`).run().catch(() => {});
+    }
+
     if (seedCheck && seedCheck.value === 'true') {
       hasCheckedD1Seed = true;
       return;

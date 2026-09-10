@@ -8,7 +8,7 @@ export const FOOD_CAVE_VENDOR = {
 
   latitude: '29.944728850615977',
   longitude: '76.82157470184504',
-  opensAt: '09:00',
+  opensAt: '11:30',
   closesAt: '23:30',
   deliversTo: ['Campus wide'],
   image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
