@@ -39,6 +39,14 @@ export const GET: APIRoute = async ({ request }) => {
       categories = MOCK_CATEGORIES as any;
     }
 
+    if (categories && categories.length > 0) {
+      if (!categories.some((c: any) => c.id === 9 || c.slug === 'combos')) {
+        const { MOCK_CATEGORIES } = await import('../../../../lib/mock-data');
+        const cat9 = MOCK_CATEGORIES.find((c: any) => c.id === 9);
+        if (cat9) categories.push(cat9 as any);
+      }
+    }
+
     return new Response(JSON.stringify({ categories: categories || [] }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });

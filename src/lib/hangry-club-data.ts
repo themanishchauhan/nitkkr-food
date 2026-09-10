@@ -1137,11 +1137,11 @@ export const HANGRY_CLUB_MENU_ITEMS = [
     displayOrder: 91
   },
 
-  // ================= 🍱 THE HANGRY CLUB - COMBOS =================
+  // ================= 🍱 THE HANGRY CLUB - COMBOS (Category 9) =================
   {
     id: 2592,
     vendorId: 25,
-    categoryId: 7,
+    categoryId: 9,
     name: 'Any Roll (Non-Veg) Combo',
     description: 'Choice of Chicken Tikka Kathi Roll / Chicken Seekh Roll / Chicken Malai Roll + Coke + French Fries',
     price: '349.00',
@@ -1153,7 +1153,7 @@ export const HANGRY_CLUB_MENU_ITEMS = [
   {
     id: 2593,
     vendorId: 25,
-    categoryId: 7,
+    categoryId: 9,
     name: 'Egg Roll Combo',
     description: 'Freshly rolled egg kathi roll + Coke + Crispy French Fries',
     price: '259.00',
@@ -1165,7 +1165,7 @@ export const HANGRY_CLUB_MENU_ITEMS = [
   {
     id: 2594,
     vendorId: 25,
-    categoryId: 7,
+    categoryId: 9,
     name: 'Any Roll (Veg) Combo',
     description: 'Choice of Paneer Kathi Roll / Paneer Malai Tikka Roll + Coke + French Fries',
     price: '329.00',
@@ -1177,7 +1177,7 @@ export const HANGRY_CLUB_MENU_ITEMS = [
   {
     id: 2595,
     vendorId: 25,
-    categoryId: 1,
+    categoryId: 9,
     name: 'Chicken Burger or Chicken Sandwich Combo',
     description: 'Choice of crispy Chicken Burger or grilled Chicken Sandwich + French Fries + Coke',
     price: '249.00',
@@ -1189,7 +1189,7 @@ export const HANGRY_CLUB_MENU_ITEMS = [
   {
     id: 2596,
     vendorId: 25,
-    categoryId: 1,
+    categoryId: 9,
     name: 'Veg Burger or Veg Sandwich Combo',
     description: 'Choice of loaded Veg Burger or fresh Veg Sandwich + French Fries + Coke',
     price: '199.00',
@@ -1201,7 +1201,7 @@ export const HANGRY_CLUB_MENU_ITEMS = [
   {
     id: 2597,
     vendorId: 25,
-    categoryId: 1,
+    categoryId: 9,
     name: 'Paneer Sandwich Combo',
     description: 'Grilled spiced paneer stuffed sandwich + French Fries + Coke',
     price: '209.00',
@@ -1213,7 +1213,7 @@ export const HANGRY_CLUB_MENU_ITEMS = [
   {
     id: 2598,
     vendorId: 25,
-    categoryId: 4,
+    categoryId: 9,
     name: 'Any Paratha Combo',
     description: 'Choice of fresh hot stuffed Paratha + fresh Curd + Coffee or Coke',
     price: '149.00',
@@ -1225,7 +1225,7 @@ export const HANGRY_CLUB_MENU_ITEMS = [
   {
     id: 2599,
     vendorId: 25,
-    categoryId: 4,
+    categoryId: 9,
     name: 'Veg Thali Combo',
     description: 'Dal + Paneer + 2 Butter Roti + Salad + Rice + Raita + Pickle',
     price: '220.00',
@@ -1237,7 +1237,7 @@ export const HANGRY_CLUB_MENU_ITEMS = [
   {
     id: 2600,
     vendorId: 25,
-    categoryId: 4,
+    categoryId: 9,
     name: 'Non-Veg Thali Combo',
     description: 'Chicken Curry + Rice + 2 Butter Roti + Salad + Raita + Pickle',
     price: '270.00',

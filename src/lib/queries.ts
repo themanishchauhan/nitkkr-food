@@ -195,6 +195,17 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('hangry_combos_v1_fixed', 'true')`).run().catch(() => {});
     }
 
+    // Ensure Category 9 (Combos & Meals) exists in D1 and Hangry Club combo items are in Category 9
+    const combosCategoryFixed = await d1.prepare(`SELECT value FROM site_settings WHERE key = 'combos_category_v1_fixed' LIMIT 1`).first().catch(() => null);
+    if (!combosCategoryFixed || combosCategoryFixed.value !== 'true') {
+      await d1.prepare(`
+        INSERT OR REPLACE INTO categories (id, name, slug, icon, display_order)
+        VALUES (9, 'Combos & Meals', 'combos', '🍱', 9)
+      `).run().catch(() => {});
+      await d1.prepare(`UPDATE menu_items SET category_id = 9 WHERE id >= 2592 AND id <= 2600`).run().catch(() => {});
+      await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('combos_category_v1_fixed', 'true')`).run().catch(() => {});
+    }
+
     if (seedCheck && seedCheck.value === 'true') {
       hasCheckedD1Seed = true;
       return;
@@ -619,10 +630,15 @@ export async function getFeaturedVendors(limit = 5) {
 export async function getCategories() {
   try {
     const db = getDb();
-    const result = await db.select()
+    let result = await db.select()
       .from(schema.categories)
       .orderBy(asc(schema.categories.displayOrder), asc(schema.categories.name));
-    if (result && result.length > 0) return result;
+    if (result && result.length > 0) {
+      if (!result.some((c: any) => c.id === 9 || c.slug === 'combos')) {
+        result.push({ id: 9, name: 'Combos & Meals', slug: 'combos', icon: '🍱', displayOrder: 9 } as any);
+      }
+      return result;
+    }
     return MOCK_CATEGORIES;
   } catch (e) {
     return MOCK_CATEGORIES;
@@ -660,6 +676,15 @@ export async function getMenuItemsByVendor(vendorId: number) {
             categoryName: 'Chai & Snacks',
             categorySlug: 'chai-snacks',
             categoryIcon: '☕'
+          };
+        }
+        if (item.id >= 2592 && item.id <= 2600) {
+          return {
+            ...item,
+            categoryId: 9,
+            categoryName: 'Combos & Meals',
+            categorySlug: 'combos',
+            categoryIcon: '🍱'
           };
         }
         return item;
