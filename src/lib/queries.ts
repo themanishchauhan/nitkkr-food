@@ -21,6 +21,7 @@ import { YUMMY_TUMMY_FOODS_VENDOR, YUMMY_TUMMY_FOODS_MENU_ITEMS } from './yummy-
 import { PIZZA_KING_VENDOR, PIZZA_KING_MENU_ITEMS } from './pizza-king-data';
 import { MEHFIL_VENDOR, MEHFIL_MENU_ITEMS } from './mehfil-data';
 import { KALU_FOOD_CORNER_VENDOR, KALU_FOOD_CORNER_MENU_ITEMS } from './kalu-food-corner-data';
+import { isPureVegVendor } from './utils';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -206,6 +207,13 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('combos_category_v1_fixed', 'true')`).run().catch(() => {});
     }
 
+    // Ensure homepage title is gender-neutral
+    const genderNeutralFixed = await d1.prepare(`SELECT value FROM site_settings WHERE key = 'gender_neutral_title_v1' LIMIT 1`).first().catch(() => null);
+    if (!genderNeutralFixed || genderNeutralFixed.value !== 'true') {
+      await d1.prepare(`UPDATE site_settings SET value = 'Stop Asking “Koi Menu Bhej Do.”' WHERE key = 'homepage_title' AND value LIKE '%Bhai%'`).run().catch(() => {});
+      await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('gender_neutral_title_v1', 'true')`).run().catch(() => {});
+    }
+
     if (seedCheck && seedCheck.value === 'true') {
       hasCheckedD1Seed = true;
       return;
@@ -375,11 +383,20 @@ export async function getActiveVendors() {
           combined.push(mv);
         }
       }
-      return combined;
+      return combined.map((v: any) => ({
+        ...v,
+        isPureVeg: isPureVegVendor(v)
+      }));
     }
-    return MOCK_VENDORS.filter(v => v.isActive);
+    return MOCK_VENDORS.filter(v => v.isActive).map((v: any) => ({
+      ...v,
+      isPureVeg: isPureVegVendor(v)
+    }));
   } catch (e) {
-    return MOCK_VENDORS.filter(v => v.isActive);
+    return MOCK_VENDORS.filter(v => v.isActive).map((v: any) => ({
+      ...v,
+      isPureVeg: isPureVegVendor(v)
+    }));
   }
 }
 

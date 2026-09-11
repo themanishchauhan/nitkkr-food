@@ -410,6 +410,13 @@
         return 'tel:+91' + digits.slice(-10);
       },
 
+      isPureVeg: function (vendor) {
+        if (!vendor) return false;
+        if (typeof vendor.isPureVeg === 'boolean') return vendor.isPureVeg;
+        var pureVegSlugs = ['apna-fast-food', 'bakers-bite-kkr', 'yummy-tummy-foods', 'pizza-king'];
+        return Boolean(vendor.slug && pureVegSlugs.indexOf(vendor.slug) !== -1);
+      },
+
       getWhatsAppHref: function (phone) {
         if (!phone) return '#';
         var digits = String(phone).replace(/[^0-9]/g, '');
@@ -495,6 +502,20 @@
             }
           }
         });
+
+        // Smooth Infinite Scroll Observer (loads next dishes automatically)
+        if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+          setTimeout(function () {
+            if (self.$refs && self.$refs.scrollSentinel) {
+              var observer = new IntersectionObserver(function (entries) {
+                if (entries[0] && entries[0].isIntersecting) {
+                  self.loadMore();
+                }
+              }, { rootMargin: '400px' });
+              observer.observe(self.$refs.scrollSentinel);
+            }
+          }, 250);
+        }
 
         // Fast background hydration of full catalog from cached /api/search-index.json
         if (!window.__SEARCH_INDEX_CACHE__) {
@@ -840,6 +861,22 @@
 
       loadMore: function () {
         this.displayLimit += 20;
+      },
+
+      init: function () {
+        var self = this;
+        if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+          setTimeout(function () {
+            if (self.$refs && self.$refs.vendorScrollSentinel) {
+              var observer = new IntersectionObserver(function (entries) {
+                if (entries[0] && entries[0].isIntersecting) {
+                  self.loadMore();
+                }
+              }, { rootMargin: '400px' });
+              observer.observe(self.$refs.vendorScrollSentinel);
+            }
+          }, 250);
+        }
       },
 
       get totalCount() {

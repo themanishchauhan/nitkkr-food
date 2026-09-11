@@ -4,6 +4,26 @@
  */
 
 /**
+ * Slugs of verified 100% Pure Vegetarian vendors on campus
+ */
+export const PURE_VEG_VENDOR_SLUGS = new Set([
+  'apna-fast-food',
+  'bakers-bite-kkr',
+  'yummy-tummy-foods',
+  'pizza-king'
+]);
+
+/**
+ * Determine if a vendor is 100% Pure Vegetarian (Zomato-style classification)
+ */
+export function isPureVegVendor(vendor: { slug?: string; isPureVeg?: boolean } | null | undefined): boolean {
+  if (!vendor) return false;
+  if (typeof vendor.isPureVeg === 'boolean') return vendor.isPureVeg;
+  if (vendor.slug && PURE_VEG_VENDOR_SLUGS.has(vendor.slug)) return true;
+  return false;
+}
+
+/**
  * Format 24-hour time ('09:00', '23:30', '13:00:00') into 12-hour AM/PM Indian format ('9:00 AM', '11:30 PM')
  */
 export function formatTime12h(timeStr: string | null | undefined): string {

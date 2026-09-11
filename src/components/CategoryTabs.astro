@@ -33,6 +33,7 @@ const {
 
 <div
   x-data="categoryTabsComponent(window.__VENDOR_MENU_CONFIG__)"
+  x-init="init()"
   class="mb-8"
 >
   <!-- Menu Header -->
@@ -100,24 +101,33 @@ const {
         <!-- Middle: Veg/Non-Veg icon + Dish Name + Subtitle -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5 min-w-0">
-            <!-- Veg / Egg / Non-Veg Indicator -->
+            <!-- Veg / Egg / Non-Veg Indicator (Colorblind-Safe: Circle / Egg / Triangle) -->
             <span
-              class="w-3.5 h-3.5 rounded-xs border flex items-center justify-center flex-shrink-0"
+              class="w-3.5 h-3.5 rounded-[3px] border-[1.5px] bg-white flex items-center justify-center flex-shrink-0"
               :class="{
-                'border-emerald-600 bg-emerald-50': getItemDiet(item) === 'veg',
-                'border-amber-500 bg-amber-50': getItemDiet(item) === 'egg',
-                'border-rose-600 bg-rose-50': getItemDiet(item) === 'nonveg'
+                'border-emerald-600': getItemDiet(item) === 'veg',
+                'border-amber-600': getItemDiet(item) === 'egg',
+                'border-rose-700': getItemDiet(item) === 'nonveg'
               }"
               :title="getItemDiet(item) === 'veg' ? 'Pure Veg' : (getItemDiet(item) === 'egg' ? 'Contains Egg' : 'Non-Veg')"
+              :aria-label="getItemDiet(item) === 'veg' ? 'Pure Veg' : (getItemDiet(item) === 'egg' ? 'Contains Egg' : 'Non-Veg')"
             >
-              <span
-                class="w-1.5 h-1.5 rounded-full"
-                :class="{
-                  'bg-emerald-600': getItemDiet(item) === 'veg',
-                  'bg-amber-500': getItemDiet(item) === 'egg',
-                  'bg-rose-600': getItemDiet(item) === 'nonveg'
-                }"
-              ></span>
+              <!-- Pure Veg: Circle -->
+              <template x-if="getItemDiet(item) === 'veg'">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              </template>
+              <!-- Egg: Oval / Egg shape -->
+              <template x-if="getItemDiet(item) === 'egg'">
+                <svg class="w-2 h-2 fill-amber-600 text-amber-600" viewBox="0 0 10 10" aria-hidden="true">
+                  <path d="M5,1 C6.5,1 8,4 8,6.8 C8,8.2 6.7,9 5,9 C3.3,9 2,8.2 2,6.8 C2,4 3.5,1 5,1 Z" />
+                </svg>
+              </template>
+              <!-- Non-Veg: Upward Triangle -->
+              <template x-if="getItemDiet(item) === 'nonveg'">
+                <svg class="w-2 h-2 fill-rose-700 text-rose-700" viewBox="0 0 10 10" aria-hidden="true">
+                  <polygon points="5,1 9.5,8.5 0.5,8.5" />
+                </svg>
+              </template>
             </span>
 
             <h3 class="font-bold text-sm sm:text-base text-slate-900 truncate group-hover:text-nitkkr-orange transition-colors" x-text="item.name"></h3>
@@ -142,19 +152,15 @@ const {
       </div>
     </template>
 
-    <!-- Load More Pagination Button -->
-    <template x-if="displayedItems.length > visibleItems.length">
-      <div class="text-center pt-3 pb-2">
-        <p class="text-[11px] font-semibold text-slate-400 mb-2" x-text="`Showing ${visibleItems.length} of ${displayedItems.length} dishes`"></p>
-        <button
-          type="button"
-          @click="loadMore()"
-          class="px-6 py-2.5 bg-white border border-slate-200 hover:border-nitkkr-orange hover:text-nitkkr-orange text-slate-800 font-bold text-xs rounded-2xl shadow-xs transition-all active:scale-95 cursor-pointer"
-        >
-          Load Next 20 Dishes ↓
-        </button>
-      </div>
-    </template>
+    <!-- Automatic Infinite Scroll Sentinel (loads smoothly as student scrolls) -->
+    <div
+      x-ref="vendorScrollSentinel"
+      x-show="displayedItems.length > visibleItems.length"
+      class="py-6 flex flex-col items-center justify-center gap-1.5 text-slate-400"
+    >
+      <div class="w-5 h-5 border-2 border-nitkkr-orange border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-[11px] font-medium text-slate-400" x-text="`Loading dishes (${visibleItems.length} of ${displayedItems.length})...`"></span>
+    </div>
   </div>
 
   <!-- Empty Search / Category State -->
@@ -218,14 +224,34 @@ const {
 
           <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
             <span
-              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-md"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold shadow-md"
               :class="{
-                'bg-emerald-600 text-white': getItemDiet(selectedItem) === 'veg',
-                'bg-amber-500 text-white': getItemDiet(selectedItem) === 'egg',
-                'bg-rose-600 text-white': getItemDiet(selectedItem) === 'nonveg'
+                'bg-emerald-700 text-white': getItemDiet(selectedItem) === 'veg',
+                'bg-amber-600 text-white': getItemDiet(selectedItem) === 'egg',
+                'bg-rose-700 text-white': getItemDiet(selectedItem) === 'nonveg'
               }"
             >
-              <span x-text="getItemDiet(selectedItem) === 'veg' ? '🌱 Pure Veg' : (getItemDiet(selectedItem) === 'egg' ? '🥚 Contains Egg' : '🍗 Non-Veg')"></span>
+              <!-- Shape icon for colorblind accessibility: Circle for Veg, Egg/Oval for Egg, Triangle for Non-Veg -->
+              <span class="w-3.5 h-3.5 rounded-xs bg-white flex items-center justify-center flex-shrink-0" :class="{
+                'border border-emerald-600': getItemDiet(selectedItem) === 'veg',
+                'border border-amber-600': getItemDiet(selectedItem) === 'egg',
+                'border border-rose-600': getItemDiet(selectedItem) === 'nonveg'
+              }">
+                <template x-if="getItemDiet(selectedItem) === 'veg'">
+                  <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                </template>
+                <template x-if="getItemDiet(selectedItem) === 'egg'">
+                  <svg class="w-2 h-2 fill-amber-600 text-amber-600" viewBox="0 0 10 10" aria-hidden="true">
+                    <path d="M5,1 C6.5,1 8,4 8,6.8 C8,8.2 6.7,9 5,9 C3.3,9 2,8.2 2,6.8 C2,4 3.5,1 5,1 Z" />
+                  </svg>
+                </template>
+                <template x-if="getItemDiet(selectedItem) === 'nonveg'">
+                  <svg class="w-2 h-2 fill-rose-700 text-rose-700" viewBox="0 0 10 10" aria-hidden="true">
+                    <polygon points="5,1 9.5,8.5 0.5,8.5" />
+                  </svg>
+                </template>
+              </span>
+              <span x-text="getItemDiet(selectedItem) === 'veg' ? 'Pure Veg' : (getItemDiet(selectedItem) === 'egg' ? 'Contains Egg' : 'Non-Veg')"></span>
             </span>
 
             <span class="text-2xl font-black text-white drop-shadow-md" x-text="'₹' + Number(selectedItem.price).toFixed(0)"></span>
