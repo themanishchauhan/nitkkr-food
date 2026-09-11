@@ -523,20 +523,6 @@
           }
         });
 
-        // Smooth Infinite Scroll Observer (loads next dishes automatically)
-        if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
-          setTimeout(function () {
-            if (self.$refs && self.$refs.scrollSentinel) {
-              var observer = new IntersectionObserver(function (entries) {
-                if (entries[0] && entries[0].isIntersecting) {
-                  self.loadMore();
-                }
-              }, { rootMargin: '400px' });
-              observer.observe(self.$refs.scrollSentinel);
-            }
-          }, 250);
-        }
-
         // Fast background hydration of full catalog from cached /api/search-index.json
         if (!window.__SEARCH_INDEX_CACHE__) {
           fetch('/api/search-index.json')
@@ -884,19 +870,7 @@
       },
 
       init: function () {
-        var self = this;
-        if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
-          setTimeout(function () {
-            if (self.$refs && self.$refs.vendorScrollSentinel) {
-              var observer = new IntersectionObserver(function (entries) {
-                if (entries[0] && entries[0].isIntersecting) {
-                  self.loadMore();
-                }
-              }, { rootMargin: '400px' });
-              observer.observe(self.$refs.vendorScrollSentinel);
-            }
-          }, 250);
-        }
+        // Ready
       },
 
       get totalCount() {

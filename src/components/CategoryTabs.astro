@@ -152,15 +152,19 @@ const {
       </div>
     </template>
 
-    <!-- Automatic Infinite Scroll Sentinel (loads smoothly as student scrolls) -->
-    <div
-      x-ref="vendorScrollSentinel"
-      x-show="displayedItems.length > visibleItems.length"
-      class="py-6 flex flex-col items-center justify-center gap-1.5 text-slate-400"
-    >
-      <div class="w-5 h-5 border-2 border-nitkkr-orange border-t-transparent rounded-full animate-spin"></div>
-      <span class="text-[11px] font-medium text-slate-400" x-text="`Loading dishes (${visibleItems.length} of ${displayedItems.length})...`"></span>
-    </div>
+    <!-- Load More Pagination Button -->
+    <template x-if="displayedItems.length > visibleItems.length">
+      <div class="text-center pt-4 pb-2">
+        <p class="text-[11px] font-semibold text-slate-400 mb-2" x-text="`Showing ${visibleItems.length} of ${displayedItems.length} dishes`"></p>
+        <button
+          type="button"
+          @click="loadMore()"
+          class="px-6 py-2.5 bg-white border border-slate-200 hover:border-nitkkr-orange hover:text-nitkkr-orange text-slate-800 font-bold text-xs rounded-2xl shadow-xs transition-all active:scale-95 cursor-pointer"
+        >
+          Load More
+        </button>
+      </div>
+    </template>
   </div>
 
   <!-- Empty Search / Category State -->
