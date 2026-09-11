@@ -27,5 +27,13 @@
   },
   "observability": {
     "enabled": true
+  },
+  "env": {
+    "dev": {
+      "name": "orandus-dev",
+      "vars": {
+        "ENVIRONMENT": "development"
+      }
+    }
   }
 }

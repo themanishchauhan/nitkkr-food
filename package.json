@@ -10,6 +10,7 @@
     "dev:local": "npm run db:local:seed && astro dev",
     "build": "astro build",
     "deploy": "astro build && wrangler deploy",
+    "deploy:dev": "astro build && wrangler deploy --env dev",
     "preview": "astro preview",
     "astro": "astro",
     "db:push": "drizzle-kit push",
