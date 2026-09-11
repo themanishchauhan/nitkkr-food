@@ -67,7 +67,7 @@ export const MOCK_CATEGORIES = [
   { id: 6, name: 'Desserts & Sweets', slug: 'desserts', icon: '🍰', displayOrder: 6 },
   { id: 7, name: 'Rolls & Wraps', slug: 'rolls', icon: '🌯', displayOrder: 7 },
   { id: 8, name: 'Chai & Snacks', slug: 'chai-snacks', icon: '☕', displayOrder: 8 },
-  { id: 9, name: 'Combos & Meals', slug: 'combos', icon: '🍱', displayOrder: 9 },
+  { id: 9, name: 'Combos', slug: 'combos', icon: '🍱', displayOrder: 9 },
 ];
 
 export const MOCK_VENDORS = [
