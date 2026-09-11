@@ -25,7 +25,7 @@ const defaultSlides: Slide[] = [
     description: "Finish 1 giant parantha in under 20 minutes and win a ₹1,100 cash prize! Visit near NIT Gate 2.",
     ctaText: 'Take the Challenge →',
     ctaLink: '/v/yummy-tummy-foods',
-    gradient: 'from-amber-900 via-bistro-800 to-orange-800',
+    gradient: 'from-amber-500 via-orange-500 to-amber-600',
     icon: '🫓',
     isEnabled: true
   }
@@ -120,14 +120,14 @@ const activeSlides = rawSlides.filter(s => s.isEnabled !== false && s.title?.tri
     </div>
 
     <!-- Carousel Viewport & Horizontal Track -->
-    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm border border-amber-950/10 bg-stone-900">
+    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm border border-orange-200/50 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600">
       <div
         class="flex w-full transition-transform duration-500 ease-[cubic-bezier(0.2,1,0.3,1)]"
         :style="`transform: translateX(-${current * 100}%);`"
       >
         {activeSlides.map((slide) => (
           <div
-            class={`w-full shrink-0 p-4 sm:p-4.5 text-white flex flex-col justify-between min-h-[140px] sm:min-h-[145px] relative overflow-hidden bg-gradient-to-r ${slide.gradient || 'from-bistro-800 via-bistro-700 to-amber-700'}`}
+            class={`w-full shrink-0 p-4 sm:p-4.5 text-white flex flex-col justify-between min-h-[140px] sm:min-h-[145px] relative overflow-hidden bg-gradient-to-r ${slide.gradient || 'from-amber-500 via-orange-500 to-amber-600'}`}
           >
             <!-- Background Decorative Watermark Icon -->
             <span class="absolute -right-2 -bottom-3 text-5xl sm:text-6xl opacity-10 select-none pointer-events-none" aria-hidden="true">

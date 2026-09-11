@@ -42,7 +42,13 @@ if (settingsObj.announcement_carousel_json) {
   try {
     const parsed = JSON.parse(settingsObj.announcement_carousel_json);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      announcementSlides = parsed;
+      announcementSlides = parsed.map((s: any) => {
+        const grad = s.gradient || '';
+        if (!grad || grad.includes('amber-900') || grad.includes('amber-800') || grad.includes('bistro-800') || grad.includes('bistro-700') || grad.includes('stone-900')) {
+          return { ...s, gradient: 'from-amber-500 via-orange-500 to-amber-600' };
+        }
+        return s;
+      });
     }
   } catch (e) {}
 }
