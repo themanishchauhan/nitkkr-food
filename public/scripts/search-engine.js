@@ -413,8 +413,28 @@
       isPureVeg: function (vendor) {
         if (!vendor) return false;
         if (typeof vendor.isPureVeg === 'boolean') return vendor.isPureVeg;
-        var pureVegSlugs = ['apna-fast-food', 'bakers-bite-kkr', 'yummy-tummy-foods', 'pizza-king'];
-        return Boolean(vendor.slug && pureVegSlugs.indexOf(vendor.slug) !== -1);
+        var slug = (vendor.slug || '').toLowerCase();
+        var name = (vendor.name || '').toLowerCase();
+        if (
+          slug === 'apna-fast-food' ||
+          slug === 'apna-fresh-fast-food' ||
+          slug === 'bakers-bite-kkr' ||
+          slug === 'bakers-bite' ||
+          slug === 'yummy-tummy-foods' ||
+          slug === 'yummy-tummy' ||
+          slug === 'pizza-king'
+        ) {
+          return true;
+        }
+        if (
+          name.indexOf('apna') !== -1 ||
+          name.indexOf('bakers bite') !== -1 ||
+          name.indexOf('yummy tummy') !== -1 ||
+          name.indexOf('pizza king') !== -1
+        ) {
+          return true;
+        }
+        return false;
       },
 
       getWhatsAppHref: function (phone) {

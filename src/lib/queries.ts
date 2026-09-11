@@ -207,11 +207,11 @@ export async function ensureRealDatabasePopulated(d1Raw?: any) {
       await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('combos_category_v1_fixed', 'true')`).run().catch(() => {});
     }
 
-    // Ensure homepage title is gender-neutral
-    const genderNeutralFixed = await d1.prepare(`SELECT value FROM site_settings WHERE key = 'gender_neutral_title_v1' LIMIT 1`).first().catch(() => null);
-    if (!genderNeutralFixed || genderNeutralFixed.value !== 'true') {
-      await d1.prepare(`UPDATE site_settings SET value = 'Stop Asking “Koi Menu Bhej Do.”' WHERE key = 'homepage_title' AND value LIKE '%Bhai%'`).run().catch(() => {});
-      await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('gender_neutral_title_v1', 'true')`).run().catch(() => {});
+    // Ensure homepage title is restored to student favourite "Stop Asking “Bhai, Menu Bhej.”"
+    const bhaiTitleRestored = await d1.prepare(`SELECT value FROM site_settings WHERE key = 'bhai_title_restored_v3' LIMIT 1`).first().catch(() => null);
+    if (!bhaiTitleRestored || bhaiTitleRestored.value !== 'true') {
+      await d1.prepare(`UPDATE site_settings SET value = 'Stop Asking “Bhai, Menu Bhej.”' WHERE key = 'homepage_title'`).run().catch(() => {});
+      await d1.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('bhai_title_restored_v3', 'true')`).run().catch(() => {});
     }
 
     if (seedCheck && seedCheck.value === 'true') {

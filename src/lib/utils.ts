@@ -8,18 +8,25 @@
  */
 export const PURE_VEG_VENDOR_SLUGS = new Set([
   'apna-fast-food',
+  'apna-fresh-fast-food',
   'bakers-bite-kkr',
+  'bakers-bite',
   'yummy-tummy-foods',
+  'yummy-tummy',
   'pizza-king'
 ]);
 
 /**
  * Determine if a vendor is 100% Pure Vegetarian (Zomato-style classification)
  */
-export function isPureVegVendor(vendor: { slug?: string; isPureVeg?: boolean } | null | undefined): boolean {
+export function isPureVegVendor(vendor: { slug?: string; name?: string; isPureVeg?: boolean } | null | undefined): boolean {
   if (!vendor) return false;
   if (typeof vendor.isPureVeg === 'boolean') return vendor.isPureVeg;
-  if (vendor.slug && PURE_VEG_VENDOR_SLUGS.has(vendor.slug)) return true;
+  if (vendor.slug && PURE_VEG_VENDOR_SLUGS.has(vendor.slug.toLowerCase())) return true;
+  const name = (vendor.name || '').toLowerCase();
+  if (name.includes('apna') || name.includes('bakers bite') || name.includes('yummy tummy') || name.includes('pizza king')) {
+    return true;
+  }
   return false;
 }
 

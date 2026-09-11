@@ -36,7 +36,7 @@ const initialQrStats = await getQrAnalyticsData();
       reviews: Array.isArray(initialReviews) ? initialReviews : [],
       qrStats: initialQrStats || { totalScans: 0, totalCalls: 0, totalWhatsApp: 0, totalInstalls: 0, campaigns: [], recentEvents: [] },
       settings: {
-        homepage_title: initialSettingsObj.homepage_title || 'Stop Asking “Koi Menu Bhej Do.”',
+        homepage_title: initialSettingsObj.homepage_title || 'Stop Asking “Bhai, Menu Bhej.”',
         homepage_tagline: initialSettingsObj.homepage_tagline || 'Find campus food, menus and prices in seconds.',
         announcement_banner_enabled: initialSettingsObj.announcement_banner_enabled || 'false',
         announcement_banner_text: initialSettingsObj.announcement_banner_text || '',
