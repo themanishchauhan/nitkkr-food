@@ -38,3 +38,7 @@ scratch/
 
 # docker volumes
 docker-compose.override.yml
+
+# Temporary SQL dumps & exports
+scripts/*.sql
+*.dump.sql

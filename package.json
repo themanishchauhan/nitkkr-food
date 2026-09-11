@@ -10,7 +10,7 @@
     "dev:local": "npm run db:local:seed && astro dev",
     "build": "astro build",
     "deploy": "astro build && wrangler deploy",
-    "deploy:dev": "astro build && wrangler deploy --name orandus-dev",
+    "deploy:dev": "astro build && node scripts/prepare-dev-dist.mjs && wrangler deploy",
     "preview": "astro preview",
     "astro": "astro",
     "db:push": "drizzle-kit push",
@@ -18,6 +18,7 @@
     "db:local:seed": "npx tsx scripts/seed-local.ts",
     "db:local:migrate": "npx tsx scripts/migrate-local.ts",
     "db:local": "wrangler d1 execute nitkkr-food --local --file=./drizzle/0000_initial.sql",
+    "db:sync:prod-to-dev": "node scripts/sync-prod-to-dev.mjs",
     "wrangler:dev": "wrangler dev",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down"

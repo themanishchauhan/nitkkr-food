@@ -249,3 +249,30 @@ If stall items are sorted alphabetically or by vendor ID, the first stall (e.g. 
 | **Diet Badges** | FSSAI Colorblind-Safe Shapes | 🟢 High | Permanent standard |
 | **Pagination** | Explicit `Load More` Button | 🟢 High | Permanent standard |
 | **Branding** | `Stop Asking “Bhai, Menu Bhej.”` | 🟢 High | Campus student consensus |
+| **Database Env** | Isolated `orandus-dev` D1 with 1-Command Sync | 🟢 High | Permanent architecture |
+
+---
+
+## 11. Database Isolation (`orandus-dev`) & On-Demand Production Sync
+
+### Context & Problem
+Sharing a single database between production (`orandus`) and development (`orandus-dev`) exposed the platform to severe risks: accidental stall deletions during admin testing, broken migrations crashing live student traffic, and dummy test stalls polluting the real campus feed. However, developers still need full, realistic menus and stall images to visually test views, category tabs, and filters.
+
+### Decision Made
+- Created an isolated D1 database: `orandus-dev` (ID: `82c051aa-b543-404f-af41-dd75dc1b9b2e`).
+- Automated a 1-command sync workflow: `npm run db:sync:prod-to-dev` (`scripts/sync-prod-to-dev.mjs`).
+  - Exports production D1 (`nitkkr-food`) to an ephemeral SQL dump.
+  - Automatically prepends table drops (`DROP TABLE IF EXISTS`) and disables foreign keys (`PRAGMA foreign_keys=OFF`) to ensure idempotent, clean overwrites.
+  - Injects all schemas and rows into `orandus-dev` and securely unlinks the dump.
+- Created `scripts/prepare-dev-dist.mjs` to dynamically inject the `orandus-dev` D1 binding into `@astrojs/cloudflare` build output during both local `npm run deploy:dev` and automated GitHub Actions CI/CD on the `dev` branch.
+
+### Looped Thinking: What Does This Lead To?
+- **Positive Outcomes**:
+  - **Zero Blast Radius**: Any test delete, price update, or schema experiment in `dev` never touches live students.
+  - **Always-Realistic Views**: With one command (`npm run db:sync:prod-to-dev`), `dev` receives all current stalls, dishes, prices, and photos from production.
+  - **Idempotent & Safe**: Sync can be run 100 times without key conflicts or table collision errors.
+- **Risks & Second-Order Effects**:
+  - Changes made solely on `dev` will be overwritten if a developer runs `npm run db:sync:prod-to-dev` without saving custom test seeds.
+
+### Is There Any Better Way?
+- The current automated Wrangler export/import script is the cleanest, zero-cost, and fastest approach on Cloudflare D1. For future multi-developer branches, Cloudflare D1 Time Travel branch snapshots can be invoked per ephemeral PR environment.

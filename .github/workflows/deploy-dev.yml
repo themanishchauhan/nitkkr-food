@@ -23,10 +23,12 @@ jobs:
         run: npm ci
 
       - name: Build Project
-        run: npm run build
+        run: |
+          npm run build
+          node scripts/prepare-dev-dist.mjs
 
       - name: Deploy to Cloudflare Workers (Dev Environment)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: deploy --name orandus-dev
+          command: deploy
