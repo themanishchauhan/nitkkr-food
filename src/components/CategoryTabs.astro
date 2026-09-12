@@ -624,17 +624,17 @@ const {
       x-transition:leave="transition ease-in duration-200 transform"
       x-transition:leave-start="opacity-100 translate-y-0"
       x-transition:leave-end="opacity-0 translate-y-4"
-      class="fixed inset-0 z-[100] overflow-hidden bg-[#FEF7F0] flex flex-col text-nitkkr-dark font-body"
+      class="fixed inset-0 z-[100] overflow-hidden bg-[#FAF8F5] flex flex-col text-slate-900 font-body"
       @keydown.escape.window="closeCartScreen()"
     >
       <!-- Top Sticky Navigation Bar with Safe-Area Inset Support -->
-      <header class="flex-shrink-0 bg-white/90 backdrop-blur-md border-b border-bistro-200/80 z-30 px-4 py-3 sm:py-3.5 shadow-xs pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
+      <header class="flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 z-30 px-4 py-3 sm:py-3.5 shadow-xs pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
         <div class="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <!-- Back Button -->
           <button
             type="button"
             @click="closeCartScreen()"
-            class="flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-bistro-800 hover:text-bistro-900 hover:bg-bistro-50 transition-all active:scale-95 cursor-pointer py-1.5 px-3 rounded-full border border-bistro-200 shadow-2xs"
+            class="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-all active:scale-95 cursor-pointer py-1.5 px-3 rounded-full border border-slate-200 shadow-2xs"
             aria-label="Back to menu"
           >
             <span class="text-base font-bold">←</span>
@@ -643,7 +643,7 @@ const {
 
           <!-- Center Vendor Header (Clean, no taglines) -->
           <div class="text-center min-w-0 flex-1 px-2">
-            <h1 class="text-sm sm:text-base font-black text-nitkkr-dark font-display leading-tight truncate" x-text="vendorInfo.name || 'Vendor'"></h1>
+            <h1 class="text-sm sm:text-base font-black text-slate-900 font-display leading-tight truncate" x-text="vendorInfo.name || 'Vendor'"></h1>
           </div>
 
           <!-- Right Action: Clear Cart or Status Badge -->
@@ -652,13 +652,13 @@ const {
               <button
                 type="button"
                 @click="if (confirm('Clear all items from your order?')) { clearCart(); closeCartScreen(); }"
-                class="text-xs text-bistro-400 hover:text-rose-600 font-bold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                class="text-xs text-slate-400 hover:text-rose-600 font-bold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
               >
                 Clear
               </button>
             </template>
             <template x-if="orderPlaced">
-              <span class="px-2.5 py-1 bg-bistro-100 text-bistro-800 font-black text-[11px] rounded-lg border border-bistro-200">
+              <span class="px-2.5 py-1 bg-slate-100 text-slate-800 font-black text-[11px] rounded-lg border border-slate-200">
                 ✓ Sent
               </span>
             </template>
@@ -675,25 +675,25 @@ const {
             <div class="space-y-4">
               
               <!-- 1. Delivery Location Card (Clean Asterisk & 3 Specific Campus Chips with Toggle) -->
-              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-bistro-200/80 shadow-xs space-y-3">
+              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
                 <div class="flex items-center justify-between">
-                  <h2 class="text-sm sm:text-base font-extrabold text-nitkkr-dark font-display">
-                    <span>Location</span> <span class="text-bistro-500 font-bold">*</span>
+                  <h2 class="text-sm sm:text-base font-extrabold text-slate-900 font-display">
+                    <span>Location</span> <span class="text-rose-500 font-bold">*</span>
                   </h2>
                 </div>
 
-                <!-- 3 Specific Simple Campus Chips with Toggle & Orandus Palette -->
+                <!-- 3 Specific Simple Campus Chips with Toggle -->
                 <div class="flex flex-wrap gap-2">
                   <template x-for="loc in ['Back Gate', 'Front Gate', 'Girls Hostel']" :key="loc">
                     <button
                       type="button"
                       @click="setDeliveryLocation(loc)"
                       :class="(deliveryLocation && deliveryLocation.trim().toLowerCase() === loc.trim().toLowerCase()) 
-                        ? 'bg-gradient-to-r from-bistro-500 to-bistro-600 text-white border-transparent shadow-sm shadow-bistro-500/25 font-black' 
-                        : 'bg-white hover:bg-bistro-50 text-nitkkr-dark border border-bistro-200 hover:border-bistro-300 font-bold'"
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm font-extrabold' 
+                        : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold'"
                       class="px-3.5 py-2 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center text-xs active:scale-95"
                     >
-                      <span class="leading-tight font-extrabold" x-text="loc"></span>
+                      <span class="leading-tight" x-text="loc"></span>
                     </button>
                   </template>
                 </div>
@@ -705,13 +705,13 @@ const {
                     type="text"
                     x-model="deliveryLocation"
                     placeholder="Enter hostel room, department, or landmark..."
-                    class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-white hover:bg-bistro-50/40 focus:bg-white border border-bistro-200 rounded-xl font-medium text-nitkkr-dark placeholder:text-bistro-300/80 focus:outline-hidden focus:border-bistro-500 focus:ring-2 focus:ring-bistro-500/20 shadow-2xs transition-all"
+                    class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-white hover:bg-slate-50/50 focus:bg-white border border-slate-200 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-slate-400 focus:ring-2 focus:ring-slate-100 shadow-2xs transition-all"
                   />
                   <button
                     type="button"
                     x-show="deliveryLocation"
                     @click="deliveryLocation = ''; localStorage.removeItem('orandus_delivery_loc');"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-bistro-300 hover:text-bistro-600 cursor-pointer text-sm font-bold"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer text-sm font-bold"
                     aria-label="Clear location"
                   >
                     ✕
@@ -720,28 +720,28 @@ const {
               </section>
 
               <!-- 2. Order Items Card -->
-              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-bistro-200/80 shadow-xs space-y-3">
-                <div class="flex items-center justify-between gap-2 border-b border-bistro-100 pb-2.5">
-                  <h2 class="text-sm sm:text-base font-extrabold text-nitkkr-dark font-display">
+              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
+                <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                  <h2 class="text-sm sm:text-base font-extrabold text-slate-900 font-display">
                     <span>Items</span>
-                    <span class="text-xs font-bold text-bistro-400 ml-0.5" x-text="'(' + cartTotalCount + ')'"></span>
+                    <span class="text-xs font-bold text-slate-400 ml-0.5" x-text="'(' + cartTotalCount + ')'"></span>
                   </h2>
                   <button
                     type="button"
                     @click="closeCartScreen()"
-                    class="text-xs text-bistro-600 hover:text-bistro-700 font-extrabold flex items-center gap-1 cursor-pointer bg-bistro-50 hover:bg-bistro-100 px-2.5 py-1 rounded-xl border border-bistro-200/70 transition-colors"
+                    class="text-xs text-slate-700 hover:text-slate-900 font-bold flex items-center gap-1 cursor-pointer bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-xl border border-slate-200 transition-colors"
                   >
                     <span>+ Add items</span>
                   </button>
                 </div>
 
                 <template x-if="cartItems.length === 0">
-                  <div class="text-center py-10 bg-bistro-50/60 rounded-2xl border border-dashed border-bistro-200">
-                    <p class="text-xs font-bold text-nitkkr-dark">Your cart is empty</p>
+                  <div class="text-center py-10 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200">
+                    <p class="text-xs font-bold text-slate-900">Your cart is empty</p>
                     <button
                       type="button"
                       @click="closeCartScreen()"
-                      class="mt-3 px-4 py-2 bg-bistro-500 hover:bg-bistro-600 text-white font-bold text-xs rounded-xl shadow-xs"
+                      class="mt-3 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs"
                     >
                       Explore Menu
                     </button>
@@ -749,7 +749,7 @@ const {
                 </template>
 
                 <!-- Items List -->
-                <div class="divide-y divide-bistro-100">
+                <div class="divide-y divide-slate-100">
                   <template x-for="it in cartItems" :key="it.id">
                     <div class="py-3 first:pt-1 last:pb-1 flex items-center justify-between gap-3">
                       <!-- Dish Diet Icon & Name -->
@@ -778,26 +778,26 @@ const {
                         </span>
 
                         <div class="min-w-0">
-                          <p class="font-extrabold text-xs sm:text-sm text-nitkkr-dark truncate" x-text="it.name"></p>
-                          <p class="text-[11px] text-bistro-400 font-medium" x-text="'₹' + it.price + ' each'"></p>
+                          <p class="font-extrabold text-xs sm:text-sm text-slate-900 truncate" x-text="it.name"></p>
+                          <p class="text-[11px] text-slate-400 font-medium" x-text="'₹' + it.price + ' each'"></p>
                         </div>
                       </div>
 
                       <!-- Stepper -->
-                      <div class="flex items-center gap-1.5 bg-bistro-50/80 border border-bistro-200/80 rounded-xl p-1 shadow-2xs flex-shrink-0">
+                      <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-1 shadow-2xs flex-shrink-0">
                         <button
                           type="button"
                           @click="decrementCartItem(it.id)"
-                          class="w-7 h-7 rounded-lg bg-white hover:bg-bistro-100 active:scale-90 text-nitkkr-dark flex items-center justify-center font-black text-sm cursor-pointer transition-all shadow-2xs"
+                          class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 active:scale-90 text-slate-900 flex items-center justify-center font-black text-sm cursor-pointer transition-all shadow-2xs border border-slate-200/60"
                           aria-label="Decrease quantity"
                         >
                           −
                         </button>
-                        <span class="min-w-[18px] text-center font-black text-xs sm:text-sm text-nitkkr-dark font-display" x-text="it.quantity"></span>
+                        <span class="min-w-[18px] text-center font-black text-xs sm:text-sm text-slate-900 font-display" x-text="it.quantity"></span>
                         <button
                           type="button"
                           @click="addToCart(it)"
-                          class="w-7 h-7 rounded-lg bg-white hover:bg-bistro-100 active:scale-90 text-nitkkr-dark flex items-center justify-center font-black text-sm cursor-pointer transition-all shadow-2xs"
+                          class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 active:scale-90 text-slate-900 flex items-center justify-center font-black text-sm cursor-pointer transition-all shadow-2xs border border-slate-200/60"
                           aria-label="Increase quantity"
                         >
                           +
@@ -805,44 +805,39 @@ const {
                       </div>
 
                       <!-- Subtotal -->
-                      <span class="font-black text-xs sm:text-sm text-nitkkr-dark font-display min-w-[54px] text-right" x-text="'₹' + (it.price * it.quantity)"></span>
+                      <span class="font-black text-xs sm:text-sm text-slate-900 font-display min-w-[54px] text-right" x-text="'₹' + (it.price * it.quantity)"></span>
                     </div>
                   </template>
                 </div>
               </section>
 
-              <!-- 3. Cooking & Special Requests (Sweet & Simple Request Box) -->
-              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-bistro-200/80 shadow-xs space-y-2.5">
-                <h2 class="text-xs sm:text-sm font-extrabold text-nitkkr-dark font-display">
+              <!-- 3. Cooking & Special Requests -->
+              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-2.5">
+                <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 font-display">
                   <span>Special Requests?</span>
-                  <span class="text-[11px] font-normal text-bistro-400 ml-1">(Optional)</span>
+                  <span class="text-[11px] font-normal text-slate-400 ml-1">(Optional)</span>
                 </h2>
 
                 <input
                   type="text"
                   x-model="cookingNotes"
                   placeholder="e.g. Extra napkins, less spicy, pack separately..."
-                  class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-bistro-200 rounded-xl font-medium text-nitkkr-dark placeholder:text-bistro-300/80 focus:bg-white focus:outline-hidden focus:border-bistro-500 focus:ring-2 focus:ring-bistro-500/20 shadow-2xs transition-all"
+                  class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-slate-400 focus:ring-2 focus:ring-slate-100 shadow-2xs transition-all"
                 />
               </section>
 
-              <!-- 4. Contact Credentials Card (Clean with Inline Validation & Digit Counter) -->
-              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-bistro-200/80 shadow-xs space-y-3">
+              <!-- 4. Contact Credentials Card (Neutral Border, Small Tick Only) -->
+              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
                 <div class="flex items-center justify-between gap-2">
-                  <h2 class="text-sm sm:text-base font-extrabold text-nitkkr-dark font-display">
-                    <span>Phone Number</span> <span class="text-bistro-500 font-bold">*</span>
+                  <h2 class="text-sm sm:text-base font-extrabold text-slate-900 font-display">
+                    <span>Phone Number</span> <span class="text-rose-500 font-bold">*</span>
                   </h2>
                 </div>
 
-                <!-- Mobile Phone Input with +91 Prefix and Subtle Inline Verification Indicator -->
+                <!-- Mobile Phone Input with +91 Prefix (Clean Neutral Border - No Green Outline) -->
                 <div>
-                  <div 
-                    class="flex items-center rounded-xl border overflow-hidden bg-white shadow-2xs transition-all"
-                    :class="isPhoneValid 
-                      ? 'border-emerald-500 ring-2 ring-emerald-500/20' 
-                      : 'border-bistro-200 focus-within:border-bistro-500 focus-within:ring-2 focus-within:ring-bistro-500/20'"
-                  >
-                    <span class="bg-bistro-50 px-3 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-bistro-800 border-r border-bistro-200 flex items-center">
+                  <div class="flex items-center rounded-xl border border-slate-200 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-100 overflow-hidden bg-white shadow-2xs transition-all">
+                    <span class="bg-slate-50 px-3 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-slate-700 border-r border-slate-200 flex items-center">
                       +91
                     </span>
                     <input
@@ -853,22 +848,22 @@ const {
                       x-model="studentPhone"
                       @input="phoneError = ''"
                       placeholder="10-digit mobile number"
-                      class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-nitkkr-dark outline-hidden bg-transparent placeholder:text-bistro-300/70"
+                      class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-900 outline-hidden bg-transparent placeholder:text-slate-400"
                     />
-                    <!-- Inline phone indicator: clean green checkmark when valid, digit progress counter while typing -->
-                    <div class="pr-3 flex items-center flex-shrink-0 select-none">
+                    <!-- Inline phone indicator: small green tick when valid, subtle digit counter while typing -->
+                    <div class="pr-3.5 flex items-center flex-shrink-0 select-none">
                       <span
                         x-show="isPhoneValid"
                         x-cloak
-                        class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-black shadow-2xs"
-                        title="Verified phone number"
+                        class="text-emerald-600 font-black text-sm"
+                        title="Valid phone number"
                       >
                         ✓
                       </span>
                       <span
                         x-show="!isPhoneValid && studentPhone.length > 0"
                         x-cloak
-                        class="text-[10px] font-mono font-bold text-bistro-400"
+                        class="text-[10px] font-mono font-bold text-slate-400"
                         x-text="studentPhone.length + '/10'"
                       ></span>
                     </div>
@@ -885,47 +880,47 @@ const {
                     type="text"
                     x-model="studentName"
                     placeholder="Your name (optional)"
-                    class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-white focus:bg-white rounded-xl border border-bistro-200 outline-hidden font-medium text-nitkkr-dark placeholder:text-bistro-300/80 focus:border-bistro-500 focus:ring-2 focus:ring-bistro-500/20 shadow-2xs transition-all"
+                    class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-white focus:bg-white rounded-xl border border-slate-200 outline-hidden font-medium text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 shadow-2xs transition-all"
                   />
                 </div>
               </section>
 
               <!-- 5. 🧾 Bill Breakdown Card -->
-              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-bistro-200/80 shadow-xs space-y-2.5">
-                <h2 class="text-xs sm:text-sm font-extrabold text-nitkkr-dark font-display flex items-center gap-2 border-b border-bistro-100 pb-2">
-                  <span class="w-6 h-6 rounded-lg bg-bistro-100 text-bistro-800 flex items-center justify-center text-xs">🧾</span>
+              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-2.5">
+                <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 font-display flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <span class="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center text-xs">🧾</span>
                   <span>Bill Details</span>
                 </h2>
 
-                <div class="space-y-1.5 text-xs text-bistro-700">
+                <div class="space-y-1.5 text-xs text-slate-600">
                   <div class="flex items-center justify-between">
                     <span>Items Subtotal:</span>
-                    <span class="font-bold text-nitkkr-dark" x-text="'₹' + cartTotalPrice"></span>
+                    <span class="font-bold text-slate-900" x-text="'₹' + cartTotalPrice"></span>
                   </div>
                   <div class="flex items-center justify-between">
                     <span class="flex items-center gap-1">
                       <span>Campus Handover:</span>
-                      <span class="text-[10px] bg-bistro-100 text-bistro-800 px-1.5 py-0.5 rounded-sm font-bold">FREE</span>
+                      <span class="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.5 rounded-sm font-bold">FREE</span>
                     </span>
                     <span class="font-bold text-emerald-600">₹0</span>
                   </div>
                   <div class="flex items-center justify-between">
                     <span class="flex items-center gap-1">
                       <span>Orandus Platform Fee:</span>
-                      <span class="text-[10px] bg-bistro-100 text-bistro-800 px-1.5 py-0.5 rounded-sm font-bold">0% COMMISSION</span>
+                      <span class="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-sm font-bold">0% COMMISSION</span>
                     </span>
                     <span class="font-bold text-emerald-600">₹0</span>
                   </div>
                 </div>
 
-                <div class="pt-2.5 border-t border-bistro-200 flex items-center justify-between">
-                  <span class="font-black text-sm sm:text-base text-nitkkr-dark font-display">To Pay:</span>
-                  <span class="font-black text-lg sm:text-xl text-bistro-600 font-display" x-text="'₹' + cartTotalPrice"></span>
+                <div class="pt-2.5 border-t border-slate-200 flex items-center justify-between">
+                  <span class="font-black text-sm sm:text-base text-slate-900 font-display">To Pay:</span>
+                  <span class="font-black text-lg sm:text-xl text-slate-900 font-display" x-text="'₹' + cartTotalPrice"></span>
                 </div>
 
-                <div class="p-3 bg-bistro-50/90 rounded-2xl border border-bistro-200/80 text-[11px] text-bistro-900 flex items-center gap-2">
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 text-[11px] text-slate-700 flex items-center gap-2">
                   <span class="text-base flex-shrink-0">💡</span>
-                  <span>Pay directly to vendor via <strong>UPI or Cash</strong> upon pickup at <strong x-text="deliveryLocation || 'Selected Gate'"></strong>.</span>
+                  <span>Pay directly to vendor via <strong>UPI or Cash</strong> upon pickup at <strong class="text-slate-900" x-text="deliveryLocation || 'Selected Gate'"></strong>.</span>
                 </div>
               </section>
 
@@ -935,103 +930,103 @@ const {
             </div>
           </template>
 
-          <!-- STATE 2: Order Dispatched Confirmation & Digital Receipt (The Next Page with Unified Orandus Philosophy) -->
+          <!-- STATE 2: Order Dispatched Confirmation & Digital Receipt (Unified Philosophy - Clean, No Orange Overuse) -->
           <template x-if="orderPlaced">
             <div class="max-w-xl mx-auto py-6 space-y-4">
               
               <!-- Top Celebratory Status Card -->
-              <div class="bg-white rounded-3xl p-6 border border-bistro-200/80 shadow-xs text-center space-y-3">
-                <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-3xl font-black shadow-inner">
+              <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs text-center space-y-3">
+                <div class="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 mx-auto flex items-center justify-center text-3xl font-black shadow-inner">
                   ✓
                 </div>
                 
                 <div>
-                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-bistro-100 text-bistro-800 border border-bistro-200 mb-2">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200/80 mb-2">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>Order Dispatched • <strong x-text="'#' + ((placedOrder && placedOrder.orderId) || 'OR-READY')"></strong></span>
                   </span>
-                  <h2 class="font-display text-2xl font-black text-nitkkr-dark tracking-tight">Order Sent Successfully!</h2>
-                  <p class="text-xs sm:text-sm text-nitkkr-gray mt-1 max-w-md mx-auto leading-relaxed">
-                    Your order was sent directly to <strong class="text-nitkkr-dark" x-text="(placedOrder && placedOrder.vendorName) || vendorInfo.name || 'the kitchen'"></strong> for pickup at <strong class="text-nitkkr-dark" x-text="(placedOrder && placedOrder.location) || deliveryLocation || 'your selected location'"></strong>.
+                  <h2 class="font-display text-2xl font-black text-slate-900 tracking-tight">Order Sent Successfully!</h2>
+                  <p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-md mx-auto leading-relaxed">
+                    Your order was sent directly to <strong class="text-slate-900" x-text="(placedOrder && placedOrder.vendorName) || vendorInfo.name || 'the kitchen'"></strong> for pickup at <strong class="text-slate-900" x-text="(placedOrder && placedOrder.location) || deliveryLocation || 'your selected location'"></strong>.
                   </p>
                 </div>
               </div>
 
-              <!-- 📞 Reassuring Confirmation Call Notice -->
-              <div class="bg-bistro-50 rounded-2xl p-4 border border-bistro-200 text-left flex items-start gap-3 shadow-2xs">
-                <div class="w-9 h-9 rounded-xl bg-bistro-500 text-white flex items-center justify-center text-base flex-shrink-0 shadow-2xs">
+              <!-- 📞 Reassuring Confirmation Call Notice (Neutral Styling) -->
+              <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left flex items-start gap-3 shadow-2xs">
+                <div class="w-9 h-9 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center text-base flex-shrink-0">
                   📞
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-xs sm:text-sm font-extrabold text-nitkkr-dark">Confirmation Call Upcoming</p>
-                  <p class="text-xs text-bistro-800/90 mt-0.5 leading-relaxed">
-                    You will receive a quick confirmation call from the vendor on <span class="font-bold text-nitkkr-dark" x-text="'+91 ' + (((placedOrder && placedOrder.phone) || studentPhone) || 'your mobile')"></span> to confirm your order details and preparation.
+                  <p class="text-xs sm:text-sm font-extrabold text-slate-900">Confirmation Call Upcoming</p>
+                  <p class="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                    You will receive a quick confirmation call from the vendor on <span class="font-bold text-slate-900" x-text="'+91 ' + (((placedOrder && placedOrder.phone) || studentPhone) || 'your mobile')"></span> to confirm your order details and preparation.
                   </p>
                 </div>
               </div>
 
               <!-- 🧾 Itemized Order Receipt Card -->
-              <div class="bg-white rounded-3xl p-5 sm:p-6 border border-bistro-200/80 shadow-xs space-y-4">
-                <div class="flex items-center justify-between border-b border-bistro-100 pb-3">
+              <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div>
-                    <h3 class="text-sm sm:text-base font-black text-nitkkr-dark font-display flex items-center gap-1.5">
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 font-display flex items-center gap-1.5">
                       <span>🧾</span>
                       <span>Receipt Summary</span>
-                      <span class="text-[11px] font-black px-2 py-0.5 rounded-lg bg-bistro-100 text-bistro-800 border border-bistro-200" x-text="'#' + ((placedOrder && placedOrder.orderId) || '')"></span>
+                      <span class="text-[11px] font-black px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200" x-text="'#' + ((placedOrder && placedOrder.orderId) || '')"></span>
                     </h3>
-                    <p class="text-[11px] text-bistro-400 font-medium" x-text="'Sent at ' + ((placedOrder && placedOrder.timestamp) || 'Just now')"></p>
+                    <p class="text-[11px] text-slate-400 font-medium" x-text="'Sent at ' + ((placedOrder && placedOrder.timestamp) || 'Just now')"></p>
                   </div>
-                  <span class="text-xs font-black px-2.5 py-1 rounded-xl bg-bistro-100 text-bistro-800">
+                  <span class="text-xs font-black px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 border border-slate-200">
                     <span x-text="(((placedOrder && placedOrder.items) || cartItems).length) + ' items'"></span>
                   </span>
                 </div>
 
                 <!-- Customer & Delivery Metadata Row -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-2xl bg-bistro-50/70 border border-bistro-200/70 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs">
                   <div class="flex items-start gap-2">
                     <span class="text-sm">📍</span>
                     <div>
-                      <span class="text-[10px] text-bistro-400 font-bold uppercase tracking-wider block">Pickup Location</span>
-                      <span class="font-black text-nitkkr-dark text-xs sm:text-sm" x-text="(placedOrder && placedOrder.location) || deliveryLocation || 'Selected Location'"></span>
+                      <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Pickup Location</span>
+                      <span class="font-black text-slate-900 text-xs sm:text-sm" x-text="(placedOrder && placedOrder.location) || deliveryLocation || 'Selected Location'"></span>
                     </div>
                   </div>
                   <div class="flex items-start gap-2">
                     <span class="text-sm">📱</span>
                     <div>
-                      <span class="text-[10px] text-bistro-400 font-bold uppercase tracking-wider block">Contact Number</span>
-                      <span class="font-extrabold text-nitkkr-dark text-xs sm:text-sm" x-text="((placedOrder && placedOrder.name) || studentName ? (((placedOrder && placedOrder.name) || studentName) + ' • ') : '') + '+91 ' + (((placedOrder && placedOrder.phone) || studentPhone) || '—')"></span>
+                      <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Contact Number</span>
+                      <span class="font-extrabold text-slate-900 text-xs sm:text-sm" x-text="((placedOrder && placedOrder.name) || studentName ? (((placedOrder && placedOrder.name) || studentName) + ' • ') : '') + '+91 ' + (((placedOrder && placedOrder.phone) || studentPhone) || '—')"></span>
                     </div>
                   </div>
                 </div>
 
                 <!-- Special Instructions Note (If any) -->
                 <template x-if="(placedOrder && placedOrder.notes) || cookingNotes">
-                  <div class="p-3 bg-bistro-50 rounded-2xl border border-bistro-200/70 text-xs flex items-start gap-2">
+                  <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs flex items-start gap-2">
                     <span class="text-base flex-shrink-0">📝</span>
                     <div>
-                      <span class="text-[10px] text-bistro-800 font-bold uppercase tracking-wider block">Cooking / Handover Notes</span>
-                      <span class="text-nitkkr-dark font-medium italic" x-text="(placedOrder && placedOrder.notes) || cookingNotes"></span>
+                      <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Cooking / Handover Notes</span>
+                      <span class="text-slate-800 font-medium italic" x-text="(placedOrder && placedOrder.notes) || cookingNotes"></span>
                     </div>
                   </div>
                 </template>
 
                 <!-- Itemized Breakdown Table -->
-                <div class="divide-y divide-bistro-100 text-xs">
+                <div class="divide-y divide-slate-100 text-xs">
                   <template x-for="item in ((placedOrder && placedOrder.items) || cartItems)" :key="item.id">
                     <div class="py-2.5 flex items-center justify-between">
                       <div class="flex items-center gap-2">
-                        <span class="font-bold text-bistro-700" x-text="item.quantity + 'x'"></span>
-                        <span class="font-bold text-nitkkr-dark" x-text="item.name"></span>
+                        <span class="font-bold text-slate-500" x-text="item.quantity + 'x'"></span>
+                        <span class="font-bold text-slate-900" x-text="item.name"></span>
                       </div>
-                      <span class="font-extrabold text-nitkkr-dark" x-text="'₹' + (item.price * item.quantity)"></span>
+                      <span class="font-extrabold text-slate-900" x-text="'₹' + (item.price * item.quantity)"></span>
                     </div>
                   </template>
                 </div>
 
                 <!-- Grand Total Row -->
-                <div class="border-t border-bistro-200 pt-3 flex items-center justify-between text-sm sm:text-base font-black text-nitkkr-dark font-display">
+                <div class="border-t border-slate-200 pt-3 flex items-center justify-between text-sm sm:text-base font-black text-slate-900 font-display">
                   <span>Grand Total (Pay at Pickup)</span>
-                  <span class="text-bistro-600 text-lg" x-text="'₹' + ((placedOrder && placedOrder.totalPrice) || cartTotalPrice)"></span>
+                  <span class="text-slate-900 text-lg sm:text-xl font-black" x-text="'₹' + ((placedOrder && placedOrder.totalPrice) || cartTotalPrice)"></span>
                 </div>
               </div>
 
@@ -1042,7 +1037,7 @@ const {
                     :href="placedOrder.whatsappUrl"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="w-full sm:flex-1 py-3 px-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-98 text-white font-extrabold text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-500/20 text-center"
+                    class="w-full sm:flex-1 py-3 px-4 bg-[#25D366] hover:bg-[#20bd5a] active:scale-98 text-white font-extrabold text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-500/20 text-center"
                   >
                     <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
                       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.194 1.871.18.51-.013 1.745-.87 2.014-1.762.27-.9.07-1.653-.599-2.185C18.918 15.288 17.787 14.532 17.472 14.382z"/>
@@ -1054,7 +1049,7 @@ const {
                 <button
                   type="button"
                   @click="copyOrderSummary()"
-                  class="w-full sm:w-auto py-3 px-4 bg-white hover:bg-bistro-50 border border-bistro-200 active:scale-98 text-bistro-800 font-bold text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  class="w-full sm:w-auto py-3 px-4 bg-white hover:bg-slate-50 border border-slate-200 active:scale-98 text-slate-700 font-bold text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
                   <span x-text="copiedOrderSummary ? '✓ Copied!' : '📋 Copy Receipt'">📋 Copy Receipt</span>
                 </button>
@@ -1065,7 +1060,7 @@ const {
                 <button
                   type="button"
                   @click="clearCart(); closeCartScreen();"
-                  class="py-2.5 px-6 bg-bistro-100 hover:bg-bistro-200 border border-bistro-200 text-bistro-900 font-extrabold text-xs sm:text-sm rounded-2xl transition-all cursor-pointer text-center"
+                  class="py-2.5 px-6 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm rounded-2xl transition-all cursor-pointer text-center"
                 >
                   ← Order More / Back to Menu
                 </button>
@@ -1081,13 +1076,13 @@ const {
 
       <!-- Anchored Bottom Action Dock (Flex-shrink-0: Guarantees 100% visibility on all screen sizes & viewports) -->
       <template x-if="!orderPlaced && cartItems.length > 0">
-        <footer class="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-bistro-200/90 p-3 sm:p-4 shadow-[0_-8px_30px_rgba(232,125,46,0.08)] pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-30">
+        <footer class="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-3 sm:p-4 shadow-lg pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-30">
           <div class="max-w-2xl mx-auto">
             <div class="flex items-center justify-between gap-3 sm:gap-4">
               <!-- Total Price Display -->
               <div class="flex flex-col">
-                <span class="text-[10px] text-bistro-400 font-bold uppercase tracking-wider">Total to pay</span>
-                <span class="text-xl sm:text-2xl font-black text-nitkkr-dark tracking-tight font-display" x-text="'₹' + cartTotalPrice"></span>
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total to pay</span>
+                <span class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-display" x-text="'₹' + cartTotalPrice"></span>
               </div>
 
               <!-- Primary Send WhatsApp CTA Button -->
@@ -1096,8 +1091,8 @@ const {
                 @click="if (isPhoneValid) { sendWhatsAppOrder(); } else { document.getElementById('fullScreenPhoneInput')?.focus(); }"
                 :disabled="isDispatching"
                 :class="(isPhoneValid && !isDispatching)
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg shadow-emerald-500/25 cursor-pointer active:scale-98' 
-                  : 'bg-bistro-100 hover:bg-bistro-200/80 text-bistro-900 border border-bistro-300/80 cursor-pointer'"
+                  ? 'bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-lg shadow-emerald-500/20 cursor-pointer active:scale-98' 
+                  : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200 cursor-pointer'"
                 class="flex-1 max-w-md py-3.5 px-5 font-black text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-sm"
               >
                 <!-- Official Full WhatsApp Logo (Speech Bubble with Phone) -->
