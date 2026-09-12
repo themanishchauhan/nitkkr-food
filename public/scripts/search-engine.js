@@ -914,6 +914,21 @@
         this.displayLimit += 20;
       },
 
+      lockScroll: function (isLocked) {
+        if (typeof document === 'undefined') return;
+        if (isLocked) {
+          document.documentElement.style.overflow = 'hidden';
+          document.body.style.overflow = 'hidden';
+          document.documentElement.classList.add('overflow-hidden');
+          document.body.classList.add('overflow-hidden');
+        } else {
+          document.documentElement.style.overflow = '';
+          document.body.style.overflow = '';
+          document.documentElement.classList.remove('overflow-hidden');
+          document.body.classList.remove('overflow-hidden');
+        }
+      },
+
       init: function () {
         this.initCart();
         var self = this;
@@ -922,16 +937,19 @@
           window.addEventListener('popstate', function (e) {
             if (self.showCartScreen) {
               self.showCartScreen = false;
+              self.lockScroll(false);
             }
           });
           if (window.location.hash === '#cart') {
             this.showCartScreen = true;
+            this.lockScroll(true);
           }
         }
       },
 
       openCartScreen: function () {
         this.showCartScreen = true;
+        this.lockScroll(true);
         if (typeof window !== 'undefined') {
           if (window.location.hash !== '#cart') {
             window.history.pushState({ cart: true }, '', '#cart');
@@ -941,6 +959,7 @@
 
       closeCartScreen: function () {
         this.showCartScreen = false;
+        this.lockScroll(false);
         if (typeof window !== 'undefined' && window.location.hash === '#cart') {
           window.history.back();
         }

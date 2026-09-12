@@ -614,13 +614,14 @@ const {
     <div
       x-show="showCartScreen"
       x-cloak
+      x-effect="lockScroll(showCartScreen)"
       x-transition:enter="transition ease-out duration-250 transform"
       x-transition:enter-start="opacity-0 translate-y-4"
       x-transition:enter-end="opacity-100 translate-y-0"
       x-transition:leave="transition ease-in duration-200 transform"
       x-transition:leave-start="opacity-100 translate-y-0"
       x-transition:leave-end="opacity-0 translate-y-4"
-      class="fixed inset-0 z-[100] overflow-y-auto bg-slate-50 min-h-screen flex flex-col text-slate-900"
+      class="fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-slate-50 flex flex-col text-slate-900"
       @keydown.escape.window="closeCartScreen()"
     >
       <!-- Top Sticky Navigation Bar with Safe-Area Inset Support -->
