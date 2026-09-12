@@ -941,8 +941,16 @@
 
       get visibleCategories() {
         var self = this;
-        return this.categories.filter(function (cat) {
+        var active = this.categories.filter(function (cat) {
           return self.getCatCount(cat.slug) > 0;
+        });
+        return active.slice().sort(function (a, b) {
+          var countA = self.getCatCount(a.slug);
+          var countB = self.getCatCount(b.slug);
+          if (countB !== countA) {
+            return countB - countA; // Decreasing order: categories with more items first
+          }
+          return (a.displayOrder || 0) - (b.displayOrder || 0);
         });
       },
 

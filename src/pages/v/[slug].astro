@@ -24,9 +24,22 @@ const [menuItems, allCategories, vendorReviews, settings] = await Promise.all([
   getAllSiteSettings()
 ]);
 
-const categories = allCategories.filter((c: any) => 
-  menuItems.some((item: any) => item.categoryId === c.id || item.categorySlug === c.slug)
-);
+const categoryCounts = new Map<number | string, number>();
+for (const item of menuItems) {
+  if (item.categoryId) categoryCounts.set(item.categoryId, (categoryCounts.get(item.categoryId) || 0) + 1);
+  if (item.categorySlug) categoryCounts.set(item.categorySlug, (categoryCounts.get(item.categorySlug) || 0) + 1);
+}
+
+const categories = allCategories
+  .filter((c: any) => (categoryCounts.get(c.id) || categoryCounts.get(c.slug) || 0) > 0)
+  .sort((a: any, b: any) => {
+    const countA = categoryCounts.get(a.id) || categoryCounts.get(a.slug) || 0;
+    const countB = categoryCounts.get(b.id) || categoryCounts.get(b.slug) || 0;
+    if (countB !== countA) {
+      return countB - countA; // Decreasing order: show categories with more items first
+    }
+    return (a.displayOrder || 0) - (b.displayOrder || 0);
+  });
 const closedDays = (vendor as any).closedDays || ((vendor.slug === 'the-hangry-club' || vendor.slug === 'hangry-club') ? ['Tuesday'] : null);
 const timing = getVendorTimingStatus(vendor.opensAt, vendor.closesAt, undefined, closedDays);
 const isBackendActive = vendor.isActive !== undefined ? Boolean(vendor.isActive) : ((vendor as any).is_active !== undefined ? Boolean((vendor as any).is_active) : true);
