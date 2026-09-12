@@ -231,6 +231,11 @@ const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${googleM
         <CategoryTabs
           categories={categories}
           menuItems={menuItems}
+          vendorSlug={vendor.slug}
+          vendorName={vendor.name}
+          vendorPhone={vendor.phone || ''}
+          vendorWhatsApp={vendor.whatsapp || ''}
+          isVendorOpen={isVendorOpen}
           vendorTelLink={vendorTelLink}
           vendorDisplayPhone={vendorDisplayPhone}
           vendorWhatsAppLink={vendorWhatsAppLink}

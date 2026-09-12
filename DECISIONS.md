@@ -17,6 +17,8 @@
 8. [Client-Side In-Memory Search Engine (<3ms Latency)](#8-client-side-in-memory-search-engine-3ms-latency)
 9. [Fair Multi-Vendor Feed Rotation (Anti-Bias Algorithm)](#9-fair-multi-vendor-feed-rotation-anti-bias-algorithm)
 10. [Future Evolution & Decision Health Matrix](#10-future-evolution--decision-health-matrix)
+11. [Database Isolation (`orandus-dev`) & On-Demand Production Sync](#11-database-isolation-orandus-dev--on-demand-production-sync)
+12. [Single-Vendor WhatsApp Cart & 3-Point Campus Pickup Recovery](#12-single-vendor-whatsapp-cart--3-point-campus-pickup-recovery)
 
 ---
 
@@ -244,12 +246,14 @@ If stall items are sorted alphabetically or by vendor ID, the first stall (e.g. 
 | Decision Area | Current Approach | Stability | Next Review Milestone |
 |---|---|---|---|
 | **Platform** | Cloudflare Workers + D1 SQLite | 🟢 High | Multi-city expansion (Narnaul) |
-| **Ordering** | Direct Call Discovery | 🟢 High | Fleet partner onboarding |
+| **Ordering** | Vendor-Only WhatsApp Cart + Call Confirmation | 🟢 High | Multi-vendor fleet phase |
+| **Locations** | 3-Point Handover (Back Gate, Front Gate, GH) | 🟢 High | Permanent campus standard |
 | **Search** | In-Memory Token Indexing (<3ms) | 🟢 High | >2,000 menu items catalog size |
 | **Diet Badges** | FSSAI Colorblind-Safe Shapes | 🟢 High | Permanent standard |
 | **Pagination** | Explicit `Load More` Button | 🟢 High | Permanent standard |
 | **Branding** | `Stop Asking “Bhai, Menu Bhej.”` | 🟢 High | Campus student consensus |
 | **Database Env** | Isolated `orandus-dev` D1 with 1-Command Sync | 🟢 High | Permanent architecture |
+| **Cart Recovery** | LocalStorage Pending Island | 🟢 High | Cross-session order retention |
 
 ---
 
@@ -276,3 +280,54 @@ Sharing a single database between production (`orandus`) and development (`orand
 
 ### Is There Any Better Way?
 - The current automated Wrangler export/import script is the cleanest, zero-cost, and fastest approach on Cloudflare D1. For future multi-developer branches, Cloudflare D1 Time Travel branch snapshots can be invoked per ephemeral PR environment.
+
+---
+
+## 12. Single-Vendor WhatsApp Cart & 3-Point Campus Pickup Recovery
+
+### Context & Problem
+Decision 2 originally disabled global multi-vendor carts because stall bhaiyas do not monitor complex vendor dashboards, and mixing items from multiple stalls across campus creates delivery chaos. However, students ordering from high-volume stalls like **Food Point** struggle to communicate multi-item orders accurately over a noisy phone call (e.g. "2 Paneer Butter Masala, 4 Butter Tandoori Roti, 1 Jeera Rice"). 
+
+Additionally, campus delivery at NIT Kurukshetra does not occur to arbitrary room doors; security regulations restrict external delivery handovers strictly to **three specific boundary gates and hostel points**:
+1. **Back Gate** (Gate 2 / Kirmach Road)
+2. **Front Gate** (Main Gate 1)
+3. **Girls Hostel** (Kalpana Chawla / GH)
+
+Students also frequently get interrupted or browse multiple dishes before ordering; if cart state vanishes upon closing a dialog or navigating, order intent is lost.
+
+### Decision Made
+1. **Single-Vendor Scoped Cart**:
+   - The cart is strictly isolated to the active vendor (piloted on Food Point). Items cannot be mixed across vendors.
+   - Attempting to add an item from a different vendor prompts the student to start a fresh order or keep their existing cart.
+2. **Persistent "Cart Pending" Island**:
+   - As long as items exist in the cart, a floating **Cart Pending** bar remains anchored above the bottom dock showing total items and cost (e.g. `🛒 3 items • ₹510`).
+   - If the student closes the dish modal, scrolls the menu, or reloads the tab, their selections are preserved via `localStorage` (`orandus_vendor_cart`).
+3. **Restricted 3-Point Delivery Selection**:
+   - The checkout sheet replaces manual address text fields with **3 large segmented tap targets**:
+     - 🚪 `Back Gate`
+     - 🏛️ `Front Gate`
+     - 🏢 `Girls Hostel`
+   - Zero typing required; tap-to-select with high contrast, colorblind-safe visual active states, and 48px touch targets.
+4. **Student Contact Credentials Auto-Fill**:
+   - Requires a 10-digit Indian mobile number (`+91`) with inline validation.
+   - Saves both phone number and student name in `localStorage` so repeat orders require zero re-entry.
+5. **Pre-Formatted WhatsApp Ticket & Immediate Call-to-Confirm Bridge**:
+   - Generates a clean, readable WhatsApp markdown ticket sent directly to the vendor's WhatsApp (e.g. Food Point: `9504316289`):
+     - Delivery Location (Back Gate / Front Gate / Girls Hostel)
+     - Student Name & 10-digit Phone
+     - Line items with quantities & prices
+     - Grand total & payment note (Cash / UPI upon delivery)
+   - Upon dispatch, transitions to a success screen with a prominent **`📞 Call Bhaiya Now`** button (`tel:+91...`) prompting a 10-second verbal confirmation so busy cooks never miss the incoming WhatsApp notification.
+
+### Looped Thinking: What Does This Lead To?
+- **Positive Outcomes**:
+  - **Zero Order Errors**: Acoustic misunderstandings over loud kitchen exhausts are eliminated because the order arrives in structured text.
+  - **Zero Commission & Zero Merchant Hardware**: Vendors require no POS terminal, tablet, or app installation—just their existing WhatsApp.
+  - **High Campus Conversion**: Restricting delivery points to the 3 real campus handovers makes checkout take under 10 seconds.
+  - **Cart Recovery**: Students never lose their pending cart when browsing.
+- **Risks & Second-Order Effects**:
+  - If a bhaiya does not have mobile data turned on, WhatsApp messages might sit unread. (Mitigated directly by the post-dispatch "📞 Call Bhaiya Now to Confirm" prompt).
+
+### Is There Any Better Way?
+- For future scale, an automated Cloudflare Worker webhook could ingest vendor order logs or dispatch SMS alerts if WhatsApp read receipts are not acknowledged within 3 minutes. For campus phase 1, direct WhatsApp + instant telephone call provides the highest reliability at zero operating cost.
+

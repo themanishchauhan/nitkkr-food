@@ -892,12 +892,210 @@
       showDetailModal: false,
       displayLimit: 20,
 
+      // Single-Vendor WhatsApp Cart State
+      vendorInfo: {
+        slug: config.vendorSlug || '',
+        name: config.vendorName || '',
+        phone: config.vendorPhone || '',
+        whatsapp: config.vendorWhatsApp || ''
+      },
+      cartItems: [],
+      showCartModal: false,
+      orderPlaced: false,
+      deliveryLocation: 'Back Gate', // Back Gate, Front Gate, Girls Hostel
+      studentName: '',
+      studentPhone: '',
+      phoneError: '',
+
       loadMore: function () {
         this.displayLimit += 20;
       },
 
       init: function () {
-        // Ready
+        this.initCart();
+      },
+
+      initCart: function () {
+        try {
+          var savedPhone = localStorage.getItem('orandus_student_phone');
+          if (savedPhone) this.studentPhone = savedPhone;
+          var savedName = localStorage.getItem('orandus_student_name');
+          if (savedName) this.studentName = savedName;
+          var savedLoc = localStorage.getItem('orandus_delivery_loc');
+          if (savedLoc && ['Back Gate', 'Front Gate', 'Girls Hostel'].indexOf(savedLoc) !== -1) {
+            this.deliveryLocation = savedLoc;
+          }
+
+          var raw = localStorage.getItem('orandus_vendor_cart');
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && parsed.vendorSlug === this.vendorInfo.slug && Array.isArray(parsed.items)) {
+              this.cartItems = parsed.items;
+            }
+          }
+        } catch (e) {}
+      },
+
+      saveCart: function () {
+        try {
+          if (this.cartItems.length === 0) {
+            localStorage.removeItem('orandus_vendor_cart');
+          } else {
+            localStorage.setItem('orandus_vendor_cart', JSON.stringify({
+              vendorSlug: this.vendorInfo.slug,
+              vendorName: this.vendorInfo.name,
+              vendorPhone: this.vendorInfo.phone,
+              vendorWhatsApp: this.vendorInfo.whatsapp,
+              items: this.cartItems,
+              updatedAt: Date.now()
+            }));
+          }
+        } catch (e) {}
+      },
+
+      getItemCartQuantity: function (itemId) {
+        if (!itemId || !this.cartItems || this.cartItems.length === 0) return 0;
+        var found = this.cartItems.find(function (it) { return it.id === itemId; });
+        return found ? found.quantity : 0;
+      },
+
+      addToCart: function (item) {
+        if (!item) return;
+        try {
+          var raw = localStorage.getItem('orandus_vendor_cart');
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && parsed.vendorSlug && parsed.vendorSlug !== this.vendorInfo.slug && parsed.items && parsed.items.length > 0) {
+              var proceed = confirm(
+                'Your cart contains items from ' + (parsed.vendorName || 'another stall') + 
+                '. Clear it and start an order from ' + (this.vendorInfo.name || 'this stall') + '?'
+              );
+              if (!proceed) return;
+              this.cartItems = [];
+              localStorage.removeItem('orandus_vendor_cart');
+            }
+          }
+        } catch (e) {}
+
+        var existing = this.cartItems.find(function (it) { return it.id === item.id; });
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          this.cartItems.push({
+            id: item.id,
+            name: item.name,
+            price: Number(item.price) || 0,
+            quantity: 1,
+            diet: this.getItemDiet(item)
+          });
+        }
+        this.orderPlaced = false;
+        this.saveCart();
+      },
+
+      decrementCartItem: function (itemId) {
+        var idx = this.cartItems.findIndex(function (it) { return it.id === itemId; });
+        if (idx !== -1) {
+          if (this.cartItems[idx].quantity > 1) {
+            this.cartItems[idx].quantity -= 1;
+          } else {
+            this.cartItems.splice(idx, 1);
+          }
+          this.saveCart();
+        }
+      },
+
+      removeCartItem: function (itemId) {
+        this.cartItems = this.cartItems.filter(function (it) { return it.id !== itemId; });
+        this.saveCart();
+      },
+
+      clearCart: function () {
+        this.cartItems = [];
+        this.orderPlaced = false;
+        this.saveCart();
+      },
+
+      setDeliveryLocation: function (loc) {
+        if (['Back Gate', 'Front Gate', 'Girls Hostel'].indexOf(loc) !== -1) {
+          this.deliveryLocation = loc;
+          try {
+            localStorage.setItem('orandus_delivery_loc', loc);
+          } catch (e) {}
+        }
+      },
+
+      get cartTotalCount() {
+        var sum = 0;
+        for (var i = 0; i < this.cartItems.length; i++) {
+          sum += this.cartItems[i].quantity;
+        }
+        return sum;
+      },
+
+      get cartTotalPrice() {
+        var sum = 0;
+        for (var i = 0; i < this.cartItems.length; i++) {
+          sum += this.cartItems[i].price * this.cartItems[i].quantity;
+        }
+        return sum;
+      },
+
+      get isPhoneValid() {
+        var clean = (this.studentPhone || '').replace(/\D/g, '');
+        return clean.length === 10 && /^[6-9]/.test(clean);
+      },
+
+      sendWhatsAppOrder: function () {
+        var cleanPhone = (this.studentPhone || '').replace(/\D/g, '');
+        if (cleanPhone.length !== 10 || !/^[6-9]/.test(cleanPhone)) {
+          this.phoneError = 'Please enter a valid 10-digit mobile number';
+          return;
+        }
+        this.phoneError = '';
+
+        try {
+          localStorage.setItem('orandus_student_phone', cleanPhone);
+          if (this.studentName) {
+            localStorage.setItem('orandus_student_name', this.studentName.trim());
+          }
+        } catch (e) {}
+
+        var whatsappNum = (this.vendorInfo.whatsapp || '').replace(/\D/g, '');
+        if (!whatsappNum) {
+          whatsappNum = (this.vendorInfo.phone || '').replace(/\D/g, '');
+        }
+        if (whatsappNum.length === 10) {
+          whatsappNum = '91' + whatsappNum;
+        }
+
+        var lines = [];
+        lines.push('*New Order via Orandus* 🍽️');
+        lines.push('-------------------------');
+        lines.push('📍 *Delivery Location:* ' + this.deliveryLocation);
+        if (this.studentName && this.studentName.trim()) {
+          lines.push('👤 *Student:* ' + this.studentName.trim() + ' (' + cleanPhone + ')');
+        } else {
+          lines.push('📱 *Phone:* ' + cleanPhone);
+        }
+        lines.push('🏪 *Vendor:* ' + (this.vendorInfo.name || 'Food Point'));
+        lines.push('');
+        lines.push('*Items Ordered:*');
+        for (var i = 0; i < this.cartItems.length; i++) {
+          var it = this.cartItems[i];
+          lines.push('• ' + it.quantity + 'x ' + it.name + ' - ₹' + (it.price * it.quantity));
+        }
+        lines.push('');
+        lines.push('*Total Amount:* ₹' + this.cartTotalPrice);
+        lines.push('💵 *Payment:* UPI / Cash upon pickup at ' + this.deliveryLocation);
+        lines.push('-------------------------');
+        lines.push('_Sent from Orandus Campus Food_');
+
+        var text = encodeURIComponent(lines.join('\n'));
+        var waUrl = 'https://wa.me/' + whatsappNum + '?text=' + text;
+
+        window.open(waUrl, '_blank');
+        this.orderPlaced = true;
       },
 
       get totalCount() {
