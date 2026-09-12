@@ -641,13 +641,9 @@ const {
             <span>Back to Menu</span>
           </button>
 
-          <!-- Center Vendor Header -->
+          <!-- Center Vendor Header (Clean, no taglines) -->
           <div class="text-center min-w-0 flex-1 px-2">
             <h1 class="text-sm sm:text-base font-black text-slate-900 leading-tight truncate" x-text="vendorInfo.name || 'Vendor'"></h1>
-            <p class="text-[11px] font-semibold text-emerald-600 flex items-center justify-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span x-text="orderPlaced ? 'Ticket Sent via WhatsApp' : 'Direct Campus Ordering'"></span>
-            </p>
           </div>
 
           <!-- Right Action: Clear Cart or Status Badge -->
@@ -678,89 +674,69 @@ const {
           <template x-if="!orderPlaced">
             <div class="space-y-4">
               
-              <!-- 1. 📍 Campus Delivery Location Card (Quick Chips + Manual Input) -->
+              <!-- 1. Delivery Location Card (Clean Asterisk & 3 Specific Campus Chips) -->
               <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-xs space-y-3">
-                <div>
-                  <div class="flex items-center justify-between gap-2">
-                    <h2 class="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
-                      <span class="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-sm">📍</span>
-                      <span>Delivery Location</span>
-                    </h2>
-                    <span class="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
-                      Required
-                    </span>
-                  </div>
-                  <p class="text-xs text-slate-500 mt-1">Tap a quick campus gate, or type your specific hostel / room below:</p>
+                <div class="flex items-center justify-between">
+                  <h2 class="text-sm sm:text-base font-black text-slate-900">
+                    <span>Location</span> <span class="text-rose-500 font-bold">*</span>
+                  </h2>
                 </div>
 
-                <!-- Dynamic Easy-Touch Quick Location Chips -->
+                <!-- 3 Specific Simple Campus Chips -->
                 <div class="flex flex-wrap gap-2">
-                  <template x-for="loc in presetLocations" :key="loc">
+                  <template x-for="loc in ['Back Gate', 'Front Gate', 'Girls Hostel']" :key="loc">
                     <button
                       type="button"
                       @click="setDeliveryLocation(loc)"
                       :class="deliveryLocation.trim().toLowerCase() === loc.trim().toLowerCase() 
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs font-black ring-2 ring-slate-900/20' 
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs font-black' 
                         : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 font-bold'"
-                      class="px-3.5 py-2 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center text-xs active:scale-95 shadow-2xs"
+                      class="px-3.5 py-2 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center text-xs active:scale-95"
                     >
                       <span class="leading-tight font-extrabold" x-text="loc"></span>
                     </button>
                   </template>
                 </div>
 
-                <!-- Manual Location Input with Clear Button -->
-                <div class="pt-1">
-                  <label for="manualLocationInput" class="block text-[11px] font-bold text-slate-600 mb-1">
-                    Custom Address / Room / Landmark Details:
-                  </label>
-                  <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <input
-                      id="manualLocationInput"
-                      type="text"
-                      x-model="deliveryLocation"
-                      placeholder="e.g. Back Gate, Hostel 7 Room 214, Library Lawn..."
-                      class="w-full pl-10 pr-9 py-2.5 sm:py-3 text-xs sm:text-sm bg-slate-50 hover:bg-slate-50/80 focus:bg-white border border-slate-200 rounded-2xl font-semibold text-slate-900 focus:outline-hidden focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 transition-all shadow-2xs"
-                    />
-                    <button
-                      type="button"
-                      x-show="deliveryLocation"
-                      @click="deliveryLocation = ''"
-                      class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer text-sm font-bold"
-                      aria-label="Clear location"
-                    >
-                      ✕
-                    </button>
-                  </div>
+                <!-- Simple Clean Location Input -->
+                <div class="relative">
+                  <input
+                    id="manualLocationInput"
+                    type="text"
+                    x-model="deliveryLocation"
+                    placeholder="Or type specific room / hostel / landmark..."
+                    class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-slate-50 hover:bg-slate-50/80 focus:bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-hidden focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 transition-all"
+                  />
+                  <button
+                    type="button"
+                    x-show="deliveryLocation"
+                    @click="deliveryLocation = ''"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer text-sm font-bold"
+                    aria-label="Clear location"
+                  >
+                    ✕
+                  </button>
                 </div>
               </section>
 
-              <!-- 2. 🍱 Order Items Card (Zomato/Swiggy Stepper Layout) -->
+              <!-- 2. Order Items Card -->
               <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-xs space-y-3">
                 <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                  <h2 class="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
-                    <span class="w-7 h-7 rounded-xl bg-orange-500/10 text-orange-600 flex items-center justify-center text-sm">🍽️</span>
-                    <span>Items Ordered</span>
-                    <span class="text-xs font-bold text-slate-400" x-text="'(' + cartTotalCount + ')'"></span>
+                  <h2 class="text-sm sm:text-base font-black text-slate-900">
+                    <span>Items</span>
+                    <span class="text-xs font-bold text-slate-400 ml-0.5" x-text="'(' + cartTotalCount + ')'"></span>
                   </h2>
                   <button
                     type="button"
                     @click="closeCartScreen()"
                     class="text-xs text-emerald-700 hover:text-emerald-800 font-extrabold flex items-center gap-1 cursor-pointer bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200/60"
                   >
-                    <span>+ Add more items</span>
+                    <span>+ Add items</span>
                   </button>
                 </div>
 
                 <template x-if="cartItems.length === 0">
                   <div class="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                    <p class="text-3xl mb-1">🍱</p>
                     <p class="text-xs font-bold text-slate-600">Your cart is empty</p>
                     <button
                       type="button"
@@ -803,7 +779,7 @@ const {
 
                         <div class="min-w-0">
                           <p class="font-extrabold text-xs sm:text-sm text-slate-900 truncate" x-text="it.name"></p>
-                          <p class="text-[11px] text-slate-400 font-medium" x-text="'₹' + it.price + ' per dish'"></p>
+                          <p class="text-[11px] text-slate-400 font-medium" x-text="'₹' + it.price + ' each'"></p>
                         </div>
                       </div>
 
@@ -835,89 +811,41 @@ const {
                 </div>
               </section>
 
-              <!-- 3. 📝 Cooking & Delivery Notes Card -->
+              <!-- 3. Cooking & Special Requests (Sweet & Simple Request Box) -->
               <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-xs space-y-2.5">
-                <h2 class="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-2">
-                  <span class="w-7 h-7 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-sm">📝</span>
-                  <span>Cooking Instructions (Optional)</span>
+                <h2 class="text-xs sm:text-sm font-black text-slate-900">
+                  <span>Special Requests?</span>
+                  <span class="text-[11px] font-normal text-slate-400 ml-1">(Optional)</span>
                 </h2>
-
-                <!-- Quick Chips for common notes -->
-                <div class="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
-                    @click="addQuickNote('Make it spicy 🌶️')"
-                    class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 text-[11px] font-bold transition-colors cursor-pointer"
-                  >
-                    🌶️ Make it spicy
-                  </button>
-                  <button
-                    type="button"
-                    @click="addQuickNote('Extra onions 🧅')"
-                    class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 text-[11px] font-bold transition-colors cursor-pointer"
-                  >
-                    🧅 Extra onions
-                  </button>
-                  <button
-                    type="button"
-                    @click="addQuickNote('Less oil 🥢')"
-                    class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 text-[11px] font-bold transition-colors cursor-pointer"
-                  >
-                    🥢 Less oil
-                  </button>
-                  <button
-                    type="button"
-                    @click="addQuickNote('Pack separately 🥡')"
-                    class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 text-[11px] font-bold transition-colors cursor-pointer"
-                  >
-                    🥡 Pack separately
-                  </button>
-                </div>
 
                 <input
                   type="text"
                   x-model="cookingNotes"
-                  placeholder="e.g. Please send extra tissue, extra mint chutney, keep spoons..."
+                  placeholder="e.g. Extra napkins, less spicy, pack separately..."
                   class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:bg-white focus:outline-hidden focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 shadow-2xs transition-all"
                 />
               </section>
 
-              <!-- 4. 📱 Student Contact Credentials Card -->
+              <!-- 4. Contact Credentials Card (Clean, Minimal with Asterisk) -->
               <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-xs space-y-3">
-                <div>
-                  <div class="flex items-center justify-between gap-2">
-                    <h2 class="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
-                      <span class="w-7 h-7 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center text-sm">📱</span>
-                      <span>Contact Information</span>
-                    </h2>
-                    <span
-                      x-show="isPhoneValid"
-                      x-cloak
-                      class="text-emerald-700 font-extrabold text-[11px] flex items-center gap-1 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-2xs"
-                    >
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                      <span>✓ Valid Mobile</span>
-                    </span>
-                    <span
-                      x-show="!isPhoneValid && studentPhone.length > 0"
-                      x-cloak
-                      class="text-amber-700 font-extrabold text-[11px] flex items-center gap-1 bg-amber-50 px-2.5 py-0.5 rounded-full border border-emerald-200"
-                    >
-                      <span>10 digits required</span>
-                    </span>
-                  </div>
-                  <p class="text-xs text-slate-500 mt-1">Vendor will message or call this number upon order arrival:</p>
+                <div class="flex items-center justify-between gap-2">
+                  <h2 class="text-sm sm:text-base font-black text-slate-900">
+                    <span>Phone Number</span> <span class="text-rose-500 font-bold">*</span>
+                  </h2>
+                  <span
+                    x-show="isPhoneValid"
+                    x-cloak
+                    class="text-emerald-700 font-extrabold text-[11px] flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200"
+                  >
+                    <span>✓ Valid</span>
+                  </span>
                 </div>
 
                 <!-- Mobile Phone Input with +91 Prefix -->
                 <div>
-                  <label for="fullScreenPhoneInput" class="block text-[11px] font-bold text-slate-600 mb-1">
-                    WhatsApp / Mobile Number (Required):
-                  </label>
-                  <div class="flex rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 focus-within:bg-white focus-within:border-emerald-600 focus-within:ring-2 focus-within:ring-emerald-600/20 shadow-2xs transition-all">
-                    <span class="bg-slate-100 px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-slate-700 border-r border-slate-200 flex items-center gap-1">
-                      <span>🇮🇳</span>
-                      <span>+91</span>
+                  <div class="flex rounded-xl border border-slate-200 overflow-hidden bg-slate-50 focus-within:bg-white focus-within:border-emerald-600 focus-within:ring-2 focus-within:ring-emerald-600/20 shadow-2xs transition-all">
+                    <span class="bg-slate-100 px-3 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-slate-700 border-r border-slate-200 flex items-center">
+                      +91
                     </span>
                     <input
                       id="fullScreenPhoneInput"
@@ -926,7 +854,7 @@ const {
                       maxlength="10"
                       x-model="studentPhone"
                       @input="phoneError = ''"
-                      placeholder="Enter 10-digit mobile number"
+                      placeholder="10-digit mobile number"
                       class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-900 outline-hidden bg-transparent"
                     />
                   </div>
@@ -935,17 +863,14 @@ const {
                   </template>
                 </div>
 
-                <!-- Student Name (Optional) -->
+                <!-- Optional Name Input -->
                 <div>
-                  <label for="fullScreenNameInput" class="block text-[11px] font-bold text-slate-600 mb-1">
-                    Your Name (Optional):
-                  </label>
                   <input
                     id="fullScreenNameInput"
                     type="text"
                     x-model="studentName"
-                    placeholder="e.g. Rahul, Priya, Amit"
-                    class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-slate-50 focus:bg-white rounded-2xl border border-slate-200 outline-hidden font-semibold text-slate-900 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 shadow-2xs transition-all"
+                    placeholder="Your name (optional)"
+                    class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-slate-50 focus:bg-white rounded-xl border border-slate-200 outline-hidden font-semibold text-slate-900 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 shadow-2xs transition-all"
                   />
                 </div>
               </section>
@@ -1176,11 +1101,6 @@ const {
                 </span>
               </button>
             </div>
-
-            <!-- Helpful Guidance Notice -->
-            <p class="text-[11px] text-center text-slate-400 mt-2 font-medium" x-show="!isPhoneValid">
-              👉 Please fill in your 10-digit mobile number above to send order ticket
-            </p>
           </div>
         </footer>
       </template>
