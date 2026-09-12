@@ -897,7 +897,8 @@
         slug: config.vendorSlug || '',
         name: config.vendorName || '',
         phone: config.vendorPhone || '',
-        whatsapp: config.vendorWhatsApp || ''
+        whatsapp: config.vendorWhatsApp || '',
+        isVendorOpen: config.isVendorOpen !== false
       },
       presetLocations: (Array.isArray(config.deliversTo) && config.deliversTo.length > 0)
         ? config.deliversTo
@@ -1059,6 +1060,10 @@
 
       addToCart: function (item) {
         if (!item) return;
+        if (this.vendorInfo && this.vendorInfo.isVendorOpen === false) {
+          alert((this.vendorInfo.name || 'This stall') + ' is currently closed and not taking orders right now.');
+          return;
+        }
         try {
           var raw = localStorage.getItem('orandus_vendor_cart');
           if (raw) {
@@ -1219,6 +1224,10 @@
 
       sendWhatsAppOrder: function () {
         if (this.isDispatching) return;
+        if (this.vendorInfo && this.vendorInfo.isVendorOpen === false) {
+          this.phoneError = 'This stall is currently closed and cannot accept orders right now.';
+          return;
+        }
 
         var cleanPhone = (this.studentPhone || '').replace(/\D/g, '');
         if (!this.isPhoneValid) {
