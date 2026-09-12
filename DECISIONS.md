@@ -318,12 +318,13 @@ Students also frequently get interrupted or browse multiple dishes before orderi
    - Requires a 10-digit Indian mobile number (`+91`) with inline validation.
    - Saves both phone number and student name in `localStorage` so repeat orders require zero re-entry.
 6. **Pre-Formatted WhatsApp Ticket & Immediate Call-to-Confirm Bridge**:
-   - Generates a clean, readable WhatsApp markdown ticket sent directly to the vendor's WhatsApp (e.g. Food Point: `9504316289`):
-     - Delivery Location (Quick Gate or Custom Manual Spot)
-     - Optional Cooking / Delivery Notes
-     - Student Name & 10-digit Phone
-     - Line items with quantities & prices
-     - Grand total & payment note (Cash / UPI upon delivery)
+   - Generates an ultra-clean, 3-second readable WhatsApp markdown ticket sent directly to the vendor's WhatsApp:
+     - Line 1: `👤 Name • +91[Phone]` (with `+91` so dialer click works instantly)
+     - Line 2: `📍 *Location:* [Location]`
+     - Line 3: `📝 *Instructions:* [Notes]` (if any)
+     - Line 4: Itemized menu list (`• 1x [Dish] — ₹[Price]`)
+     - Line 5: `*Total:* ₹[Price] (Cash / UPI)`
+     - Line 6: `_Sent via Orandus_`
    - Upon dispatch, transitions to a success screen with a prominent **`📞 Call Bhaiya Now`** button (`tel:+91...`) prompting a 10-second verbal confirmation so busy cooks never miss the incoming WhatsApp notification.
 
 ### Looped Thinking: What Does This Lead To?

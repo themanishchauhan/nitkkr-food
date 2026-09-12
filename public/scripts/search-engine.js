@@ -1108,29 +1108,25 @@
         }
 
         var lines = [];
-        lines.push('🧾 *ORANDUS ORDER TICKET*');
-        lines.push('━━━━━━━━━━━━━━━━━━━━');
-        lines.push('🏪 *Vendor:* ' + (this.vendorInfo.name || 'Campus Stall'));
-        lines.push('📍 *Deliver To:* ' + finalLoc);
+        lines.push('*New Order* 🍽️');
         if (this.studentName && this.studentName.trim()) {
-          lines.push('👤 *Student:* ' + this.studentName.trim());
+          lines.push('👤 ' + this.studentName.trim() + ' • +91' + cleanPhone);
+        } else {
+          lines.push('📱 +91' + cleanPhone);
         }
-        lines.push('📞 *Phone:* +91' + cleanPhone);
-        lines.push('💬 *Chat:* https://wa.me/91' + cleanPhone);
+        lines.push('📍 *Location:* ' + finalLoc);
         if (this.cookingNotes && this.cookingNotes.trim()) {
           lines.push('📝 *Instructions:* ' + this.cookingNotes.trim());
         }
-        lines.push('━━━━━━━━━━━━━━━━━━━━');
-        lines.push('📋 *ITEMS ORDERED (' + this.cartTotalCount + ' items):*');
+        lines.push('');
+        lines.push('*Items:*');
         for (var i = 0; i < this.cartItems.length; i++) {
           var it = this.cartItems[i];
-          lines.push('• ' + it.quantity + ' × ' + it.name + ' — ₹' + (it.price * it.quantity));
+          lines.push('• ' + it.quantity + 'x ' + it.name + ' — ₹' + (it.price * it.quantity));
         }
-        lines.push('━━━━━━━━━━━━━━━━━━━━');
-        lines.push('💰 *TOTAL BILL: ₹' + this.cartTotalPrice + '*');
-        lines.push('💵 *Payment:* Cash / UPI on Handover at ' + finalLoc);
-        lines.push('━━━━━━━━━━━━━━━━━━━━');
-        lines.push('⚡ _Sent via Orandus • NIT Kurukshetra_');
+        lines.push('');
+        lines.push('*Total:* ₹' + this.cartTotalPrice + ' (Cash / UPI)');
+        lines.push('_Sent via Orandus_');
 
         var text = encodeURIComponent(lines.join('\n'));
         var waUrl = 'https://wa.me/' + whatsappNum + '?text=' + text;
