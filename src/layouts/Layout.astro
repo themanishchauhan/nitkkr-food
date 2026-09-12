@@ -84,6 +84,15 @@ const cfAnalyticsToken = siteSettingsObj.cloudflare_analytics_token || (import.m
     <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={`{"token": "${cfAnalyticsToken}"}`}></script>
   )}
 
+  <!-- 📈 Google Analytics (GA4) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-H762FJ91V7"></script>
+  <script is:inline>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-H762FJ91V7');
+  </script>
+
   <!-- 📲 Early PWA Lifecycle & Standalone Detection -->
   <script is:inline>
     (function() {
