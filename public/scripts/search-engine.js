@@ -892,7 +892,7 @@
       showDetailModal: false,
       displayLimit: 20,
 
-      // Single-Vendor WhatsApp Cart State
+      // Single-Vendor WhatsApp Cart State (Full-Screen Checkout)
       vendorInfo: {
         slug: config.vendorSlug || '',
         name: config.vendorName || '',
@@ -900,9 +900,10 @@
         whatsapp: config.vendorWhatsApp || ''
       },
       cartItems: [],
-      showCartModal: false,
+      showCartScreen: false,
       orderPlaced: false,
-      deliveryLocation: 'Back Gate', // Back Gate, Front Gate, Girls Hostel
+      deliveryLocation: 'Back Gate', // Quick chips: 'Back Gate', 'Front Gate', 'Girls Hostel', or custom manual input
+      cookingNotes: '',
       studentName: '',
       studentPhone: '',
       phoneError: '',
@@ -913,6 +914,34 @@
 
       init: function () {
         this.initCart();
+        var self = this;
+        // Listen for browser back button to smoothly close cart screen
+        if (typeof window !== 'undefined') {
+          window.addEventListener('popstate', function (e) {
+            if (self.showCartScreen) {
+              self.showCartScreen = false;
+            }
+          });
+          if (window.location.hash === '#cart') {
+            this.showCartScreen = true;
+          }
+        }
+      },
+
+      openCartScreen: function () {
+        this.showCartScreen = true;
+        if (typeof window !== 'undefined') {
+          if (window.location.hash !== '#cart') {
+            window.history.pushState({ cart: true }, '', '#cart');
+          }
+        }
+      },
+
+      closeCartScreen: function () {
+        this.showCartScreen = false;
+        if (typeof window !== 'undefined' && window.location.hash === '#cart') {
+          window.history.back();
+        }
       },
 
       initCart: function () {
@@ -922,7 +951,7 @@
           var savedName = localStorage.getItem('orandus_student_name');
           if (savedName) this.studentName = savedName;
           var savedLoc = localStorage.getItem('orandus_delivery_loc');
-          if (savedLoc && ['Back Gate', 'Front Gate', 'Girls Hostel'].indexOf(savedLoc) !== -1) {
+          if (savedLoc) {
             this.deliveryLocation = savedLoc;
           }
 
@@ -1017,11 +1046,17 @@
       },
 
       setDeliveryLocation: function (loc) {
-        if (['Back Gate', 'Front Gate', 'Girls Hostel'].indexOf(loc) !== -1) {
-          this.deliveryLocation = loc;
-          try {
-            localStorage.setItem('orandus_delivery_loc', loc);
-          } catch (e) {}
+        this.deliveryLocation = loc;
+        try {
+          localStorage.setItem('orandus_delivery_loc', loc);
+        } catch (e) {}
+      },
+
+      addQuickNote: function (noteText) {
+        if (!this.cookingNotes) {
+          this.cookingNotes = noteText;
+        } else if (this.cookingNotes.indexOf(noteText) === -1) {
+          this.cookingNotes += ', ' + noteText;
         }
       },
 
@@ -1054,11 +1089,14 @@
         }
         this.phoneError = '';
 
+        var finalLoc = (this.deliveryLocation || '').trim() || 'Back Gate';
+
         try {
           localStorage.setItem('orandus_student_phone', cleanPhone);
           if (this.studentName) {
             localStorage.setItem('orandus_student_name', this.studentName.trim());
           }
+          localStorage.setItem('orandus_delivery_loc', finalLoc);
         } catch (e) {}
 
         var whatsappNum = (this.vendorInfo.whatsapp || '').replace(/\D/g, '');
@@ -1072,7 +1110,10 @@
         var lines = [];
         lines.push('*New Order via Orandus* 🍽️');
         lines.push('-------------------------');
-        lines.push('📍 *Delivery Location:* ' + this.deliveryLocation);
+        lines.push('📍 *Delivery Location:* ' + finalLoc);
+        if (this.cookingNotes && this.cookingNotes.trim()) {
+          lines.push('📝 *Instructions:* ' + this.cookingNotes.trim());
+        }
         if (this.studentName && this.studentName.trim()) {
           lines.push('👤 *Student:* ' + this.studentName.trim() + ' (' + cleanPhone + ')');
         } else {
@@ -1087,7 +1128,7 @@
         }
         lines.push('');
         lines.push('*Total Amount:* ₹' + this.cartTotalPrice);
-        lines.push('💵 *Payment:* UPI / Cash upon pickup at ' + this.deliveryLocation);
+        lines.push('💵 *Payment:* UPI / Cash upon handover at ' + finalLoc);
         lines.push('-------------------------');
         lines.push('_Sent from Orandus Campus Food_');
 

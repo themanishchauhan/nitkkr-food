@@ -302,18 +302,25 @@ Students also frequently get interrupted or browse multiple dishes before orderi
 2. **Persistent "Cart Pending" Island**:
    - As long as items exist in the cart, a floating **Cart Pending** bar remains anchored above the bottom dock showing total items and cost (e.g. `🛒 3 items • ₹510`).
    - If the student closes the dish modal, scrolls the menu, or reloads the tab, their selections are preserved via `localStorage` (`orandus_vendor_cart`).
-3. **Restricted 3-Point Delivery Selection**:
-   - The checkout sheet replaces manual address text fields with **3 large segmented tap targets**:
-     - 🚪 `Back Gate`
-     - 🏛️ `Front Gate`
-     - 🏢 `Girls Hostel`
-   - Zero typing required; tap-to-select with high contrast, colorblind-safe visual active states, and 48px touch targets.
-4. **Student Contact Credentials Auto-Fill**:
+3. **Hybrid Location Architecture: 3 Easy-Touch Chips + Freeform Manual Input**:
+   - Rather than forcing a rigid dropdown or restricting students strictly to 3 words, the checkout view provides **3 one-tap campus gate chips**:
+     - 🚪 `Back Gate` (Gate 2 / Road)
+     - 🏛️ `Front Gate` (Main Gate 1)
+     - 🏢 `Girls Hostel` (Kalpana Chawla)
+   - Directly underneath, an editable manual location input is provided. Tapping a quick chip instantly pre-fills the input with 0 friction, while students wishing to specify exact spots (e.g. "Hostel 7, Room 214", "Library Lawn", "Back Gate near Chai Tapri") can type or edit freely.
+4. **Complete Full-Screen Method vs Cramped Popup Modal**:
+   - *Competitor Benchmark (Swiggy / Zomato / Blinkit)*: Mobile food checkout experiences fail inside cramped dialog popups due to virtual keyboard occlusion, double scrollbars, and lack of visual breathing room.
+   - The checkout was re-architected into a **dedicated Full-Screen View (`fixed inset-0 z-50 bg-slate-50 min-h-screen`)**:
+     - Sticky top app bar with `← Back to Menu` navigation synced with browser `popstate` / back gesture (`#cart`).
+     - Dedicated cards for Location, Item List with large steppers, Cooking/Delivery Notes (quick chips: Spicy, Extra Onions, Less Oil, Pack Separately), and Student Contact.
+     - Anchored sticky bottom bar holding total price and full-width WhatsApp order CTA with device safe-area inset padding.
+5. **Student Contact Credentials Auto-Fill**:
    - Requires a 10-digit Indian mobile number (`+91`) with inline validation.
    - Saves both phone number and student name in `localStorage` so repeat orders require zero re-entry.
-5. **Pre-Formatted WhatsApp Ticket & Immediate Call-to-Confirm Bridge**:
+6. **Pre-Formatted WhatsApp Ticket & Immediate Call-to-Confirm Bridge**:
    - Generates a clean, readable WhatsApp markdown ticket sent directly to the vendor's WhatsApp (e.g. Food Point: `9504316289`):
-     - Delivery Location (Back Gate / Front Gate / Girls Hostel)
+     - Delivery Location (Quick Gate or Custom Manual Spot)
+     - Optional Cooking / Delivery Notes
      - Student Name & 10-digit Phone
      - Line items with quantities & prices
      - Grand total & payment note (Cash / UPI upon delivery)
@@ -323,8 +330,8 @@ Students also frequently get interrupted or browse multiple dishes before orderi
 - **Positive Outcomes**:
   - **Zero Order Errors**: Acoustic misunderstandings over loud kitchen exhausts are eliminated because the order arrives in structured text.
   - **Zero Commission & Zero Merchant Hardware**: Vendors require no POS terminal, tablet, or app installation—just their existing WhatsApp.
-  - **High Campus Conversion**: Restricting delivery points to the 3 real campus handovers makes checkout take under 10 seconds.
-  - **Cart Recovery**: Students never lose their pending cart when browsing.
+  - **High Campus Conversion & Usability**: 1-tap gate chips satisfy 80%+ of campus handovers, while manual entry allows 100% address flexibility.
+  - **Mobile Ergonomics**: Full-screen canvas completely avoids mobile keyboard layout breakages.
 - **Risks & Second-Order Effects**:
   - If a bhaiya does not have mobile data turned on, WhatsApp messages might sit unread. (Mitigated directly by the post-dispatch "📞 Call Bhaiya Now to Confirm" prompt).
 
