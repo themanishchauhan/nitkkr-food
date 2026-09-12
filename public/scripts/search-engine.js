@@ -1108,29 +1108,29 @@
         }
 
         var lines = [];
-        lines.push('*New Order via Orandus* 🍽️');
-        lines.push('-------------------------');
-        lines.push('📍 *Delivery Location:* ' + finalLoc);
+        lines.push('🧾 *ORANDUS ORDER TICKET*');
+        lines.push('━━━━━━━━━━━━━━━━━━━━');
+        lines.push('🏪 *Vendor:* ' + (this.vendorInfo.name || 'Campus Stall'));
+        lines.push('📍 *Deliver To:* ' + finalLoc);
+        if (this.studentName && this.studentName.trim()) {
+          lines.push('👤 *Student:* ' + this.studentName.trim());
+        }
+        lines.push('📞 *Phone:* +91' + cleanPhone);
+        lines.push('💬 *Chat:* https://wa.me/91' + cleanPhone);
         if (this.cookingNotes && this.cookingNotes.trim()) {
           lines.push('📝 *Instructions:* ' + this.cookingNotes.trim());
         }
-        if (this.studentName && this.studentName.trim()) {
-          lines.push('👤 *Student:* ' + this.studentName.trim() + ' (' + cleanPhone + ')');
-        } else {
-          lines.push('📱 *Phone:* ' + cleanPhone);
-        }
-        lines.push('🏪 *Vendor:* ' + (this.vendorInfo.name || 'Food Point'));
-        lines.push('');
-        lines.push('*Items Ordered:*');
+        lines.push('━━━━━━━━━━━━━━━━━━━━');
+        lines.push('📋 *ITEMS ORDERED (' + this.cartTotalCount + ' items):*');
         for (var i = 0; i < this.cartItems.length; i++) {
           var it = this.cartItems[i];
-          lines.push('• ' + it.quantity + 'x ' + it.name + ' - ₹' + (it.price * it.quantity));
+          lines.push('• ' + it.quantity + ' × ' + it.name + ' — ₹' + (it.price * it.quantity));
         }
-        lines.push('');
-        lines.push('*Total Amount:* ₹' + this.cartTotalPrice);
-        lines.push('💵 *Payment:* UPI / Cash upon handover at ' + finalLoc);
-        lines.push('-------------------------');
-        lines.push('_Sent from Orandus Campus Food_');
+        lines.push('━━━━━━━━━━━━━━━━━━━━');
+        lines.push('💰 *TOTAL BILL: ₹' + this.cartTotalPrice + '*');
+        lines.push('💵 *Payment:* Cash / UPI on Handover at ' + finalLoc);
+        lines.push('━━━━━━━━━━━━━━━━━━━━');
+        lines.push('⚡ _Sent via Orandus • NIT Kurukshetra_');
 
         var text = encodeURIComponent(lines.join('\n'));
         var waUrl = 'https://wa.me/' + whatsappNum + '?text=' + text;
