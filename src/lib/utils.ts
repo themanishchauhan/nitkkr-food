@@ -13,10 +13,7 @@ export const PURE_VEG_VENDOR_SLUGS = new Set([
   'bakers-bite',
   'yummy-tummy-foods',
   'yummy-tummy',
-  'pizza-king',
-  'aunty-ji-tea-stall',
-  'anty-ji-tea-stall',
-  'aunty-ji'
+  'pizza-king'
 ]);
 
 /**
@@ -27,7 +24,7 @@ export function isPureVegVendor(vendor: { slug?: string; name?: string; isPureVe
   if (typeof vendor.isPureVeg === 'boolean') return vendor.isPureVeg;
   if (vendor.slug && PURE_VEG_VENDOR_SLUGS.has(vendor.slug.toLowerCase())) return true;
   const name = (vendor.name || '').toLowerCase();
-  if (name.includes('apna') || name.includes('bakers bite') || name.includes('yummy tummy') || name.includes('pizza king') || name.includes('aunty ji') || name.includes('anty ji')) {
+  if (name.includes('apna') || name.includes('bakers bite') || name.includes('yummy tummy') || name.includes('pizza king')) {
     return true;
   }
   return false;
