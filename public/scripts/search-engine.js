@@ -523,27 +523,54 @@
           }
         });
 
-        // Fast background hydration of full catalog from cached /api/search-index.json
+        // Dual-Layer Offline Persistence:
+        // 1. Instant 0ms hydration from localStorage snapshot if available
         if (!window.__SEARCH_INDEX_CACHE__) {
-          fetch('/api/search-index.json')
-            .then(function (res) { return res.json(); })
-            .then(function (data) {
-              if (data && data.items && data.items.length > 0) {
-                window.__SEARCH_INDEX_CACHE__ = data.items;
-                for (var k = 0; k < data.items.length; k++) {
-                  preIndexItem(data.items[k]);
+          try {
+            var localCached = localStorage.getItem('orandus_search_catalog_v1');
+            if (localCached) {
+              var parsed = JSON.parse(localCached);
+              if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
+                window.__SEARCH_INDEX_CACHE__ = parsed.items;
+                for (var idx = 0; idx < parsed.items.length; idx++) {
+                  preIndexItem(parsed.items[idx]);
                 }
-                self.allItems = data.items;
-                if (data.vendors && data.vendors.length > 0) {
-                  self.allVendors = data.vendors;
+                self.allItems = parsed.items;
+                if (Array.isArray(parsed.vendors) && parsed.vendors.length > 0) {
+                  self.allVendors = parsed.vendors;
                   self._vendorMap = null;
                 }
               }
-            })
-            .catch(function () {});
+            }
+          } catch (e) {}
         } else {
           self.allItems = window.__SEARCH_INDEX_CACHE__;
         }
+
+        // 2. Fetch fresh catalog from network / Service Worker cache in background
+        fetch('/api/search-index.json')
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (data && data.items && data.items.length > 0) {
+              window.__SEARCH_INDEX_CACHE__ = data.items;
+              for (var k = 0; k < data.items.length; k++) {
+                preIndexItem(data.items[k]);
+              }
+              self.allItems = data.items;
+              if (data.vendors && data.vendors.length > 0) {
+                self.allVendors = data.vendors;
+                self._vendorMap = null;
+              }
+              try {
+                localStorage.setItem('orandus_search_catalog_v1', JSON.stringify({
+                  items: data.items,
+                  vendors: data.vendors,
+                  savedAt: Date.now()
+                }));
+              } catch (e) {}
+            }
+          })
+          .catch(function () {});
       },
 
       _vendorMap: null,

@@ -13,7 +13,10 @@ export const PURE_VEG_VENDOR_SLUGS = new Set([
   'bakers-bite',
   'yummy-tummy-foods',
   'yummy-tummy',
-  'pizza-king'
+  'pizza-king',
+  'aunty-ji-tea-stall',
+  'anty-ji-tea-stall',
+  'aunty-ji'
 ]);
 
 /**
@@ -24,7 +27,7 @@ export function isPureVegVendor(vendor: { slug?: string; name?: string; isPureVe
   if (typeof vendor.isPureVeg === 'boolean') return vendor.isPureVeg;
   if (vendor.slug && PURE_VEG_VENDOR_SLUGS.has(vendor.slug.toLowerCase())) return true;
   const name = (vendor.name || '').toLowerCase();
-  if (name.includes('apna') || name.includes('bakers bite') || name.includes('yummy tummy') || name.includes('pizza king')) {
+  if (name.includes('apna') || name.includes('bakers bite') || name.includes('yummy tummy') || name.includes('pizza king') || name.includes('aunty ji') || name.includes('anty ji')) {
     return true;
   }
   return false;
@@ -253,7 +256,8 @@ export function formatRating(rating: number | string | null | undefined): string
 export function cleanTelHref(phone: string | null | undefined, defaultPhone = '9896475885'): string {
   if (!phone) return `tel:+91${defaultPhone}`;
   const digits = phone.replace(/\D/g, '');
-  const clean10 = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
+  let clean10 = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
+  if (clean10.length === 9) clean10 = `${clean10}0`;
   return `tel:+91${clean10 || defaultPhone}`;
 }
 
@@ -262,7 +266,8 @@ export function cleanTelHref(phone: string | null | undefined, defaultPhone = '9
  */
 export function cleanWhatsAppHref(phone: string | null | undefined, text = 'Hi! I found your menu on Orandus and would like to check availability.', defaultPhone = '9896475885'): string {
   const digits = (phone || '').replace(/\D/g, '');
-  const clean10 = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
+  let clean10 = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
+  if (clean10.length === 9) clean10 = `${clean10}0`;
   const num = clean10 || defaultPhone;
   return `https://wa.me/91${num}?text=${encodeURIComponent(text)}`;
 }
@@ -273,7 +278,8 @@ export function cleanWhatsAppHref(phone: string | null | undefined, text = 'Hi! 
 export function cleanDisplayPhone(phone: string | null | undefined, defaultPhone = '98964 75885'): string {
   if (!phone) return `+91 ${defaultPhone}`;
   const digits = phone.replace(/\D/g, '');
-  const clean10 = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
+  let clean10 = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
+  if (clean10.length === 9) clean10 = `${clean10}0`;
   if (clean10.length === 10) {
     return `+91 ${clean10.slice(0, 5)} ${clean10.slice(5)}`;
   }

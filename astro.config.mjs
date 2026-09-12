@@ -62,9 +62,49 @@ export default defineConfig({
         workbox: {
           globPatterns: ['**/*.{html,js,css,png,svg,woff2,jpg,webp}'],
           runtimeCaching: [
-            { urlPattern: /^https:\/\/.*\.neon\.tech/, handler: 'NetworkFirst', options: { cacheName: 'neon-api', expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 } } },
-            { urlPattern: /^https:\/\/.*\.meilisearch\.cloud/, handler: 'NetworkFirst', options: { cacheName: 'meilisearch-api', expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 } } },
-            { urlPattern: /^https:\/\/res\.cloudinary\.com/, handler: 'CacheFirst', options: { cacheName: 'cloudinary-images', expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 } } },
+            // 1. Instant offline search index (NetworkFirst with cache fallback)
+            {
+              urlPattern: /\/api\/search-index\.json/,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'orandus-search-index',
+                networkTimeoutSeconds: 3,
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            // 2. High-performance caching for dish and stall photos (Unsplash & Cloudinary)
+            {
+              urlPattern: /^https:\/\/(images\.unsplash\.com|res\.cloudinary\.com)\/.*/,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'orandus-images-cache',
+                expiration: {
+                  maxEntries: 250,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            // 3. StaleWhileRevalidate for vendor menu pages and search route
+            {
+              urlPattern: /\/(v\/[a-z0-9\-]+|search)?$/,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'orandus-pages-cache',
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 3, // 3 days
+                },
+              },
+            },
           ],
         },
       }),
