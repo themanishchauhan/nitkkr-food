@@ -965,6 +965,11 @@
         }
       },
 
+      _getCartStorageKey: function () {
+        var slug = (this.vendorInfo && this.vendorInfo.slug) ? this.vendorInfo.slug : 'default';
+        return 'orandus_cart_' + slug;
+      },
+
       initCart: function () {
         try {
           var savedPhone = localStorage.getItem('orandus_student_phone');
@@ -976,7 +981,12 @@
             this.deliveryLocation = savedLoc;
           }
 
-          var raw = localStorage.getItem('orandus_vendor_cart');
+          var scopedKey = this._getCartStorageKey();
+          var raw = localStorage.getItem(scopedKey);
+          if (!raw) {
+            // Backward compatibility fallback to global key if matching slug
+            raw = localStorage.getItem('orandus_vendor_cart');
+          }
           if (raw) {
             var parsed = JSON.parse(raw);
             if (parsed && parsed.vendorSlug === this.vendorInfo.slug && Array.isArray(parsed.items)) {
@@ -986,19 +996,36 @@
         } catch (e) {}
       },
 
+      _saveCartTimer: null,
       saveCart: function () {
+        var self = this;
+        if (this._saveCartTimer) clearTimeout(this._saveCartTimer);
+        this._saveCartTimer = setTimeout(function () {
+          self.flushCart();
+        }, 150);
+      },
+
+      flushCart: function () {
+        if (this._saveCartTimer) {
+          clearTimeout(this._saveCartTimer);
+          this._saveCartTimer = null;
+        }
         try {
+          var scopedKey = this._getCartStorageKey();
           if (this.cartItems.length === 0) {
+            localStorage.removeItem(scopedKey);
             localStorage.removeItem('orandus_vendor_cart');
           } else {
-            localStorage.setItem('orandus_vendor_cart', JSON.stringify({
+            var payload = JSON.stringify({
               vendorSlug: this.vendorInfo.slug,
               vendorName: this.vendorInfo.name,
               vendorPhone: this.vendorInfo.phone,
               vendorWhatsApp: this.vendorInfo.whatsapp,
               items: this.cartItems,
               updatedAt: Date.now()
-            }));
+            });
+            localStorage.setItem(scopedKey, payload);
+            localStorage.setItem('orandus_vendor_cart', payload);
           }
         } catch (e) {}
       },
@@ -1021,7 +1048,8 @@
                 '. Clear it and start an order from ' + (this.vendorInfo.name || 'this stall') + '?'
               );
               if (!proceed) return;
-              this.cartItems = [];
+              var otherKey = 'orandus_cart_' + parsed.vendorSlug;
+              localStorage.removeItem(otherKey);
               localStorage.removeItem('orandus_vendor_cart');
             }
           }
@@ -1064,7 +1092,7 @@
         this.cartItems = [];
         this.orderPlaced = false;
         this.placedOrder = null;
-        this.saveCart();
+        this.flushCart();
       },
 
       setDeliveryLocation: function (loc) {
@@ -1100,26 +1128,20 @@
 
       get isPhoneValid() {
         var clean = (this.studentPhone || '').replace(/\D/g, '');
-        return clean.length === 10 && /^[6-9]/.test(clean);
+        if (clean.length !== 10) return false;
+        if (!/^[6-9]/.test(clean)) return false;
+        if (/^(\d)\1{9}$/.test(clean)) return false; // Reject repeated single-digit (e.g. 9999999999)
+        if (clean === '1234567890' || clean === '9876543210') return false; // Reject sequential fake numbers
+        return true;
       },
 
       sendWhatsAppOrder: function () {
         var cleanPhone = (this.studentPhone || '').replace(/\D/g, '');
-        if (cleanPhone.length !== 10 || !/^[6-9]/.test(cleanPhone)) {
+        if (!this.isPhoneValid) {
           this.phoneError = 'Please enter a valid 10-digit mobile number';
           return;
         }
         this.phoneError = '';
-
-        var finalLoc = (this.deliveryLocation || '').trim() || 'Back Gate';
-
-        try {
-          localStorage.setItem('orandus_student_phone', cleanPhone);
-          if (this.studentName) {
-            localStorage.setItem('orandus_student_name', this.studentName.trim());
-          }
-          localStorage.setItem('orandus_delivery_loc', finalLoc);
-        } catch (e) {}
 
         var whatsappNum = (this.vendorInfo.whatsapp || '').replace(/\D/g, '');
         if (!whatsappNum) {
@@ -1127,7 +1149,25 @@
         }
         if (whatsappNum.length === 10) {
           whatsappNum = '91' + whatsappNum;
+        } else if (whatsappNum.length > 10 && whatsappNum.startsWith('0')) {
+          whatsappNum = '91' + whatsappNum.replace(/^0+/, '');
         }
+
+        if (!whatsappNum || whatsappNum.length < 12) {
+          this.phoneError = 'Direct WhatsApp is unavailable for this stall. Please contact the vendor directly' + (this.vendorInfo.phone ? ' at +91 ' + this.vendorInfo.phone : '') + '.';
+          return;
+        }
+
+        var finalLoc = (this.deliveryLocation || '').trim() || 'Back Gate';
+
+        // Only persist student details to localStorage after validation passes (Fix L4)
+        try {
+          localStorage.setItem('orandus_student_phone', cleanPhone);
+          if (this.studentName && this.studentName.trim()) {
+            localStorage.setItem('orandus_student_name', this.studentName.trim());
+          }
+          localStorage.setItem('orandus_delivery_loc', finalLoc);
+        } catch (e) {}
 
         var lines = [];
         lines.push('*New Order* 🍽️');
@@ -1168,6 +1208,10 @@
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         this.orderPlaced = true;
+
+        // Fix B3: Reset active cart items and persist cleared state so duplicate orders cannot be re-sent
+        this.cartItems = [];
+        this.flushCart();
 
         window.open(waUrl, '_blank');
       },
