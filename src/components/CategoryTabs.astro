@@ -428,9 +428,10 @@ const {
 
     <div class="max-w-md mx-auto bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl p-1.5 sm:p-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] pointer-events-auto transition-all">
       
-      <!-- STATE 1: Default Action Row (Call [flex-1] + Share [flex-1] + Search [icon-only]) -->
+      <!-- STATE 1: Default Action Row (Call [flex-1] + Share [flex-1] + WhatsApp [opt] + Search [icon]) -->
+      <!-- Displayed when cart is empty and search is not active -->
       <div
-        x-show="!searchExpanded && !searchQuery.trim()"
+        x-show="cartTotalCount === 0 && !searchExpanded && !searchQuery.trim()"
         x-transition:enter="transition ease-out duration-150"
         x-transition:enter-start="opacity-0 scale-98"
         x-transition:enter-end="opacity-100 scale-100"
@@ -487,7 +488,78 @@ const {
         </button>
       </div>
 
-      <!-- STATE 2: Expanded Inline Search Bar (Pixel-Perfect with Clear & Done) -->
+      <!-- STATE 2: 🛒 Morphing Cart Active Action Bar (Unified, Seamless & Native App UX) -->
+      <!-- Replaces the default row when cart has items! NO double bar! -->
+      <div
+        x-show="cartTotalCount > 0 && !searchExpanded && !searchQuery.trim()"
+        x-cloak
+        x-transition:enter="transition ease-out duration-200 transform"
+        x-transition:enter-start="opacity-0 scale-98"
+        x-transition:enter-end="opacity-100 scale-100"
+        class="flex items-center justify-between gap-2"
+      >
+        <!-- Left: Cart Count & Total Price (Clickable to open cart) -->
+        <button
+          type="button"
+          @click="openCartScreen()"
+          class="flex items-center gap-2.5 min-w-0 pl-1.5 py-0.5 text-left cursor-pointer active:scale-98 transition-transform group flex-1"
+          aria-label="View cart"
+        >
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center flex-shrink-0 font-bold text-base shadow-sm shadow-orange-500/30 group-hover:scale-105 transition-transform">
+            🛒
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-black text-xs sm:text-sm text-slate-900" x-text="cartTotalCount + (cartTotalCount === 1 ? ' item' : ' items')"></span>
+              <span class="text-slate-300 text-xs">•</span>
+              <span class="font-black text-xs sm:text-sm text-emerald-600" x-text="'₹' + cartTotalPrice"></span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-slate-500 truncate flex items-center gap-1">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+              <span class="truncate font-semibold" x-text="'Order at ' + (vendorInfo.name || 'Vendor')"></span>
+            </p>
+          </div>
+        </button>
+
+        <!-- Right Controls: Quick Direct Call Button + Prominent View Cart CTA + Search -->
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <!-- 📞 Quick Direct Call Button -->
+          <a
+            href={vendorTelLink}
+            class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-800 text-slate-700 flex items-center justify-center text-sm border border-slate-200/60 shadow-2xs active:scale-95 transition-all cursor-pointer flex-shrink-0"
+            title="Call vendor directly"
+            aria-label="Call vendor"
+          >
+            <span class="text-base">📞</span>
+          </a>
+
+          <!-- 🛍️ Primary View Cart CTA -->
+          <button
+            type="button"
+            @click="openCartScreen()"
+            class="py-2.5 sm:py-3 px-3.5 sm:px-4 bg-gradient-to-r from-nitkkr-orange to-amber-600 hover:from-nitkkr-orange-dark hover:to-amber-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-sm shadow-nitkkr-orange/30 flex items-center gap-1.5 cursor-pointer transition-all"
+            aria-label="View Cart and Checkout"
+          >
+            <span>View Cart</span>
+            <span class="text-xs font-black">›</span>
+          </button>
+
+          <!-- 🔍 Search Icon Button -->
+          <button
+            type="button"
+            @click="searchExpanded = true; $nextTick(() => { const el = $refs.menuSearchInput; if (el) { el.focus(); } })"
+            class="w-9 h-9 sm:w-10 sm:h-10 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl flex items-center justify-center transition-all cursor-pointer border border-slate-200/60 shadow-2xs flex-shrink-0"
+            aria-label="Search menu"
+            title="Search in menu"
+          >
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- STATE 3: Expanded Inline Search Bar (Pixel-Perfect with Clear & Done) -->
       <div
         x-show="searchExpanded || searchQuery.trim().length > 0"
         x-cloak
@@ -537,104 +609,62 @@ const {
     </div>
   </div>
 
-  <!-- 🛒 Floating "Cart Pending" Island Bar (Sticky recovery across scroll and browsing) -->
-  <div
-    x-show="cartTotalCount > 0 && !showCartScreen"
-    x-cloak
-    x-transition:enter="transition ease-out duration-250 transform"
-    x-transition:enter-start="opacity-0 translate-y-6 scale-95"
-    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-    x-transition:leave="transition ease-in duration-200 transform"
-    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-    x-transition:leave-end="opacity-0 translate-y-6 scale-95"
-    class="fixed bottom-[calc(4.85rem+env(safe-area-inset-bottom,0px))] sm:bottom-20 left-0 right-0 z-40 px-4 pointer-events-none"
-  >
+  <!-- 📱 FULL-SCREEN CHECKOUT & ORDER CONFIRMATION VIEW (Teleported to Body to Escape Parent Stacking Contexts) -->
+  <template x-teleport="body">
     <div
-      class="max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl text-white border border-slate-700/80 rounded-2xl p-2.5 sm:p-3 shadow-[0_12px_40px_rgb(0,0,0,0.35)] pointer-events-auto flex items-center justify-between gap-3 cursor-pointer select-none"
-      @click="openCartScreen()"
+      x-show="showCartScreen"
+      x-cloak
+      x-transition:enter="transition ease-out duration-250 transform"
+      x-transition:enter-start="opacity-0 translate-y-4"
+      x-transition:enter-end="opacity-100 translate-y-0"
+      x-transition:leave="transition ease-in duration-200 transform"
+      x-transition:leave-start="opacity-100 translate-y-0"
+      x-transition:leave-end="opacity-0 translate-y-4"
+      class="fixed inset-0 z-[100] overflow-y-auto bg-slate-50 min-h-screen flex flex-col text-slate-900"
+      @keydown.escape.window="closeCartScreen()"
     >
-      <!-- Left: Cart Count & Total Price -->
-      <div class="flex items-center gap-2.5 min-w-0 pl-1">
-        <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center flex-shrink-0 text-amber-400 font-black text-base shadow-2xs">
-          🛒
-        </div>
-        <div class="min-w-0">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <span class="font-black text-xs sm:text-sm text-white" x-text="cartTotalCount + (cartTotalCount === 1 ? ' item' : ' items')"></span>
-            <span class="text-slate-400 text-xs">•</span>
-            <span class="font-extrabold text-amber-400 text-sm sm:text-base" x-text="'₹' + cartTotalPrice"></span>
+      <!-- Top Sticky Navigation Bar with Safe-Area Inset Support -->
+      <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-4 py-3 sm:py-3.5 shadow-2xs pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
+        <div class="max-w-2xl mx-auto flex items-center justify-between gap-3">
+          <!-- Back Button -->
+          <button
+            type="button"
+            @click="closeCartScreen()"
+            class="flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-slate-700 hover:text-nitkkr-orange transition-colors active:scale-95 cursor-pointer py-1.5 px-2.5 -ml-2 rounded-xl hover:bg-slate-100"
+            aria-label="Back to menu"
+          >
+            <span class="text-base font-bold">←</span>
+            <span>Back to Menu</span>
+          </button>
+
+          <!-- Center Vendor Header -->
+          <div class="text-center min-w-0 flex-1 px-2">
+            <h1 class="text-sm sm:text-base font-black text-slate-900 leading-tight truncate" x-text="vendorInfo.name || 'Vendor'"></h1>
+            <p class="text-[11px] font-semibold text-emerald-600 flex items-center justify-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span x-text="orderPlaced ? 'Ticket Sent via WhatsApp' : 'Direct Campus Ordering'"></span>
+            </p>
           </div>
-          <p class="text-[11px] text-slate-300 truncate flex items-center gap-1">
-            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Pending order at</span>
-            <span class="font-bold text-white" x-text="vendorInfo.name || 'Vendor'"></span>
-          </p>
+
+          <!-- Right Action: Clear Cart or Status Badge -->
+          <div class="flex items-center gap-1">
+            <template x-if="cartItems.length > 0 && !orderPlaced">
+              <button
+                type="button"
+                @click="if (confirm('Clear all items from your order?')) { clearCart(); closeCartScreen(); }"
+                class="text-xs text-slate-400 hover:text-rose-600 font-bold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+              >
+                Clear
+              </button>
+            </template>
+            <template x-if="orderPlaced">
+              <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-black text-[11px] rounded-lg border border-emerald-200">
+                ✓ Sent
+              </span>
+            </template>
+          </div>
         </div>
-      </div>
-
-      <!-- Right: Review Order CTA -->
-      <button
-        type="button"
-        @click.stop="openCartScreen()"
-        class="py-2.5 px-4 bg-gradient-to-r from-nitkkr-orange to-amber-500 hover:from-nitkkr-orange-dark hover:to-amber-600 active:scale-95 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-1.5 flex-shrink-0 cursor-pointer transition-all"
-        aria-label="Review pending order"
-      >
-        <span>Review Order</span>
-        <span class="text-xs font-black">›</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- 📱 FULL-SCREEN CHECKOUT VIEW (Competitor-Grade Native App UX) -->
-  <div
-    x-show="showCartScreen"
-    x-cloak
-    x-transition:enter="transition ease-out duration-300 transform"
-    x-transition:enter-start="opacity-0 translate-y-4"
-    x-transition:enter-end="opacity-100 translate-y-0"
-    x-transition:leave="transition ease-in duration-200 transform"
-    x-transition:leave-start="opacity-100 translate-y-0"
-    x-transition:leave-end="opacity-0 translate-y-4"
-    class="fixed inset-0 z-50 overflow-y-auto bg-slate-50 min-h-screen flex flex-col text-slate-900"
-    @keydown.escape.window="closeCartScreen()"
-  >
-    <!-- Top Sticky Navigation Bar -->
-    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-4 py-3 sm:py-3.5 shadow-2xs">
-      <div class="max-w-2xl mx-auto flex items-center justify-between gap-3">
-        <!-- Back Button -->
-        <button
-          type="button"
-          @click="closeCartScreen()"
-          class="flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-slate-700 hover:text-nitkkr-orange transition-colors active:scale-95 cursor-pointer py-1.5 px-2 -ml-2 rounded-xl hover:bg-slate-100"
-          aria-label="Back to menu"
-        >
-          <span class="text-base font-bold">←</span>
-          <span>Back to Menu</span>
-        </button>
-
-        <!-- Center Vendor Header -->
-        <div class="text-center min-w-0 flex-1 px-2">
-          <h1 class="text-sm sm:text-base font-black text-slate-900 leading-tight truncate" x-text="vendorInfo.name || 'Vendor'"></h1>
-          <p class="text-[11px] font-semibold text-emerald-600 flex items-center justify-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Direct Campus Ordering</span>
-          </p>
-        </div>
-
-        <!-- Right Action: Clear Cart -->
-        <div class="flex items-center gap-1">
-          <template x-if="cartItems.length > 0 && !orderPlaced">
-            <button
-              type="button"
-              @click="if (confirm('Clear all items from your order?')) { clearCart(); closeCartScreen(); }"
-              class="text-xs text-slate-400 hover:text-rose-600 font-bold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-            >
-              Clear
-            </button>
-          </template>
-        </div>
-      </div>
-    </header>
+      </header>
 
     <!-- Main Full-Screen Body Container -->
     <main class="max-w-2xl w-full mx-auto px-4 py-5 sm:py-6 space-y-4 pb-36 flex-1">
@@ -977,50 +1007,186 @@ const {
         </div>
       </template>
 
-      <!-- STATE 2: Order Dispatched Confirmation -->
+      <!-- STATE 2: Order Dispatched Confirmation & Digital Receipt -->
       <template x-if="orderPlaced">
-        <div class="max-w-md mx-auto py-8 text-center space-y-5">
-          <div class="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-4xl font-black shadow-inner">
-            ✓
-          </div>
+        <div class="max-w-xl mx-auto py-6 space-y-4">
           
-          <div>
-            <h2 class="font-display text-2xl font-black text-slate-900">Order Sent to WhatsApp!</h2>
-            <p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-sm mx-auto">
-              Your formatted order ticket was sent directly to <strong class="text-slate-900" x-text="vendorInfo.name || 'Vendor'"></strong> for handover at <strong class="text-slate-900" x-text="deliveryLocation"></strong>.
-            </p>
+          <!-- Top Celebratory Status Card -->
+          <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs text-center space-y-3">
+            <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-3xl font-black shadow-inner">
+              ✓
+            </div>
+            
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200 mb-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Ticket Delivered to WhatsApp</span>
+              </span>
+              <h2 class="font-display text-2xl font-black text-slate-900 tracking-tight">Order Sent to Bhaiya!</h2>
+              <p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-md mx-auto leading-relaxed">
+                Your order ticket was sent directly to <strong class="text-slate-900" x-text="(placedOrder && placedOrder.vendorName) || vendorInfo.name || 'Vendor'"></strong> for handover at <strong class="text-slate-900" x-text="(placedOrder && placedOrder.location) || deliveryLocation"></strong>.
+              </p>
+            </div>
           </div>
 
-          <!-- Urgent Bhaiya Follow-up Call Box -->
-          <div class="bg-amber-50 rounded-3xl p-5 border border-amber-200 text-left space-y-3.5 shadow-sm">
+          <!-- ⚡ CRUCIAL: Call Bhaiya to Confirm Cooking (Campus Stall Habit) -->
+          <div class="bg-gradient-to-br from-amber-50 to-orange-50/80 rounded-3xl p-5 border-2 border-amber-300 text-left space-y-3 shadow-sm">
             <div class="flex items-start gap-3">
-              <span class="text-2xl">⚠️</span>
-              <div>
-                <p class="text-xs sm:text-sm font-black text-amber-950">Crucial: Call Bhaiya to Confirm</p>
-                <p class="text-xs text-amber-800 mt-0.5 leading-relaxed">
-                  Campus stall kitchens get extremely loud and busy. Give him a quick 10-second call to confirm he received your WhatsApp ticket and puts it on the stove immediately!
+              <div class="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-lg flex-shrink-0 shadow-sm shadow-amber-500/30">
+                📞
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm sm:text-base font-black text-amber-950">Crucial: Call Bhaiya to Confirm</p>
+                  <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-900">10-Sec Call</span>
+                </div>
+                <p class="text-xs text-amber-900/80 mt-1 leading-relaxed">
+                  Campus stall kitchens get loud during meal rushes. Call Bhaiya right now so he confirms your WhatsApp ticket and puts your food on the pan immediately!
                 </p>
               </div>
             </div>
 
             <a
-              :href="'tel:' + (vendorInfo.phone || '9504316289')"
-              class="w-full py-3.5 px-4 bg-gradient-to-r from-nitkkr-orange to-amber-600 hover:from-nitkkr-orange-dark hover:to-amber-700 active:scale-98 text-white rounded-2xl font-black text-sm text-center transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer"
+              :href="'tel:' + ((placedOrder && placedOrder.vendorPhone) || vendorInfo.phone || '9504316289')"
+              class="w-full py-3.5 px-4 bg-gradient-to-r from-nitkkr-orange to-amber-600 hover:from-nitkkr-orange-dark hover:to-amber-700 active:scale-98 text-white rounded-2xl font-black text-sm text-center transition-all flex items-center justify-center gap-2 shadow-md shadow-nitkkr-orange/25 cursor-pointer"
             >
-              <span>📞</span>
-              <span>Call Bhaiya Now (<span x-text="vendorInfo.phone || 'Call'"></span>)</span>
+              <span class="text-base">📞</span>
+              <span>Call Bhaiya Now (<span x-text="(placedOrder && placedOrder.vendorPhone) || vendorInfo.phone || 'Call'"></span>)</span>
             </a>
           </div>
 
-          <div class="pt-3 flex flex-col sm:flex-row gap-2 justify-center">
+          <!-- 🧾 Itemized Order Receipt Card (Complete & Beautiful) -->
+          <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="text-sm sm:text-base font-black text-slate-900 flex items-center gap-1.5">
+                  <span>🧾</span>
+                  <span>Order Receipt</span>
+                </h3>
+                <p class="text-[11px] text-slate-400 font-medium" x-text="'Sent at ' + ((placedOrder && placedOrder.timestamp) || 'Just now')"></p>
+              </div>
+              <span class="text-xs font-black px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700">
+                <span x-text="(((placedOrder && placedOrder.items) || cartItems).length) + ' items'"></span>
+              </span>
+            </div>
+
+            <!-- Customer & Delivery Metadata Row -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs">
+              <div class="flex items-start gap-2">
+                <span class="text-sm">📍</span>
+                <div>
+                  <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Handover Location</span>
+                  <span class="font-black text-slate-800 text-xs sm:text-sm" x-text="(placedOrder && placedOrder.location) || deliveryLocation"></span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="text-sm">📱</span>
+                <div>
+                  <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Student Contact</span>
+                  <span class="font-extrabold text-slate-800 text-xs sm:text-sm" x-text="((placedOrder && placedOrder.name) || studentName ? (((placedOrder && placedOrder.name) || studentName) + ' • ') : '') + '+91 ' + ((placedOrder && placedOrder.phone) || studentPhone)"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Special Instructions Note (If any) -->
+            <template x-if="(placedOrder && placedOrder.notes) || cookingNotes">
+              <div class="p-3 bg-amber-50/60 rounded-2xl border border-amber-200/60 text-xs flex items-start gap-2">
+                <span class="text-base flex-shrink-0">📝</span>
+                <div>
+                  <span class="text-[10px] font-bold text-amber-900 uppercase tracking-wider block">Cooking Instructions:</span>
+                  <span class="font-semibold text-amber-950 italic" x-text="'“' + ((placedOrder && placedOrder.notes) || cookingNotes) + '”'"></span>
+                </div>
+              </div>
+            </template>
+
+            <!-- Itemized Table of Ordered Dishes -->
+            <div class="divide-y divide-slate-100">
+              <template x-for="item in ((placedOrder && placedOrder.items) || cartItems)" :key="item.id">
+                <div class="py-2.5 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                  <div class="flex items-center gap-2 min-w-0 flex-1">
+                    <span class="font-black text-slate-800 min-w-[24px]" x-text="item.quantity + 'x'"></span>
+                    <span class="font-bold text-slate-900 truncate" x-text="item.name"></span>
+                    <span class="text-[11px] text-slate-400 hidden sm:inline" x-text="'(₹' + item.price + ' ea)'"></span>
+                  </div>
+                  <span class="font-black text-slate-900" x-text="'₹' + (item.price * item.quantity)"></span>
+                </div>
+              </template>
+            </div>
+
+            <!-- Bill Total & Payment Method -->
+            <div class="pt-3 border-t-2 border-slate-100 space-y-2">
+              <div class="flex items-center justify-between text-sm sm:text-base">
+                <span class="font-black text-slate-900">Total Amount:</span>
+                <span class="font-black text-xl text-nitkkr-orange" x-text="'₹' + ((placedOrder && placedOrder.totalPrice) || cartTotalPrice)"></span>
+              </div>
+              <div class="p-3 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 text-xs text-emerald-900 flex items-center gap-2">
+                <span class="text-base flex-shrink-0">💵</span>
+                <span><strong>Payment Method:</strong> Pay ₹<span x-text="(placedOrder && placedOrder.totalPrice) || cartTotalPrice"></span> directly to Bhaiya via <strong>UPI (GPay/PhonePe) or Cash</strong> upon handover.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🚶 Campus Handover 3-Step Flow (Trust & Clarity) -->
+          <div class="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-xs space-y-3">
+            <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <span>🚀</span>
+              <span>Next Steps for Campus Handover</span>
+            </h4>
+
+            <div class="space-y-2 text-xs">
+              <div class="flex items-start gap-2.5 p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                <span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0">1</span>
+                <div>
+                  <p class="font-bold text-emerald-950">WhatsApp Order Dispatched</p>
+                  <p class="text-emerald-800 text-[11px]">Formatted order ticket delivered to bhaiya's phone.</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-2.5 p-2.5 rounded-xl bg-amber-50/70 border border-amber-200">
+                <span class="w-5 h-5 rounded-full bg-amber-500 text-white font-black text-[11px] flex items-center justify-center flex-shrink-0 animate-pulse">2</span>
+                <div>
+                  <p class="font-bold text-amber-950">Call Bhaiya (Recommended)</p>
+                  <p class="text-amber-800 text-[11px]">Confirm he saw the WhatsApp message so food goes on the pan.</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 font-black text-[11px] flex items-center justify-center flex-shrink-0">3</span>
+                <div>
+                  <p class="font-bold text-slate-800">Collect at Gate & Pay</p>
+                  <p class="text-slate-600 text-[11px]">Meet at <strong x-text="(placedOrder && placedOrder.location) || deliveryLocation"></strong>, check your items, and pay via UPI/Cash.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Action CTAs -->
+          <div class="pt-2 flex flex-col sm:flex-row gap-2.5">
+            <!-- Re-Open WhatsApp Button -->
+            <template x-if="(placedOrder && placedOrder.waUrl) || lastWhatsAppUrl">
+              <a
+                :href="(placedOrder && placedOrder.waUrl) || lastWhatsAppUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs sm:text-sm rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.194 1.871.18.51-.013 1.745-.87 2.014-1.762.27-.9.07-1.653-.599-2.185C18.918 15.288 17.787 14.532 17.472 14.382z"/>
+                </svg>
+                <span>Re-Open WhatsApp Chat</span>
+              </a>
+            </template>
+
+            <!-- Back to Menu / Start New Order -->
             <button
               type="button"
               @click="clearCart(); closeCartScreen();"
-              class="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl transition-all cursor-pointer"
+              class="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-800 font-black text-xs sm:text-sm rounded-2xl transition-all cursor-pointer text-center"
             >
-              Back to Menu / Start New Order
+              ← Back to Menu / Order More
             </button>
           </div>
+
         </div>
       </template>
 
@@ -1028,7 +1194,7 @@ const {
 
     <!-- Sticky Bottom Checkout Action Bar (Anchored for 1-Tap Ordering) -->
     <template x-if="!orderPlaced && cartItems.length > 0">
-      <footer class="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3.5 sm:p-4 shadow-[0_-4px_25px_rgb(0,0,0,0.08)]">
+      <footer class="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3.5 sm:p-4 shadow-[0_-4px_25px_rgb(0,0,0,0.08)] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
         <div class="max-w-2xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
           <!-- Total Price Counter -->
           <div>
@@ -1060,4 +1226,5 @@ const {
       </footer>
     </template>
   </div>
+  </template>
 </div>

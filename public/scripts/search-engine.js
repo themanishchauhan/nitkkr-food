@@ -902,6 +902,8 @@
       cartItems: [],
       showCartScreen: false,
       orderPlaced: false,
+      placedOrder: null,
+      lastWhatsAppUrl: '',
       deliveryLocation: 'Back Gate', // Quick chips: 'Back Gate', 'Front Gate', 'Girls Hostel', or custom manual input
       cookingNotes: '',
       studentName: '',
@@ -1042,6 +1044,7 @@
       clearCart: function () {
         this.cartItems = [];
         this.orderPlaced = false;
+        this.placedOrder = null;
         this.saveCart();
       },
 
@@ -1131,8 +1134,23 @@
         var text = encodeURIComponent(lines.join('\n'));
         var waUrl = 'https://wa.me/' + whatsappNum + '?text=' + text;
 
-        window.open(waUrl, '_blank');
+        this.lastWhatsAppUrl = waUrl;
+        this.placedOrder = {
+          items: JSON.parse(JSON.stringify(this.cartItems)),
+          totalPrice: this.cartTotalPrice,
+          totalCount: this.cartTotalCount,
+          location: finalLoc,
+          name: (this.studentName || '').trim(),
+          phone: cleanPhone,
+          notes: (this.cookingNotes || '').trim(),
+          vendorName: this.vendorInfo.name || 'Vendor',
+          vendorPhone: this.vendorInfo.phone || '',
+          waUrl: waUrl,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
         this.orderPlaced = true;
+
+        window.open(waUrl, '_blank');
       },
 
       get totalCount() {

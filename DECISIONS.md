@@ -299,25 +299,28 @@ Students also frequently get interrupted or browse multiple dishes before orderi
 1. **Single-Vendor Scoped Cart**:
    - The cart is strictly isolated to the active vendor (piloted on Food Point). Items cannot be mixed across vendors.
    - Attempting to add an item from a different vendor prompts the student to start a fresh order or keep their existing cart.
-2. **Persistent "Cart Pending" Island**:
-   - As long as items exist in the cart, a floating **Cart Pending** bar remains anchored above the bottom dock showing total items and cost (e.g. `🛒 3 items • ₹510`).
-   - If the student closes the dish modal, scrolls the menu, or reloads the tab, their selections are preserved via `localStorage` (`orandus_vendor_cart`).
+2. **Single Unified Morphing Dock (Anti-Clutter Architecture)**:
+   - Rather than stacking a disconnected dark pill floating awkwardly above the primary bottom navigation dock (which created messy visual clash), the bottom island was re-architected as a **Single Morphing Dock**:
+     - **Cart Empty**: Presents default `[ 📞 Call Bhaiya ] [ 🔗 Share ] [ 🔍 Search ]`.
+     - **Cart Active (>0 items)**: Gracefully morphs into a cohesive branded bar displaying `🛒 {count} items • ₹{total}` on the left, a direct `[ 📞 ]` call icon, and the primary `[ View Cart › ]` button on the right.
+     - **Search Active**: Smoothly transforms into an inline debounced search bar with instant clear & close controls.
 3. **Hybrid Location Architecture: 3 Easy-Touch Chips + Freeform Manual Input**:
    - Rather than forcing a rigid dropdown or restricting students strictly to 3 words, the checkout view provides **3 one-tap campus gate chips**:
      - 🚪 `Back Gate` (Gate 2 / Road)
      - 🏛️ `Front Gate` (Main Gate 1)
      - 🏢 `Girls Hostel` (Kalpana Chawla)
    - Directly underneath, an editable manual location input is provided. Tapping a quick chip instantly pre-fills the input with 0 friction, while students wishing to specify exact spots (e.g. "Hostel 7, Room 214", "Library Lawn", "Back Gate near Chai Tapri") can type or edit freely.
-4. **Complete Full-Screen Method vs Cramped Popup Modal**:
+4. **Complete Full-Screen Method (Teleported to Body to Escape Stacking Contexts)**:
    - *Competitor Benchmark (Swiggy / Zomato / Blinkit)*: Mobile food checkout experiences fail inside cramped dialog popups due to virtual keyboard occlusion, double scrollbars, and lack of visual breathing room.
-   - The checkout was re-architected into a **dedicated Full-Screen View (`fixed inset-0 z-50 bg-slate-50 min-h-screen`)**:
+   - Wrapped inside Alpine's `<template x-teleport="body">` at `z-[100]` with `env(safe-area-inset-top)` and `env(safe-area-inset-bottom)`:
+     - Escapes all parent stacking contexts (e.g. hero z-index, PWA notification banner), ensuring an uncompromising, full-screen native mobile feel.
      - Sticky top app bar with `← Back to Menu` navigation synced with browser `popstate` / back gesture (`#cart`).
      - Dedicated cards for Location, Item List with large steppers, Cooking/Delivery Notes (quick chips: Spicy, Extra Onions, Less Oil, Pack Separately), and Student Contact.
      - Anchored sticky bottom bar holding total price and full-width WhatsApp order CTA with device safe-area inset padding.
 5. **Student Contact Credentials Auto-Fill**:
    - Requires a 10-digit Indian mobile number (`+91`) with inline validation.
    - Saves both phone number and student name in `localStorage` so repeat orders require zero re-entry.
-6. **Pre-Formatted WhatsApp Ticket & Immediate Call-to-Confirm Bridge**:
+6. **Pre-Formatted WhatsApp Ticket & Complete Digital Receipt Handover View**:
    - Generates an ultra-clean, 3-second readable WhatsApp markdown ticket sent directly to the vendor's WhatsApp:
      - Line 1: `👤 Name • +91[Phone]` (with `+91` so dialer click works instantly)
      - Line 2: `📍 *Location:* [Location]`
@@ -325,7 +328,11 @@ Students also frequently get interrupted or browse multiple dishes before orderi
      - Line 4: Itemized menu list (`• 1x [Dish] — ₹[Price]`)
      - Line 5: `*Total:* ₹[Price] (Cash / UPI)`
      - Line 6: `_Sent via Orandus_`
-   - Upon dispatch, transitions to a success screen with a prominent **`📞 Call Bhaiya Now`** button (`tel:+91...`) prompting a 10-second verbal confirmation so busy cooks never miss the incoming WhatsApp notification.
+   - **Post-Dispatch Full Digital Receipt Screen (`orderPlaced`)**:
+     - Never leaves the screen empty; displays a comprehensive, itemized digital receipt card with all dishes ordered, unit prices, subtotal, and total amount to pay.
+     - Details customer name, phone number, destination gate, and cooking instructions.
+     - Prominent **`📞 Call Bhaiya Now`** direct dialer button (`tel:+91...`) prompting a 10-second verbal confirmation so busy cooks never miss the incoming WhatsApp notification.
+     - 3-Step Campus Handover Timeline: (1) WhatsApp Sent ✓, (2) Call to Confirm, (3) Meet at Gate & Pay via UPI/Cash.
 
 ### Looped Thinking: What Does This Lead To?
 - **Positive Outcomes**:
