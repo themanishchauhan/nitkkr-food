@@ -1170,6 +1170,12 @@
         return true;
       },
 
+      get whatsAppButtonLabel() {
+        if (this.isDispatching) return 'Opening WhatsApp...';
+        if (this.isPhoneValid) return 'Send Order on WhatsApp ›';
+        return 'Enter Mobile Number to Order';
+      },
+
       copyOrderSummary: function () {
         var text = (this.placedOrder && this.placedOrder.ticketText) || '';
         if (!text) return;
