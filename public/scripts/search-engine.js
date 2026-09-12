@@ -907,9 +907,7 @@
       orderPlaced: false,
       placedOrder: null,
       lastWhatsAppUrl: '',
-      deliveryLocation: (Array.isArray(config.deliversTo) && config.deliversTo.length > 0)
-        ? config.deliversTo[0]
-        : 'Back Gate',
+      deliveryLocation: '',
       cookingNotes: '',
       studentName: '',
       studentPhone: '',
@@ -990,7 +988,7 @@
           var savedName = localStorage.getItem('orandus_student_name');
           if (savedName) this.studentName = savedName;
           var savedLoc = localStorage.getItem('orandus_delivery_loc');
-          if (savedLoc) {
+          if (savedLoc && savedLoc.trim().toLowerCase() !== 'back gate') {
             this.deliveryLocation = savedLoc;
           }
 
@@ -1123,9 +1121,17 @@
       },
 
       setDeliveryLocation: function (loc) {
-        this.deliveryLocation = loc;
+        if (this.deliveryLocation && this.deliveryLocation.trim().toLowerCase() === String(loc).trim().toLowerCase()) {
+          this.deliveryLocation = '';
+        } else {
+          this.deliveryLocation = loc;
+        }
         try {
-          localStorage.setItem('orandus_delivery_loc', loc);
+          if (this.deliveryLocation) {
+            localStorage.setItem('orandus_delivery_loc', this.deliveryLocation);
+          } else {
+            localStorage.removeItem('orandus_delivery_loc');
+          }
         } catch (e) {}
       },
 
