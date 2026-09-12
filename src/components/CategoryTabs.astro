@@ -668,7 +668,7 @@ const {
       </header>
 
     <!-- Main Full-Screen Body Container -->
-    <main class="max-w-2xl w-full mx-auto px-4 py-5 sm:py-6 space-y-4 pb-36 flex-1">
+    <main class="max-w-2xl w-full mx-auto px-4 py-5 sm:py-6 space-y-4 pb-48 flex-1">
 
       <!-- STATE 1: Active Order Review -->
       <template x-if="!orderPlaced">
@@ -1005,6 +1005,9 @@ const {
             </div>
           </section>
 
+          <!-- 🛡️ Dedicated Scroll Clearance Spacer (Guarantees Bill & Tip Box Never Hide Behind Sticky Bottom Bar) -->
+          <div class="h-36 sm:h-44 w-full pointer-events-none select-none" aria-hidden="true"></div>
+
         </div>
       </template>
 
@@ -1187,6 +1190,9 @@ const {
               ← Back to Menu / Order More
             </button>
           </div>
+
+          <!-- Bottom Clearance Spacer -->
+          <div class="h-20 w-full pointer-events-none select-none" aria-hidden="true"></div>
 
         </div>
       </template>
