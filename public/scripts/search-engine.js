@@ -909,6 +909,14 @@
       studentName: '',
       studentPhone: '',
       phoneError: '',
+      isDispatching: false,
+      copiedOrderSummary: false,
+      deliveryFee: 0,
+
+      generateOrderId: function () {
+        var num = Math.floor(1000 + Math.random() * 9000);
+        return 'OR-' + num;
+      },
 
       loadMore: function () {
         this.displayLimit += 20;
@@ -1135,7 +1143,50 @@
         return true;
       },
 
+      copyOrderSummary: function () {
+        var text = (this.placedOrder && this.placedOrder.ticketText) || '';
+        if (!text) return;
+        var self = this;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () {
+            self.copiedOrderSummary = true;
+            setTimeout(function () { self.copiedOrderSummary = false; }, 2500);
+          }).catch(function () {
+            self._fallbackCopy(text);
+          });
+        } else {
+          this._fallbackCopy(text);
+        }
+      },
+
+      _fallbackCopy: function (text) {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          this.copiedOrderSummary = true;
+          var self = this;
+          setTimeout(function () { self.copiedOrderSummary = false; }, 2500);
+          document.body.removeChild(ta);
+        } catch (e) {}
+      },
+
+      callVendor: function () {
+        var phone = (this.placedOrder && this.placedOrder.vendorPhone) || (this.vendorInfo && this.vendorInfo.phone) || '';
+        var clean = phone.replace(/\D/g, '');
+        if (clean.length === 10) clean = '91' + clean;
+        if (clean) {
+          window.location.href = 'tel:+' + clean;
+        }
+      },
+
       sendWhatsAppOrder: function () {
+        if (this.isDispatching) return;
+
         var cleanPhone = (this.studentPhone || '').replace(/\D/g, '');
         if (!this.isPhoneValid) {
           this.phoneError = 'Please enter a valid 10-digit mobile number';
@@ -1158,9 +1209,12 @@
           return;
         }
 
+        this.isDispatching = true;
+        var self = this;
+
         var finalLoc = (this.deliveryLocation || '').trim() || 'Back Gate';
 
-        // Only persist student details to localStorage after validation passes (Fix L4)
+        // Persist student details to localStorage after validation passes
         try {
           localStorage.setItem('orandus_student_phone', cleanPhone);
           if (this.studentName && this.studentName.trim()) {
@@ -1169,34 +1223,61 @@
           localStorage.setItem('orandus_delivery_loc', finalLoc);
         } catch (e) {}
 
+        var orderId = this.generateOrderId();
+        var now = new Date();
+        var formattedDate = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' });
+        var formattedTime = now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+        var timestampStr = formattedDate + ', ' + formattedTime;
+
+        var fee = Number(this.deliveryFee) || 0;
+        var grandTotal = this.cartTotalPrice + fee;
+
         var lines = [];
-        lines.push('*New Order* 🍽️');
+        lines.push('🧾 *ORANDUS ORDER #' + orderId + '*');
+        lines.push('📅 ' + timestampStr);
+        lines.push('🏪 *Stall:* ' + (this.vendorInfo.name || 'Vendor'));
+        lines.push('──────────────────────');
+
         if (this.studentName && this.studentName.trim()) {
-          lines.push('👤 ' + this.studentName.trim() + ' • +91' + cleanPhone);
+          lines.push('👤 *Customer:* ' + this.studentName.trim() + ' (+91 ' + cleanPhone + ')');
         } else {
-          lines.push('📱 +91' + cleanPhone);
+          lines.push('👤 *Customer Phone:* +91 ' + cleanPhone);
         }
         lines.push('📍 *Location:* ' + finalLoc);
+
         if (this.cookingNotes && this.cookingNotes.trim()) {
-          lines.push('📝 *Instructions:* ' + this.cookingNotes.trim());
+          lines.push('📝 *Note:* "' + this.cookingNotes.trim() + '"');
         }
-        lines.push('');
-        lines.push('*Items:*');
+
+        lines.push('──────────────────────');
+        lines.push('*ITEMS:*');
         for (var i = 0; i < this.cartItems.length; i++) {
           var it = this.cartItems[i];
-          lines.push('• ' + it.quantity + 'x ' + it.name + ' — ₹' + (it.price * it.quantity));
+          var sub = it.price * it.quantity;
+          lines.push('▪ ' + it.quantity + 'x ' + it.name + ' (₹' + it.price + ' ea) = ₹' + sub);
         }
-        lines.push('');
-        lines.push('*Total:* ₹' + this.cartTotalPrice + ' (Cash / UPI)');
-        lines.push('_Sent via Orandus_');
 
-        var text = encodeURIComponent(lines.join('\n'));
-        var waUrl = 'https://wa.me/' + whatsappNum + '?text=' + text;
+        lines.push('──────────────────────');
+        lines.push('Subtotal: ₹' + this.cartTotalPrice);
+        if (fee > 0) {
+          lines.push('Delivery Fee: ₹' + fee);
+        }
+        lines.push('💵 *TOTAL TO PAY: ₹' + grandTotal + '*');
+        lines.push('💳 *Payment:* Cash / UPI upon handover');
+        lines.push('──────────────────────');
+        lines.push('👉 *Vendor:* Please reply "CONFIRMED" to accept order.');
+        lines.push('_Sent via Orandus Platform_');
+
+        var ticketText = lines.join('\n');
+        var waUrl = 'https://wa.me/' + whatsappNum + '?text=' + encodeURIComponent(ticketText);
 
         this.lastWhatsAppUrl = waUrl;
         this.placedOrder = {
+          orderId: orderId,
           items: JSON.parse(JSON.stringify(this.cartItems)),
-          totalPrice: this.cartTotalPrice,
+          subtotal: this.cartTotalPrice,
+          deliveryFee: fee,
+          totalPrice: grandTotal,
           totalCount: this.cartTotalCount,
           location: finalLoc,
           name: (this.studentName || '').trim(),
@@ -1205,13 +1286,38 @@
           vendorName: this.vendorInfo.name || 'Vendor',
           vendorPhone: this.vendorInfo.phone || '',
           waUrl: waUrl,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          timestamp: timestampStr,
+          ticketText: ticketText
         };
         this.orderPlaced = true;
 
-        // Fix B3: Reset active cart items and persist cleared state so duplicate orders cannot be re-sent
+        // Reset active cart items and persist cleared state
         this.cartItems = [];
         this.flushCart();
+
+        // Release dispatch lock after small window to prevent double-sends
+        setTimeout(function () {
+          self.isDispatching = false;
+        }, 1000);
+
+        // Async non-blocking telemetry event log
+        try {
+          if (typeof fetch === 'function') {
+            fetch('/api/analytics', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                eventType: 'whatsapp_order',
+                vendorSlug: this.vendorInfo.slug,
+                orderId: orderId,
+                totalAmount: grandTotal,
+                itemCount: this.placedOrder.totalCount,
+                location: finalLoc
+              }),
+              keepalive: true
+            }).catch(function () {});
+          }
+        } catch (e) {}
 
         window.open(waUrl, '_blank');
       },

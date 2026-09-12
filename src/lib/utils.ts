@@ -297,3 +297,111 @@ export function slugify(text: string): string {
     .replace(/^-+/, '')
     .replace(/-+$/, '');
 }
+
+/**
+ * Multi-City Location & Delivery Configurations (NIT Kurukshetra + Narnaul Ready)
+ */
+export const CITY_CONFIGS = {
+  kurukshetra: {
+    name: 'Kurukshetra (NIT Campus)',
+    code: 'KKR',
+    deliveryFee: 0,
+    presetLocations: [
+      'Back Gate',
+      'Front Gate',
+      'Girls Hostel',
+      'Mega Boys Hostel',
+      'Market Counter'
+    ]
+  },
+  narnaul: {
+    name: 'Narnaul City',
+    code: 'NNL',
+    deliveryFee: 40,
+    presetLocations: [
+      'Mahaveer Chowk',
+      'Rewari Road',
+      'Pul Bazar',
+      'Singhana Road',
+      'Subhash Park',
+      'Narnaul Bus Stand'
+    ]
+  }
+} as const;
+
+export type CityCode = keyof typeof CITY_CONFIGS;
+
+/**
+ * Generate a human-friendly unique order token (e.g. 'OR-8492')
+ */
+export function generateOrderId(cityPrefix = 'OR'): string {
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  return `${cityPrefix}-${randomNum}`;
+}
+
+export interface OrderTicketItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+export interface OrderTicketPayload {
+  orderId: string;
+  vendorName: string;
+  vendorCity?: string;
+  customerName?: string;
+  customerPhone: string;
+  location: string;
+  cookingNotes?: string;
+  items: OrderTicketItem[];
+  itemTotal: number;
+  deliveryFee?: number;
+  totalPayable: number;
+  paymentMethod?: string;
+  timestamp?: string;
+}
+
+/**
+ * Build a clean, structured, and professional WhatsApp order message
+ */
+export function buildWhatsAppOrderTicket(order: OrderTicketPayload): string {
+  const lines: string[] = [];
+  lines.push(`🧾 *ORANDUS ORDER #${order.orderId}*`);
+  if (order.timestamp) {
+    lines.push(`📅 ${order.timestamp}`);
+  }
+  lines.push(`🏪 *Stall:* ${order.vendorName}`);
+  lines.push('──────────────────────');
+
+  if (order.customerName && order.customerName.trim()) {
+    lines.push(`👤 *Customer:* ${order.customerName.trim()} (+91 ${order.customerPhone})`);
+  } else {
+    lines.push(`👤 *Customer Phone:* +91 ${order.customerPhone}`);
+  }
+  lines.push(`📍 *Location:* ${order.location}`);
+
+  if (order.cookingNotes && order.cookingNotes.trim()) {
+    lines.push(`📝 *Note:* "${order.cookingNotes.trim()}"`);
+  }
+
+  lines.push('──────────────────────');
+  lines.push('*ITEMS:*');
+  for (let i = 0; i < order.items.length; i++) {
+    const item = order.items[i];
+    const sub = item.price * item.quantity;
+    lines.push(`▪ ${item.quantity}x ${item.name} (₹${item.price} ea) = ₹${sub}`);
+  }
+
+  lines.push('──────────────────────');
+  lines.push(`Subtotal: ₹${order.itemTotal}`);
+  if (order.deliveryFee && order.deliveryFee > 0) {
+    lines.push(`Delivery Fee: ₹${order.deliveryFee}`);
+  }
+  lines.push(`💵 *TOTAL TO PAY: ₹${order.totalPayable}*`);
+  lines.push(`💳 *Payment:* ${order.paymentMethod || 'Cash / UPI upon handover'}`);
+  lines.push('──────────────────────');
+  lines.push(`👉 *Vendor:* Please reply "CONFIRMED" to accept order.`);
+  lines.push(`_Sent via Orandus Platform_`);
+
+  return lines.join('\n');
+}
