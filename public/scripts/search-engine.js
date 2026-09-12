@@ -899,12 +899,17 @@
         phone: config.vendorPhone || '',
         whatsapp: config.vendorWhatsApp || ''
       },
+      presetLocations: (Array.isArray(config.deliversTo) && config.deliversTo.length > 0)
+        ? config.deliversTo
+        : ['Back Gate', 'Front Gate', 'Girls Hostel', 'Mega Boys Hostel', 'Market Counter'],
       cartItems: [],
       showCartScreen: false,
       orderPlaced: false,
       placedOrder: null,
       lastWhatsAppUrl: '',
-      deliveryLocation: 'Back Gate', // Quick chips: 'Back Gate', 'Front Gate', 'Girls Hostel', or custom manual input
+      deliveryLocation: (Array.isArray(config.deliversTo) && config.deliversTo.length > 0)
+        ? config.deliversTo[0]
+        : 'Back Gate',
       cookingNotes: '',
       studentName: '',
       studentPhone: '',
@@ -1001,6 +1006,16 @@
               this.cartItems = parsed.items;
             }
           }
+
+          // Restore recent placed order receipt if within 45 mins (protects against mobile tab reload)
+          var savedOrder = sessionStorage.getItem('orandus_last_order_' + this.vendorInfo.slug);
+          if (savedOrder) {
+            var parsedOrder = JSON.parse(savedOrder);
+            if (parsedOrder && parsedOrder.orderId && (Date.now() - (parsedOrder.placedAt || 0) < 45 * 60 * 1000)) {
+              this.placedOrder = parsedOrder;
+              this.orderPlaced = true;
+            }
+          }
         } catch (e) {}
       },
 
@@ -1056,6 +1071,7 @@
                 '. Clear it and start an order from ' + (this.vendorInfo.name || 'this stall') + '?'
               );
               if (!proceed) return;
+              this.cartItems = [];
               var otherKey = 'orandus_cart_' + parsed.vendorSlug;
               localStorage.removeItem(otherKey);
               localStorage.removeItem('orandus_vendor_cart');
@@ -1065,12 +1081,12 @@
 
         var existing = this.cartItems.find(function (it) { return it.id === item.id; });
         if (existing) {
-          existing.quantity += 1;
+          existing.quantity = Math.max(1, (parseInt(existing.quantity, 10) || 0) + 1);
         } else {
           this.cartItems.push({
             id: item.id,
-            name: item.name,
-            price: Number(item.price) || 0,
+            name: (item.name || 'Dish').toString().trim(),
+            price: Math.max(0, Number(item.price) || 0),
             quantity: 1,
             diet: this.getItemDiet(item)
           });
@@ -1100,6 +1116,9 @@
         this.cartItems = [];
         this.orderPlaced = false;
         this.placedOrder = null;
+        try {
+          sessionStorage.removeItem('orandus_last_order_' + (this.vendorInfo ? this.vendorInfo.slug : ''));
+        } catch (e) {}
         this.flushCart();
       },
 
@@ -1121,7 +1140,7 @@
       get cartTotalCount() {
         var sum = 0;
         for (var i = 0; i < this.cartItems.length; i++) {
-          sum += this.cartItems[i].quantity;
+          sum += Math.max(1, parseInt(this.cartItems[i].quantity, 10) || 1);
         }
         return sum;
       },
@@ -1129,9 +1148,11 @@
       get cartTotalPrice() {
         var sum = 0;
         for (var i = 0; i < this.cartItems.length; i++) {
-          sum += this.cartItems[i].price * this.cartItems[i].quantity;
+          var price = Math.max(0, Number(this.cartItems[i].price) || 0);
+          var qty = Math.max(1, parseInt(this.cartItems[i].quantity, 10) || 1);
+          sum += price * qty;
         }
-        return sum;
+        return Math.round(sum * 100) / 100;
       },
 
       get isPhoneValid() {
@@ -1139,7 +1160,7 @@
         if (clean.length !== 10) return false;
         if (!/^[6-9]/.test(clean)) return false;
         if (/^(\d)\1{9}$/.test(clean)) return false; // Reject repeated single-digit (e.g. 9999999999)
-        if (clean === '1234567890' || clean === '9876543210') return false; // Reject sequential fake numbers
+        if (clean === '1234567890' || clean === '9876543210' || clean === '0123456789') return false; // Reject sequential fake numbers
         return true;
       },
 
@@ -1212,15 +1233,18 @@
         this.isDispatching = true;
         var self = this;
 
-        var finalLoc = (this.deliveryLocation || '').trim() || 'Back Gate';
+        // Clean & sanitize user inputs against formatting injection
+        var sanitizedName = (this.studentName || '').replace(/[\r\n]+/g, ' ').replace(/[<>{}]/g, '').trim().slice(0, 50);
+        var sanitizedNotes = (this.cookingNotes || '').replace(/[\r\n]+/g, ' ').replace(/[<>{}]/g, '').trim().slice(0, 150);
+        var sanitizedLoc = (this.deliveryLocation || '').replace(/[\r\n]+/g, ' ').replace(/[<>{}]/g, '').trim().slice(0, 80) || (this.presetLocations[0] || 'Back Gate');
 
         // Persist student details to localStorage after validation passes
         try {
           localStorage.setItem('orandus_student_phone', cleanPhone);
-          if (this.studentName && this.studentName.trim()) {
-            localStorage.setItem('orandus_student_name', this.studentName.trim());
+          if (sanitizedName) {
+            localStorage.setItem('orandus_student_name', sanitizedName);
           }
-          localStorage.setItem('orandus_delivery_loc', finalLoc);
+          localStorage.setItem('orandus_delivery_loc', sanitizedLoc);
         } catch (e) {}
 
         var orderId = this.generateOrderId();
@@ -1229,8 +1253,9 @@
         var formattedTime = now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
         var timestampStr = formattedDate + ', ' + formattedTime;
 
-        var fee = Number(this.deliveryFee) || 0;
-        var grandTotal = this.cartTotalPrice + fee;
+        var subtotal = this.cartTotalPrice;
+        var fee = Math.max(0, Number(this.deliveryFee) || 0);
+        var grandTotal = Math.round((subtotal + fee) * 100) / 100;
 
         var lines = [];
         lines.push('🧾 *ORANDUS ORDER #' + orderId + '*');
@@ -1238,27 +1263,29 @@
         lines.push('🏪 *Stall:* ' + (this.vendorInfo.name || 'Vendor'));
         lines.push('──────────────────────');
 
-        if (this.studentName && this.studentName.trim()) {
-          lines.push('👤 *Customer:* ' + this.studentName.trim() + ' (+91 ' + cleanPhone + ')');
+        if (sanitizedName) {
+          lines.push('👤 *Customer:* ' + sanitizedName + ' (+91 ' + cleanPhone + ')');
         } else {
           lines.push('👤 *Customer Phone:* +91 ' + cleanPhone);
         }
-        lines.push('📍 *Location:* ' + finalLoc);
+        lines.push('📍 *Location:* ' + sanitizedLoc);
 
-        if (this.cookingNotes && this.cookingNotes.trim()) {
-          lines.push('📝 *Note:* "' + this.cookingNotes.trim() + '"');
+        if (sanitizedNotes) {
+          lines.push('📝 *Note:* "' + sanitizedNotes + '"');
         }
 
         lines.push('──────────────────────');
         lines.push('*ITEMS:*');
         for (var i = 0; i < this.cartItems.length; i++) {
           var it = this.cartItems[i];
-          var sub = it.price * it.quantity;
-          lines.push('▪ ' + it.quantity + 'x ' + it.name + ' (₹' + it.price + ' ea) = ₹' + sub);
+          var itemPrice = Math.max(0, Number(it.price) || 0);
+          var itemQty = Math.max(1, parseInt(it.quantity, 10) || 1);
+          var sub = itemPrice * itemQty;
+          lines.push('▪ ' + itemQty + 'x ' + (it.name || 'Dish') + ' (₹' + itemPrice + ' ea) = ₹' + sub);
         }
 
         lines.push('──────────────────────');
-        lines.push('Subtotal: ₹' + this.cartTotalPrice);
+        lines.push('Subtotal: ₹' + subtotal);
         if (fee > 0) {
           lines.push('Delivery Fee: ₹' + fee);
         }
@@ -1275,21 +1302,27 @@
         this.placedOrder = {
           orderId: orderId,
           items: JSON.parse(JSON.stringify(this.cartItems)),
-          subtotal: this.cartTotalPrice,
+          subtotal: subtotal,
           deliveryFee: fee,
           totalPrice: grandTotal,
           totalCount: this.cartTotalCount,
-          location: finalLoc,
-          name: (this.studentName || '').trim(),
+          location: sanitizedLoc,
+          name: sanitizedName,
           phone: cleanPhone,
-          notes: (this.cookingNotes || '').trim(),
+          notes: sanitizedNotes,
           vendorName: this.vendorInfo.name || 'Vendor',
           vendorPhone: this.vendorInfo.phone || '',
           waUrl: waUrl,
           timestamp: timestampStr,
-          ticketText: ticketText
+          ticketText: ticketText,
+          placedAt: Date.now()
         };
         this.orderPlaced = true;
+
+        // Persist placed order in sessionStorage to survive mobile tab reloads
+        try {
+          sessionStorage.setItem('orandus_last_order_' + this.vendorInfo.slug, JSON.stringify(this.placedOrder));
+        } catch (e) {}
 
         // Reset active cart items and persist cleared state
         this.cartItems = [];
@@ -1312,7 +1345,7 @@
                 orderId: orderId,
                 totalAmount: grandTotal,
                 itemCount: this.placedOrder.totalCount,
-                location: finalLoc
+                location: sanitizedLoc
               }),
               keepalive: true
             }).catch(function () {});

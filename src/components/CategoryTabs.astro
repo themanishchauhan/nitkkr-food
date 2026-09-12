@@ -15,6 +15,7 @@ interface Props {
   shareUrl?: string;
   shareTitle?: string;
   shareText?: string;
+  deliversTo?: string[];
   [key: string]: any;
 }
 const {
@@ -32,12 +33,13 @@ const {
   whatsAppLabel = 'Order on WhatsApp',
   shareUrl = '',
   shareTitle = 'Orandus',
-  shareText = 'Check out this menu on Orandus'
+  shareText = 'Check out this menu on Orandus',
+  deliversTo = []
 } = Astro.props;
 ---
 
 <script is:inline src="/scripts/search-engine.js"></script>
-<script is:inline define:vars={{ initialCategories: categories, initialMenuItems: menuItems, shareUrlVal: shareUrl, shareTitleVal: shareTitle, shareTextVal: shareText, vendorSlugVal: vendorSlug, vendorNameVal: vendorName, vendorPhoneVal: vendorPhone, vendorWhatsAppVal: vendorWhatsApp, isVendorOpenVal: isVendorOpen }}>
+<script is:inline define:vars={{ initialCategories: categories, initialMenuItems: menuItems, shareUrlVal: shareUrl, shareTitleVal: shareTitle, shareTextVal: shareText, vendorSlugVal: vendorSlug, vendorNameVal: vendorName, vendorPhoneVal: vendorPhone, vendorWhatsAppVal: vendorWhatsApp, isVendorOpenVal: isVendorOpen, deliversToVal: deliversTo }}>
   window.__VENDOR_MENU_CONFIG__ = { 
     initialCategories, 
     initialMenuItems, 
@@ -48,7 +50,8 @@ const {
     vendorName: vendorNameVal,
     vendorPhone: vendorPhoneVal,
     vendorWhatsApp: vendorWhatsAppVal,
-    isVendorOpen: isVendorOpenVal
+    isVendorOpen: isVendorOpenVal,
+    deliversTo: deliversToVal
   };
 </script>
 
@@ -689,49 +692,20 @@ const {
               <p class="text-xs text-slate-500 mt-1">Tap a quick campus gate, or type your specific hostel / room below:</p>
             </div>
 
-            <!-- 3 Easy-Touch Quick Location Chips -->
-            <div class="grid grid-cols-3 gap-2 sm:gap-2.5">
-              <!-- Back Gate -->
-              <button
-                type="button"
-                @click="setDeliveryLocation('Back Gate')"
-                :class="deliveryLocation.trim() === 'Back Gate' 
-                  ? 'bg-nitkkr-orange text-white border-nitkkr-orange shadow-sm font-black ring-2 ring-nitkkr-orange/30' 
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 font-bold'"
-                class="p-2.5 sm:p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[56px] active:scale-95"
-              >
-                <span class="text-base mb-0.5" aria-hidden="true">🚪</span>
-                <span class="text-xs leading-tight font-extrabold">Back Gate</span>
-                <span class="text-[10px] opacity-75 font-normal">Gate 2</span>
-              </button>
-
-              <!-- Front Gate -->
-              <button
-                type="button"
-                @click="setDeliveryLocation('Front Gate')"
-                :class="deliveryLocation.trim() === 'Front Gate' 
-                  ? 'bg-nitkkr-orange text-white border-nitkkr-orange shadow-sm font-black ring-2 ring-nitkkr-orange/30' 
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 font-bold'"
-                class="p-2.5 sm:p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[56px] active:scale-95"
-              >
-                <span class="text-base mb-0.5" aria-hidden="true">🏛️</span>
-                <span class="text-xs leading-tight font-extrabold">Front Gate</span>
-                <span class="text-[10px] opacity-75 font-normal">Main Gate 1</span>
-              </button>
-
-              <!-- Girls Hostel -->
-              <button
-                type="button"
-                @click="setDeliveryLocation('Girls Hostel')"
-                :class="deliveryLocation.trim() === 'Girls Hostel' 
-                  ? 'bg-nitkkr-orange text-white border-nitkkr-orange shadow-sm font-black ring-2 ring-nitkkr-orange/30' 
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 font-bold'"
-                class="p-2.5 sm:p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[56px] active:scale-95"
-              >
-                <span class="text-base mb-0.5" aria-hidden="true">🏢</span>
-                <span class="text-xs leading-tight font-extrabold">Girls Hostel</span>
-                <span class="text-[10px] opacity-75 font-normal">Kalpana C.</span>
-              </button>
+            <!-- Dynamic Easy-Touch Quick Location Chips (Kurukshetra & Narnaul Ready) -->
+            <div class="flex flex-wrap gap-2">
+              <template x-for="loc in presetLocations" :key="loc">
+                <button
+                  type="button"
+                  @click="setDeliveryLocation(loc)"
+                  :class="deliveryLocation.trim().toLowerCase() === loc.trim().toLowerCase() 
+                    ? 'bg-nitkkr-orange text-white border-nitkkr-orange shadow-xs font-black ring-2 ring-nitkkr-orange/30' 
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 font-bold'"
+                  class="px-3.5 py-2.5 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center text-xs active:scale-95 shadow-2xs"
+                >
+                  <span class="leading-tight font-extrabold" x-text="loc"></span>
+                </button>
+              </template>
             </div>
 
             <!-- Manual Location Input with Clear Button -->
