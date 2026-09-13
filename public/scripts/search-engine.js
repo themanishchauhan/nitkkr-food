@@ -898,7 +898,9 @@
         name: config.vendorName || '',
         phone: config.vendorPhone || '',
         whatsapp: config.vendorWhatsApp || '',
-        isVendorOpen: config.isVendorOpen !== false
+        isVendorOpen: config.isVendorOpen !== false,
+        formattedHours: config.formattedHours || '',
+        timingStatus: config.timingStatus || ''
       },
       presetLocations: (Array.isArray(config.deliversTo) && config.deliversTo.length > 0)
         ? config.deliversTo
@@ -1010,10 +1012,16 @@
           var savedOrder = sessionStorage.getItem('orandus_last_order_' + this.vendorInfo.slug);
           if (savedOrder) {
             var parsedOrder = JSON.parse(savedOrder);
-            if (parsedOrder && parsedOrder.orderId && (Date.now() - (parsedOrder.placedAt || 0) < 45 * 60 * 1000)) {
+            if (parsedOrder && parsedOrder.orderId && Array.isArray(parsedOrder.items) && parsedOrder.items.length > 0 && (Date.now() - (parsedOrder.placedAt || 0) < 45 * 60 * 1000)) {
               this.placedOrder = parsedOrder;
               this.orderPlaced = true;
+            } else {
+              this.orderPlaced = false;
+              this.placedOrder = null;
             }
+          } else {
+            this.orderPlaced = false;
+            this.placedOrder = null;
           }
         } catch (e) {}
       },

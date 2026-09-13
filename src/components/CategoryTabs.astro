@@ -16,6 +16,8 @@ interface Props {
   shareTitle?: string;
   shareText?: string;
   deliversTo?: string[];
+  formattedHours?: string;
+  timingStatus?: string;
   [key: string]: any;
 }
 const {
@@ -34,12 +36,14 @@ const {
   shareUrl = '',
   shareTitle = 'Orandus',
   shareText = 'Check out this menu on Orandus',
-  deliversTo = []
+  deliversTo = [],
+  formattedHours = '',
+  timingStatus = ''
 } = Astro.props;
 ---
 
 <script is:inline src="/scripts/search-engine.js"></script>
-<script is:inline define:vars={{ initialCategories: categories, initialMenuItems: menuItems, shareUrlVal: shareUrl, shareTitleVal: shareTitle, shareTextVal: shareText, vendorSlugVal: vendorSlug, vendorNameVal: vendorName, vendorPhoneVal: vendorPhone, vendorWhatsAppVal: vendorWhatsApp, isVendorOpenVal: isVendorOpen, deliversToVal: deliversTo }}>
+<script is:inline define:vars={{ initialCategories: categories, initialMenuItems: menuItems, shareUrlVal: shareUrl, shareTitleVal: shareTitle, shareTextVal: shareText, vendorSlugVal: vendorSlug, vendorNameVal: vendorName, vendorPhoneVal: vendorPhone, vendorWhatsAppVal: vendorWhatsApp, isVendorOpenVal: isVendorOpen, deliversToVal: deliversTo, formattedHoursVal: formattedHours, timingStatusVal: timingStatus }}>
   window.__VENDOR_MENU_CONFIG__ = { 
     initialCategories, 
     initialMenuItems, 
@@ -51,7 +55,9 @@ const {
     vendorPhone: vendorPhoneVal,
     vendorWhatsApp: vendorWhatsAppVal,
     isVendorOpen: isVendorOpenVal,
-    deliversTo: deliversToVal
+    deliversTo: deliversToVal,
+    formattedHours: formattedHoursVal,
+    timingStatus: timingStatusVal
   };
 </script>
 
@@ -692,277 +698,411 @@ const {
       <main class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-5 sm:py-6">
         <div class="max-w-2xl mx-auto space-y-4">
 
-          <!-- STATE 1: Active Order Review -->
+          <!-- STATE 1: Cart Screen (Open or Closed) -->
           <template x-if="!orderPlaced">
-            <div class="space-y-4">
+            <div>
+              <!-- SUB-STATE 1A: STALL OPEN - Active Checkout Experience -->
+              <template x-if="vendorInfo.isVendorOpen">
+                <div class="space-y-4">
+                  <!-- 1. Delivery Location Card (Clean Asterisk & 3 Specific Campus Chips with Toggle) -->
+                  <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
+                    <div class="flex items-center justify-between">
+                      <h2 class="text-sm sm:text-base font-extrabold text-slate-900 font-display">
+                        <span>Location</span> <span class="text-rose-500 font-bold">*</span>
+                      </h2>
+                    </div>
 
-              <!-- Stall Closed Warning Banner -->
-              <div x-show="!vendorInfo.isVendorOpen" class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3 shadow-2xs">
-                <span class="text-xl flex-shrink-0">⚠️</span>
-                <div class="text-xs sm:text-sm">
-                  <p class="font-extrabold text-slate-900">Stall is Currently Closed</p>
-                  <p class="text-slate-600 mt-0.5 leading-relaxed">
-                    <span class="font-bold text-slate-900" x-text="vendorInfo.name || 'This stall'"></span> is not accepting orders right now. Ordering will resume during active operating hours.
-                  </p>
-                </div>
-              </div>
-              
-              <!-- 1. Delivery Location Card (Clean Asterisk & 3 Specific Campus Chips with Toggle) -->
-              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
-                <div class="flex items-center justify-between">
-                  <h2 class="text-sm sm:text-base font-extrabold text-slate-900 font-display">
-                    <span>Location</span> <span class="text-rose-500 font-bold">*</span>
-                  </h2>
-                </div>
-
-                <!-- 3 Specific Simple Campus Chips with Toggle -->
-                <div class="flex flex-wrap gap-2">
-                  <template x-for="loc in ['Back Gate', 'Front Gate', 'Girls Hostel']" :key="loc">
-                    <button
-                      type="button"
-                      @click="setDeliveryLocation(loc)"
-                      :class="(deliveryLocation && deliveryLocation.trim().toLowerCase() === loc.trim().toLowerCase()) 
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm font-extrabold' 
-                        : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold'"
-                      class="px-3.5 py-2 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center text-xs active:scale-95"
-                    >
-                      <span class="leading-tight" x-text="loc"></span>
-                    </button>
-                  </template>
-                </div>
-
-                <!-- Simple Clean Location Input with Clear cross -->
-                <div class="relative">
-                  <input
-                    id="manualLocationInput"
-                    type="text"
-                    x-model="deliveryLocation"
-                    placeholder="Enter hostel room, department, or landmark..."
-                    class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-white hover:bg-slate-50/50 focus:bg-white border border-slate-200 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-slate-400 focus:ring-2 focus:ring-slate-100 shadow-2xs transition-all"
-                  />
-                  <button
-                    type="button"
-                    x-show="deliveryLocation"
-                    @click="deliveryLocation = ''; localStorage.removeItem('orandus_delivery_loc');"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer text-sm font-bold"
-                    aria-label="Clear location"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </section>
-
-              <!-- 2. Order Items Card -->
-              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
-                <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                  <h2 class="text-sm sm:text-base font-extrabold text-slate-900 font-display">
-                    <span>Items</span>
-                    <span class="text-xs font-bold text-slate-400 ml-0.5" x-text="'(' + cartTotalCount + ')'"></span>
-                  </h2>
-                  <template x-if="vendorInfo.isVendorOpen">
-                    <button
-                      type="button"
-                      @click="closeCartScreen()"
-                      class="text-xs text-slate-700 hover:text-slate-900 font-bold flex items-center gap-1 cursor-pointer bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-xl border border-slate-200 transition-colors"
-                    >
-                      <span>+ Add items</span>
-                    </button>
-                  </template>
-                </div>
-
-                <template x-if="cartItems.length === 0">
-                  <div class="text-center py-10 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200">
-                    <p class="text-xs font-bold text-slate-900" x-text="vendorInfo.isVendorOpen ? 'Your cart is empty' : 'Stall is currently closed • Orders paused'"></p>
-                    <button
-                      type="button"
-                      @click="closeCartScreen()"
-                      class="mt-3 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs"
-                      x-text="vendorInfo.isVendorOpen ? 'Explore Menu' : 'View Menu (Browsing Only)'"
-                    >
-                      Explore Menu
-                    </button>
-                  </div>
-                </template>
-
-                <!-- Items List -->
-                <div class="divide-y divide-slate-100">
-                  <template x-for="it in cartItems" :key="it.id">
-                    <div class="py-3 first:pt-1 last:pb-1 flex items-center justify-between gap-3">
-                      <!-- Dish Diet Icon & Name -->
-                      <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                        <span
-                          class="w-4 h-4 rounded-[3px] border-[1.5px] bg-white flex items-center justify-center flex-shrink-0"
-                          :class="{
-                            'border-emerald-600': it.diet === 'veg',
-                            'border-amber-600': it.diet === 'egg',
-                            'border-rose-700': it.diet === 'nonveg'
-                          }"
+                    <!-- 3 Specific Simple Campus Chips with Toggle -->
+                    <div class="flex flex-wrap gap-2">
+                      <template x-for="loc in ['Back Gate', 'Front Gate', 'Girls Hostel']" :key="loc">
+                        <button
+                          type="button"
+                          @click="setDeliveryLocation(loc)"
+                          :class="(deliveryLocation && deliveryLocation.trim().toLowerCase() === loc.trim().toLowerCase()) 
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-sm font-extrabold' 
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold'"
+                          class="px-3.5 py-2 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center text-xs active:scale-95"
                         >
-                          <template x-if="it.diet === 'veg'">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                          </template>
-                          <template x-if="it.diet === 'egg'">
-                            <svg class="w-2.5 h-2.5 fill-amber-600 text-amber-600" viewBox="0 0 10 10" aria-hidden="true">
-                              <path d="M5,1 C6.5,1 8,4 8,6.8 C8,8.2 6.7,9 5,9 C3.3,9 2,8.2 2,6.8 C2,4 3.5,1 5,1 Z" />
-                            </svg>
-                          </template>
-                          <template x-if="it.diet === 'nonveg'">
-                            <svg class="w-2.5 h-2.5 fill-rose-700 text-rose-700" viewBox="0 0 10 10" aria-hidden="true">
-                              <polygon points="5,1 9.5,8.5 0.5,8.5" />
-                            </svg>
-                          </template>
-                        </span>
+                          <span class="leading-tight" x-text="loc"></span>
+                        </button>
+                      </template>
+                    </div>
 
-                        <div class="min-w-0">
-                          <p class="font-extrabold text-xs sm:text-sm text-slate-900 truncate" x-text="it.name"></p>
-                          <p class="text-[11px] text-slate-400 font-medium" x-text="'₹' + it.price + ' each'"></p>
+                    <!-- Simple Clean Location Input with Clear cross -->
+                    <div class="relative">
+                      <input
+                        id="manualLocationInput"
+                        type="text"
+                        x-model="deliveryLocation"
+                        placeholder="Enter hostel room, department, or landmark..."
+                        class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-white hover:bg-slate-50/50 focus:bg-white border border-slate-200 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-slate-400 focus:ring-2 focus:ring-slate-100 shadow-2xs transition-all"
+                      />
+                      <button
+                        type="button"
+                        x-show="deliveryLocation"
+                        @click="deliveryLocation = ''; localStorage.removeItem('orandus_delivery_loc');"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer text-sm font-bold"
+                        aria-label="Clear location"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </section>
+
+                  <!-- 2. Order Items Card -->
+                  <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
+                    <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <h2 class="text-sm sm:text-base font-extrabold text-slate-900 font-display">
+                        <span>Items</span>
+                        <span class="text-xs font-bold text-slate-400 ml-0.5" x-text="'(' + cartTotalCount + ')'"></span>
+                      </h2>
+                      <button
+                        type="button"
+                        @click="closeCartScreen()"
+                        class="text-xs text-slate-700 hover:text-slate-900 font-bold flex items-center gap-1 cursor-pointer bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-xl border border-slate-200 transition-colors"
+                      >
+                        <span>+ Add items</span>
+                      </button>
+                    </div>
+
+                    <template x-if="cartItems.length === 0">
+                      <div class="text-center py-10 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200">
+                        <p class="text-xs font-bold text-slate-900">Your cart is empty</p>
+                        <button
+                          type="button"
+                          @click="closeCartScreen()"
+                          class="mt-3 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs"
+                        >
+                          Explore Menu
+                        </button>
+                      </div>
+                    </template>
+
+                    <!-- Items List -->
+                    <div class="divide-y divide-slate-100">
+                      <template x-for="it in cartItems" :key="it.id">
+                        <div class="py-3 first:pt-1 last:pb-1 flex items-center justify-between gap-3">
+                          <div class="flex items-center gap-2.5 min-w-0">
+                            <!-- Diet Indicator -->
+                            <span
+                              class="w-3.5 h-3.5 rounded-[3px] border-[1.5px] bg-white flex items-center justify-center flex-shrink-0"
+                              :class="{
+                                'border-emerald-600': it.diet === 'veg',
+                                'border-amber-600': it.diet === 'egg',
+                                'border-rose-700': it.diet === 'nonveg'
+                              }"
+                            >
+                              <template x-if="it.diet === 'veg'">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                              </template>
+                              <template x-if="it.diet === 'egg'">
+                                <svg class="w-2.5 h-2.5 fill-amber-600 text-amber-600" viewBox="0 0 10 10" aria-hidden="true">
+                                  <path d="M5,1 C6.5,1 8,4 8,6.8 C8,8.2 6.7,9 5,9 C3.3,9 2,8.2 2,6.8 C2,4 3.5,1 5,1 Z" />
+                                </svg>
+                              </template>
+                              <template x-if="it.diet === 'nonveg'">
+                                <svg class="w-2.5 h-2.5 fill-rose-700 text-rose-700" viewBox="0 0 10 10" aria-hidden="true">
+                                  <polygon points="5,1 9.5,8.5 0.5,8.5" />
+                                </svg>
+                              </template>
+                            </span>
+
+                            <div class="min-w-0">
+                              <p class="font-extrabold text-xs sm:text-sm text-slate-900 truncate" x-text="it.name"></p>
+                              <p class="text-[11px] text-slate-400 font-medium" x-text="'₹' + it.price + ' each'"></p>
+                            </div>
+                          </div>
+
+                          <!-- Stepper -->
+                          <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-1 shadow-2xs flex-shrink-0">
+                            <button
+                              type="button"
+                              @click="decrementCartItem(it.id)"
+                              class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 active:scale-90 text-slate-900 flex items-center justify-center font-black text-sm cursor-pointer transition-all shadow-2xs border border-slate-200/60"
+                              aria-label="Decrease quantity"
+                            >
+                              −
+                            </button>
+                            <span class="min-w-[18px] text-center font-black text-xs sm:text-sm text-slate-900 font-display" x-text="it.quantity"></span>
+                            <button
+                              type="button"
+                              @click="addToCart(it)"
+                              class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 active:scale-90 text-slate-900 flex items-center justify-center font-black text-sm cursor-pointer transition-all shadow-2xs border border-slate-200/60"
+                              aria-label="Increase quantity"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <!-- Subtotal -->
+                          <span class="font-black text-xs sm:text-sm text-slate-900 font-display min-w-[54px] text-right" x-text="'₹' + (it.price * it.quantity)"></span>
+                        </div>
+                      </template>
+                    </div>
+                  </section>
+
+                  <!-- 3. Cooking & Special Requests -->
+                  <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-2.5">
+                    <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 font-display">
+                      <span>Special Requests?</span>
+                      <span class="text-[11px] font-normal text-slate-400 ml-1">(Optional)</span>
+                    </h2>
+
+                    <input
+                      type="text"
+                      x-model="cookingNotes"
+                      placeholder="e.g. Extra napkins, less spicy, pack separately..."
+                      class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-slate-400 focus:ring-2 focus:ring-slate-100 shadow-2xs transition-all"
+                    />
+                  </section>
+
+                  <!-- 4. Contact Credentials Card (Neutral Border, Small Tick Only) -->
+                  <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                      <h2 class="text-sm sm:text-base font-extrabold text-slate-900 font-display">
+                        <span>Phone Number</span> <span class="text-rose-500 font-bold">*</span>
+                      </h2>
+                    </div>
+
+                    <!-- Mobile Phone Input with +91 Prefix (Clean Neutral Border - No Green Outline) -->
+                    <div>
+                      <div class="flex items-center rounded-xl border border-slate-200 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-100 overflow-hidden bg-white shadow-2xs transition-all">
+                        <span class="bg-slate-50 px-3 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-slate-700 border-r border-slate-200 flex items-center">
+                          +91
+                        </span>
+                        <input
+                          id="fullScreenPhoneInput"
+                          type="tel"
+                          inputmode="numeric"
+                          maxlength="10"
+                          x-model="studentPhone"
+                          @input="phoneError = ''"
+                          placeholder="10-digit mobile number"
+                          class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-900 outline-hidden bg-transparent placeholder:text-slate-400"
+                        />
+                        <!-- Inline phone indicator: small green tick when valid, subtle digit counter while typing -->
+                        <div class="pr-3.5 flex items-center flex-shrink-0 select-none">
+                          <span
+                            x-show="isPhoneValid"
+                            x-cloak
+                            class="text-emerald-600 font-black text-sm"
+                            title="Valid phone number"
+                          >
+                            ✓
+                          </span>
+                          <span
+                            x-show="!isPhoneValid && studentPhone.length > 0"
+                            x-cloak
+                            class="text-[10px] font-mono font-bold text-slate-400"
+                            x-text="studentPhone.length + '/10'"
+                          ></span>
                         </div>
                       </div>
+                      <template x-if="phoneError">
+                        <p class="text-[11px] text-rose-600 font-bold mt-1" x-text="phoneError"></p>
+                      </template>
+                    </div>
 
-                      <!-- Stepper -->
-                      <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-1 shadow-2xs flex-shrink-0">
+                    <!-- Optional Name Input -->
+                    <div>
+                      <input
+                        id="fullScreenNameInput"
+                        type="text"
+                        x-model="studentName"
+                        placeholder="Your name (optional)"
+                        class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-white focus:bg-white rounded-xl border border-slate-200 outline-hidden font-medium text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 shadow-2xs transition-all"
+                      />
+                    </div>
+                  </section>
+
+                  <!-- 5. 🧾 Bill Breakdown Card -->
+                  <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-2.5">
+                    <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 font-display flex items-center gap-2 border-b border-slate-100 pb-2">
+                      <span class="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center text-xs">🧾</span>
+                      <span>Bill Details</span>
+                    </h2>
+
+                    <div class="space-y-1.5 text-xs text-slate-600">
+                      <div class="flex items-center justify-between">
+                        <span>Items Subtotal:</span>
+                        <span class="font-bold text-slate-900" x-text="'₹' + cartTotalPrice"></span>
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-1">
+                          <span>Campus Handover:</span>
+                          <span class="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.5 rounded-sm font-bold">FREE</span>
+                        </span>
+                        <span class="font-bold text-emerald-600">₹0</span>
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-1">
+                          <span>Orandus Platform Fee:</span>
+                          <span class="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-sm font-bold">0% COMMISSION</span>
+                        </span>
+                        <span class="font-bold text-emerald-600">₹0</span>
+                      </div>
+                    </div>
+
+                    <div class="pt-2.5 border-t border-slate-200 flex items-center justify-between">
+                      <span class="font-black text-sm sm:text-base text-slate-900 font-display">To Pay:</span>
+                      <span class="font-black text-lg sm:text-xl text-slate-900 font-display" x-text="'₹' + cartTotalPrice"></span>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 text-[11px] text-slate-700 flex items-center gap-2">
+                      <span class="text-base flex-shrink-0">💡</span>
+                      <span>Pay directly to vendor via <strong>UPI or Cash</strong> upon pickup at <strong class="text-slate-900" x-text="deliveryLocation || 'Selected Gate'"></strong>.</span>
+                    </div>
+                  </section>
+                </div>
+              </template>
+
+              <!-- SUB-STATE 1B: STALL CLOSED - Dedicated Clean Experience (No Form Inputs, No Total to Pay) -->
+              <template x-if="!vendorInfo.isVendorOpen">
+                <div class="space-y-4">
+                  <!-- Stall Closed Status Card -->
+                  <div class="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs text-center space-y-3">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 mx-auto flex items-center justify-center text-2xl shadow-2xs">
+                      🕒
+                    </div>
+                    <div>
+                      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-50 text-amber-800 border border-amber-200 mb-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <span x-text="vendorInfo.timingStatus || 'Stall is Currently Closed'"></span>
+                      </span>
+                      <h2 class="font-display text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                        <span x-text="vendorInfo.name || 'This stall'"></span> is Closed
+                      </h2>
+                      <p class="text-xs sm:text-sm text-slate-600 mt-1.5 max-w-md mx-auto leading-relaxed">
+                        Ordering is paused right now. This stall accepts orders during active operating hours: <strong class="text-slate-900" x-text="vendorInfo.formattedHours || 'Operating Hours'"></strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Saved Items in Cart (If any exist from earlier) -->
+                  <template x-if="cartItems.length > 0">
+                    <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
+                      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                        <div>
+                          <h3 class="text-sm sm:text-base font-extrabold text-slate-900 font-display">
+                            <span>Saved Items</span>
+                            <span class="text-xs font-bold text-slate-400 ml-1" x-text="'(' + cartTotalCount + ')'"></span>
+                          </h3>
+                          <p class="text-[11px] text-slate-500 mt-0.5">Your items are saved and ready for when the stall opens.</p>
+                        </div>
                         <button
                           type="button"
-                          @click="decrementCartItem(it.id)"
-                          class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 active:scale-90 text-slate-900 flex items-center justify-center font-black text-sm cursor-pointer transition-all shadow-2xs border border-slate-200/60"
-                          aria-label="Decrease quantity"
+                          @click="clearCart()"
+                          class="text-xs text-rose-600 hover:text-rose-700 font-bold px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100/80 border border-rose-200 transition-colors cursor-pointer"
                         >
-                          −
-                        </button>
-                        <span class="min-w-[18px] text-center font-black text-xs sm:text-sm text-slate-900 font-display" x-text="it.quantity"></span>
-                        <button
-                          type="button"
-                          @click="addToCart(it)"
-                          class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 active:scale-90 text-slate-900 flex items-center justify-center font-black text-sm cursor-pointer transition-all shadow-2xs border border-slate-200/60"
-                          aria-label="Increase quantity"
-                        >
-                          +
+                          Clear Cart
                         </button>
                       </div>
 
-                      <!-- Subtotal -->
-                      <span class="font-black text-xs sm:text-sm text-slate-900 font-display min-w-[54px] text-right" x-text="'₹' + (it.price * it.quantity)"></span>
-                    </div>
+                      <div class="divide-y divide-slate-100">
+                        <template x-for="it in cartItems" :key="it.id">
+                          <div class="py-3 flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                              <span
+                                class="w-3.5 h-3.5 rounded-[3px] border-[1.5px] bg-white flex items-center justify-center flex-shrink-0"
+                                :class="{
+                                  'border-emerald-600': it.diet === 'veg',
+                                  'border-amber-600': it.diet === 'egg',
+                                  'border-rose-700': it.diet === 'nonveg'
+                                }"
+                              >
+                                <template x-if="it.diet === 'veg'">
+                                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                </template>
+                                <template x-if="it.diet === 'egg'">
+                                  <svg class="w-2.5 h-2.5 fill-amber-600 text-amber-600" viewBox="0 0 10 10" aria-hidden="true">
+                                    <path d="M5,1 C6.5,1 8,4 8,6.8 C8,8.2 6.7,9 5,9 C3.3,9 2,8.2 2,6.8 C2,4 3.5,1 5,1 Z" />
+                                  </svg>
+                                </template>
+                                <template x-if="it.diet === 'nonveg'">
+                                  <svg class="w-2.5 h-2.5 fill-rose-700 text-rose-700" viewBox="0 0 10 10" aria-hidden="true">
+                                    <polygon points="5,1 9.5,8.5 0.5,8.5" />
+                                  </svg>
+                                </template>
+                              </span>
+                              <div class="min-w-0">
+                                <p class="font-extrabold text-xs sm:text-sm text-slate-900 truncate" x-text="it.name"></p>
+                                <p class="text-[11px] text-slate-400 font-medium" x-text="it.quantity + 'x • ₹' + it.price + ' each'"></p>
+                              </div>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                              <span class="font-black text-xs sm:text-sm text-slate-900 font-display" x-text="'₹' + (it.price * it.quantity)"></span>
+                              <button
+                                type="button"
+                                @click="removeCartItem(it.id)"
+                                class="text-xs text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer font-bold"
+                                aria-label="Remove item"
+                                title="Remove item"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+
+                      <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+                        <span>Saved Items Subtotal:</span>
+                        <span class="font-black text-slate-900 text-sm" x-text="'₹' + cartTotalPrice"></span>
+                      </div>
+                    </section>
                   </template>
-                </div>
-              </section>
 
-              <!-- 3. Cooking & Special Requests -->
-              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-2.5">
-                <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 font-display">
-                  <span>Special Requests?</span>
-                  <span class="text-[11px] font-normal text-slate-400 ml-1">(Optional)</span>
-                </h2>
-
-                <input
-                  type="text"
-                  x-model="cookingNotes"
-                  placeholder="e.g. Extra napkins, less spicy, pack separately..."
-                  class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-slate-400 focus:ring-2 focus:ring-slate-100 shadow-2xs transition-all"
-                />
-              </section>
-
-              <!-- 4. Contact Credentials Card (Neutral Border, Small Tick Only) -->
-              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-3">
-                <div class="flex items-center justify-between gap-2">
-                  <h2 class="text-sm sm:text-base font-extrabold text-slate-900 font-display">
-                    <span>Phone Number</span> <span class="text-rose-500 font-bold">*</span>
-                  </h2>
-                </div>
-
-                <!-- Mobile Phone Input with +91 Prefix (Clean Neutral Border - No Green Outline) -->
-                <div>
-                  <div class="flex items-center rounded-xl border border-slate-200 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-100 overflow-hidden bg-white shadow-2xs transition-all">
-                    <span class="bg-slate-50 px-3 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-slate-700 border-r border-slate-200 flex items-center">
-                      +91
-                    </span>
-                    <input
-                      id="fullScreenPhoneInput"
-                      type="tel"
-                      inputmode="numeric"
-                      maxlength="10"
-                      x-model="studentPhone"
-                      @input="phoneError = ''"
-                      placeholder="10-digit mobile number"
-                      class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-900 outline-hidden bg-transparent placeholder:text-slate-400"
-                    />
-                    <!-- Inline phone indicator: small green tick when valid, subtle digit counter while typing -->
-                    <div class="pr-3.5 flex items-center flex-shrink-0 select-none">
-                      <span
-                        x-show="isPhoneValid"
-                        x-cloak
-                        class="text-emerald-600 font-black text-sm"
-                        title="Valid phone number"
+                  <!-- Empty state if no items in cart -->
+                  <template x-if="cartItems.length === 0">
+                    <div class="bg-white rounded-3xl p-6 border border-slate-200 text-center py-10 shadow-xs space-y-2">
+                      <p class="text-3xl">🍽️</p>
+                      <p class="text-xs sm:text-sm font-extrabold text-slate-900">Your cart is empty</p>
+                      <p class="text-xs text-slate-500 max-w-xs mx-auto">Browse the menu to explore dishes, prices, and student reviews while the stall is closed.</p>
+                      <button
+                        type="button"
+                        @click="closeCartScreen()"
+                        class="mt-3 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
                       >
-                        ✓
-                      </span>
-                      <span
-                        x-show="!isPhoneValid && studentPhone.length > 0"
-                        x-cloak
-                        class="text-[10px] font-mono font-bold text-slate-400"
-                        x-text="studentPhone.length + '/10'"
-                      ></span>
+                        Explore Menu
+                      </button>
                     </div>
-                  </div>
-                  <template x-if="phoneError">
-                    <p class="text-[11px] text-rose-600 font-bold mt-1" x-text="phoneError"></p>
                   </template>
-                </div>
 
-                <!-- Optional Name Input -->
-                <div>
-                  <input
-                    id="fullScreenNameInput"
-                    type="text"
-                    x-model="studentName"
-                    placeholder="Your name (optional)"
-                    class="w-full px-3.5 py-2.5 sm:py-3 text-xs sm:text-sm bg-white focus:bg-white rounded-xl border border-slate-200 outline-hidden font-medium text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 shadow-2xs transition-all"
-                  />
-                </div>
-              </section>
+                  <!-- Direct Call Option if phone number available -->
+                  <template x-if="vendorInfo.phone">
+                    <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex items-center justify-between gap-3 text-xs shadow-2xs">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="text-lg flex-shrink-0">📞</span>
+                        <div class="min-w-0">
+                          <p class="font-bold text-slate-900 truncate">Have an urgent query?</p>
+                          <p class="text-slate-500 text-[11px] truncate">Call vendor directly regarding opening status</p>
+                        </div>
+                      </div>
+                      <a
+                        :href="'tel:' + vendorInfo.phone"
+                        class="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold border border-slate-200 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer flex-shrink-0"
+                      >
+                        <span>Call Stall</span>
+                      </a>
+                    </div>
+                  </template>
 
-              <!-- 5. 🧾 Bill Breakdown Card -->
-              <section class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-2.5">
-                <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 font-display flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <span class="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center text-xs">🧾</span>
-                  <span>Bill Details</span>
-                </h2>
-
-                <div class="space-y-1.5 text-xs text-slate-600">
-                  <div class="flex items-center justify-between">
-                    <span>Items Subtotal:</span>
-                    <span class="font-bold text-slate-900" x-text="'₹' + cartTotalPrice"></span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="flex items-center gap-1">
-                      <span>Campus Handover:</span>
-                      <span class="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.5 rounded-sm font-bold">FREE</span>
-                    </span>
-                    <span class="font-bold text-emerald-600">₹0</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="flex items-center gap-1">
-                      <span>Orandus Platform Fee:</span>
-                      <span class="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-sm font-bold">0% COMMISSION</span>
-                    </span>
-                    <span class="font-bold text-emerald-600">₹0</span>
+                  <!-- Action button to return to menu -->
+                  <div class="pt-2 flex justify-center">
+                    <button
+                      type="button"
+                      @click="closeCartScreen()"
+                      class="w-full py-3.5 px-6 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm rounded-2xl transition-all cursor-pointer text-center shadow-xs active:scale-98"
+                    >
+                      ← Return to Menu (Browsing Mode)
+                    </button>
                   </div>
                 </div>
-
-                <div class="pt-2.5 border-t border-slate-200 flex items-center justify-between">
-                  <span class="font-black text-sm sm:text-base text-slate-900 font-display">To Pay:</span>
-                  <span class="font-black text-lg sm:text-xl text-slate-900 font-display" x-text="'₹' + cartTotalPrice"></span>
-                </div>
-
-                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 text-[11px] text-slate-700 flex items-center gap-2">
-                  <span class="text-base flex-shrink-0">💡</span>
-                  <span>Pay directly to vendor via <strong>UPI or Cash</strong> upon pickup at <strong class="text-slate-900" x-text="deliveryLocation || 'Selected Gate'"></strong>.</span>
-                </div>
-              </section>
+              </template>
 
               <!-- Bottom spacer for comfortable scrolling inside main -->
               <div class="h-6 w-full pointer-events-none select-none" aria-hidden="true"></div>
-
             </div>
           </template>
 
@@ -1114,15 +1254,15 @@ const {
       <template x-if="!orderPlaced && cartItems.length > 0">
         <footer class="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-3 sm:p-4 shadow-lg pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-30">
           <div class="max-w-2xl mx-auto">
-            <div class="flex items-center justify-between gap-3 sm:gap-4">
-              <!-- Total Price Display -->
-              <div class="flex flex-col">
-                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total to pay</span>
-                <span class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-display" x-text="'₹' + cartTotalPrice"></span>
-              </div>
+            <template x-if="vendorInfo.isVendorOpen">
+              <div class="flex items-center justify-between gap-3 sm:gap-4">
+                <!-- Total Price Display -->
+                <div class="flex flex-col">
+                  <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total to pay</span>
+                  <span class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-display" x-text="'₹' + cartTotalPrice"></span>
+                </div>
 
-              <!-- Primary Send WhatsApp CTA Button (Disabled when stall is closed) -->
-              <template x-if="vendorInfo.isVendorOpen">
+                <!-- Primary Send WhatsApp CTA Button -->
                 <button
                   type="button"
                   @click="if (isPhoneValid) { sendWhatsAppOrder(); } else { document.getElementById('fullScreenPhoneInput')?.focus(); }"
@@ -1139,14 +1279,24 @@ const {
 
                   <span x-text="typeof whatsAppButtonLabel !== 'undefined' && whatsAppButtonLabel ? whatsAppButtonLabel : (isPhoneValid ? 'Send Order on WhatsApp ›' : 'Enter Mobile Number to Order')">Enter Mobile Number to Order</span>
                 </button>
-              </template>
-              <template x-if="!vendorInfo.isVendorOpen">
-                <div class="flex-1 max-w-md py-3.5 px-5 font-bold text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-2 bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed select-none">
-                  <span>🚫</span>
-                  <span>Stall Closed • Orders Paused</span>
+              </div>
+            </template>
+
+            <template x-if="!vendorInfo.isVendorOpen">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Stall Status</span>
+                  <span class="text-xs sm:text-sm font-extrabold text-slate-700" x-text="vendorInfo.timingStatus || 'Currently Closed'">Currently Closed</span>
                 </div>
-              </template>
-            </div>
+                <button
+                  type="button"
+                  @click="closeCartScreen()"
+                  class="py-2.5 px-5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl transition-all cursor-pointer shadow-xs active:scale-95"
+                >
+                  Browse Menu
+                </button>
+              </div>
+            </template>
           </div>
         </footer>
       </template>
